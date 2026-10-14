@@ -1,0 +1,28 @@
+MOBILE MAIN.DART PATCH
+======================
+
+1. Add this import near your other imports:
+
+import 'receipt_file_selector.dart';
+
+2. In _NSalesHomeState.initState(), after the WebViewController has been
+   created/configured, call:
+
+configureReceiptFileSelector(controller);
+
+Example:
+
+controller = WebViewController()
+  ..setJavaScriptMode(JavaScriptMode.unrestricted)
+  ..setBackgroundColor(Colors.white)
+  ..setNavigationDelegate(
+      NavigationDelegate(
+        ...
+      ),
+    )
+  ..loadRequest(Uri.parse(baseUrl));
+
+configureReceiptFileSelector(controller);
+
+This enables Laravel's receipt <input type="file"> buttons inside the Android
+WebView.

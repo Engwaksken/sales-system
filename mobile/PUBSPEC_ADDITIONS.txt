@@ -1,0 +1,8 @@
+Add these dependencies under dependencies: in pubspec.yaml:
+
+  image_picker: ^1.2.3
+  webview_flutter_android: ^4.14.0
+
+Then run:
+
+flutter pub get

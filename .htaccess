@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Prevent direct access to sensitive Laravel files
+    RewriteRule ^(\.env|artisan|composer\.(json|lock)|package\.json|phpunit\.xml)$ - [F,L,NC]
+
+    # Do not rewrite requests already targeting /public
+    RewriteRule ^public/ - [L]
+
+    # Forward all requests to Laravel's public directory
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
