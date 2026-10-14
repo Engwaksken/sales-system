@@ -12,7 +12,9 @@
 @include('partials.stat-card', ['icon' => 'fa-box', 'color' => 'indigo', 'label' => 'Total Products', 'value' => $items->total()])
 @include('partials.stat-card', ['icon' => 'fa-circle-check', 'color' => 'emerald', 'label' => 'Active', 'value' => $stat1])
 </div>
-@php($isMoney = false)
+@php
+$isMoney = false;
+@endphp
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
 @include('partials.business-filter-bar', [
     'searchPlaceholder' => 'Search products…',
