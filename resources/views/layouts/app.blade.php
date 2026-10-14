@@ -61,6 +61,13 @@
         }
         .stat-card { transition: transform .15s ease, box-shadow .15s ease; }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -8px rgba(0,0,0,.15); }
+        .theme-nav-details > summary { cursor: pointer; list-style: disclosure-closed inside; }
+        .theme-nav-details[open] > summary { list-style-type: disclosure-open; }
+        .theme-nav-details > summary:focus-visible,
+        .theme-nav-details .theme-nav-link:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: -2px;
+        }
     </style>
     @stack('styles')
 </head>
@@ -88,9 +95,19 @@
 
         <nav class="py-3 text-sm flex-1 overflow-y-auto">
             @foreach ($navGroups ?? [] as $groupName => $items)
-                <div class="theme-nav-group px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider">
-                    {{ $groupName }}
-                </div>
+                @php
+                    $groupActive = false;
+                    foreach ($items as $groupRouteName => $groupEntry) {
+                        if (request()->routeIs($groupRouteName.'.*') || request()->routeIs($groupRouteName)) {
+                            $groupActive = true;
+                            break;
+                        }
+                    }
+                @endphp
+                <details class="theme-nav-details" @if($groupActive) open @endif>
+                    <summary class="theme-nav-group px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider">
+                        {{ $groupName }}
+                    </summary>
 
                 @foreach ($items as $routeName => $entry)
                     @php
@@ -113,6 +130,7 @@
                         <span>{{ $label }}</span>
                     </a>
                 @endforeach
+                </details>
             @endforeach
         </nav>
 
