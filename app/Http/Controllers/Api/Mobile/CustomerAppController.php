@@ -12,6 +12,8 @@ use App\Models\OrderPaymentReceipt;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Models\SystemNotificationRead;
+use App\Models\NotificationInbox;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -40,9 +42,7 @@ class CustomerAppController extends Controller
                     ->whereIn('status', ['delivered', 'completed'])
                     ->count(),
                 'payments' => $this->paymentsQuery($request, $customer)->count(),
-                'unread_notifications' => $this->notificationsQuery($request)
-                    ->where('is_read', false)
-                    ->count(),
+                'unread_notifications' => NotificationInbox::unreadSystem($request->user())->count(),
             ],
             'recent_orders' => (clone $orders)
                 ->latest('id')
@@ -219,41 +219,47 @@ class CustomerAppController extends Controller
 
     public function unreadCount(Request $request): JsonResponse
     {
-        return response()->json([
-            'count' => $this->notificationsQuery($request)
-                ->where('is_read', false)
-                ->count(),
-        ]);
+        return response()->json(['count' => NotificationInbox::unreadSystem($request->user())->count()]);
     }
 
     public function readNotification(
         Request $request,
         AppNotification $notification
     ): JsonResponse {
-        abort_unless(
-            $notification->user_id === null ||
-            (int) $notification->user_id === (int) $request->user()->id,
-            403
-        );
+        abort_unless($notification->user_id === null ||
+            (int) $notification->user_id === (int) $request->user()->id, 403);
 
-        $notification->forceFill([
-            'is_read' => true,
-            'read_at' => now(),
-        ])->save();
+        $now = now();
+        SystemNotificationRead::query()->insertOrIgnore([
+            'user_id' => $request->user()->id,
+            'notification_id' => $notification->id,
+            'read_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
 
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'count' => NotificationInbox::unreadSystem($request->user())->count()]);
     }
 
     public function readAllNotifications(Request $request): JsonResponse
     {
-        $this->notificationsQuery($request)
-            ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => now(),
-            ]);
+        $user = $request->user();
+        $now = now();
+        $updated = 0;
+        $this->notificationsQuery($request)->select('id')->orderBy('id')->chunk(500,
+            function ($notifications) use ($user, $now, &$updated) {
+                $updated += SystemNotificationRead::query()->insertOrIgnore(
+                    $notifications->map(fn ($notification) => [
+                        'user_id' => $user->id,
+                        'notification_id' => $notification->id,
+                        'read_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])->all()
+                );
+            });
 
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'updated' => $updated, 'count' => NotificationInbox::unreadSystem($user)->count()]);
     }
 
     public function profile(Request $request): JsonResponse
@@ -330,13 +336,6 @@ class CustomerAppController extends Controller
                 'messages' => [],
             ]);
         }
-
-        // Staff messages are read once the customer opens the conversation.
-        ChatMessage::query()
-            ->where('conversation_id', $conversation->id)
-            ->where('sender_type', 'staff')
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
 
         return response()->json([
             'conversation_id' => $conversation->id,

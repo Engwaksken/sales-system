@@ -122,6 +122,12 @@
     <form id="orders-form" method="POST" action="{{ route('orders.store') }}" class="space-y-4">
       @csrf
       <input type="hidden" name="_method" value="POST">
+      <div class="mb-4 flex gap-2 border-b border-slate-200" role="tablist" aria-label="Order form sections">
+        <button type="button" role="tab" aria-selected="true" data-tabgroup="orders-form" data-tab="customer" onclick="switchTab('orders-form','customer')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">Customer &amp; delivery</button>
+        <button type="button" role="tab" aria-selected="false" data-tabgroup="orders-form" data-tab="payment" onclick="switchTab('orders-form','payment')" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500">Payment</button>
+        <button type="button" role="tab" aria-selected="false" data-tabgroup="orders-form" data-tab="details" onclick="switchTab('orders-form','details')" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500">Order details</button>
+      </div>
+      <div data-tabpanel="orders-form" data-tab="customer" class="space-y-4">
       <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Sale Id</label>
   <select name="sale_id" class="w-full rounded-md border-slate-300 shadow-sm" >
@@ -178,6 +184,8 @@
     @endforeach
   </select>
 </div>
+      </div>
+<div data-tabpanel="orders-form" data-tab="payment" class="hidden space-y-4">
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
   <input type="text" name="payment_method" class="w-full rounded-md border-slate-300 shadow-sm" required>
@@ -215,6 +223,8 @@
   <label class="block text-sm font-medium text-slate-700 mb-1">Mm Network</label>
   <input type="text" name="mm_network" class="w-full rounded-md border-slate-300 shadow-sm" >
 </div>
+      </div>
+<div data-tabpanel="orders-form" data-tab="details" class="hidden space-y-4">
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Payment Status</label>
   <input type="text" name="payment_status" class="w-full rounded-md border-slate-300 shadow-sm" required>
@@ -285,6 +295,7 @@
   <label class="block text-sm font-medium text-slate-700 mb-1">Address</label>
   <textarea name="address" rows="3" class="w-full rounded-md border-slate-300 shadow-sm" ></textarea>
 </div>
+      </div>
       <div class="pt-2 flex items-center gap-2">
         <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-check"></i> Save</button>
         <button type="button" onclick="closeModal('orders-modal')" class="text-sm text-slate-500">Cancel</button>

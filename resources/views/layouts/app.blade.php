@@ -301,6 +301,8 @@ function openViewModal(modalId, formId, data) {
 function switchTab(group, tabName) {
     document.querySelectorAll(`[data-tabgroup="${group}"]`).forEach(btn => {
         const active = btn.dataset.tab === tabName;
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.setAttribute('tabindex', active ? '0' : '-1');
         btn.classList.toggle('border-indigo-600', active);
         btn.classList.toggle('text-indigo-600', active);
         btn.classList.toggle('border-transparent', !active);
@@ -310,6 +312,95 @@ function switchTab(group, tabName) {
         panel.classList.toggle('hidden', panel.dataset.tab !== tabName);
     });
 }
+
+function organizeLongModalForms() {
+    const layouts = {
+        'efris_config-form': {
+            'Business details': /^(branch_id|tin|taxpayer_|business_type|vat_registered)/,
+            'EFRIS credentials': /^(environment|private_key_pem|public_key_pem|ura_public_key_pem|portal_)/,
+            'Status': /^(is_active)$/
+        },
+        'order_payment_receipts-form': {
+            'Order & customer': /^(order_id|order_number|receipt_number|customer_id|customer_name|phone|email)$/,
+            'Payment details': /^(payment_method|gateway_|amount_paid|currency)$/,
+            'Notes': /^(notes)$/
+        },
+        'payment_gateways-form': {
+            'Gateway': /^(gateway_name|gateway_code|display_name|provider_type|description)$/,
+            'Connection': /^(token_url|collect_url|base_url|status_url|client_id|client_secret|wallet_guid|callback_url|return_url)$/,
+            'Capabilities': /^(supports_|is_active|is_default|sandbox_mode)/
+        },
+        'sales-form': {
+            'Sale details': /^(customer_id|supplier_id|branch_id|user_id|invoice_no|sale_date)$/,
+            'Payment': /^(payment_method|payment_status|partial_amount)$/,
+            'Totals': /^(total_amount|discount|vat)$/
+        }
+    };
+
+    Object.entries(layouts).forEach(([formId, definitions]) => {
+        const form = document.getElementById(formId);
+        if (!form || form.querySelector('[data-tabgroup]')) return;
+
+        const sections = Object.keys(definitions).map(name => ({name, nodes: []}));
+        const controls = [...form.children];
+        controls.forEach(node => {
+            const field = node.matches('[name]') ? node : node.querySelector('[name]:not([type="hidden"])');
+            if (!field || field.type === 'hidden' || node.querySelector('button[type="submit"]')) return;
+            const section = sections.find(item => definitions[item.name].test(field.name));
+            if (section) section.nodes.push(node);
+        });
+        const populated = sections.filter(section => section.nodes.length);
+        if (populated.length < 2) return;
+
+        const group = `${formId}-sections`;
+        const tabs = document.createElement('div');
+        tabs.className = 'mb-4 flex flex-wrap gap-2 border-b border-slate-200';
+        tabs.setAttribute('role', 'tablist');
+        tabs.setAttribute('aria-label', 'Form sections');
+        const firstField = controls.find(node => populated.some(section => section.nodes.includes(node)));
+        if (firstField) form.insertBefore(tabs, firstField);
+        const panels = populated.map((section, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.setAttribute('role', 'tab');
+            button.dataset.tabgroup = group;
+            button.dataset.tab = String(index);
+            button.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+            button.className = `border-b-2 px-3 py-2 text-sm font-medium ${index === 0 ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500'}`;
+            button.textContent = section.name;
+            button.addEventListener('click', () => switchTab(group, String(index)));
+            tabs.appendChild(button);
+
+            const panel = document.createElement('div');
+            panel.dataset.tabpanel = group;
+            panel.dataset.tab = String(index);
+            panel.className = `${form.classList.contains('grid') ? 'grid grid-cols-1 gap-4 md:grid-cols-2' : 'space-y-4'}${index ? ' hidden' : ''}`;
+            section.nodes.forEach(node => panel.appendChild(node));
+            return panel;
+        });
+
+        panels.forEach(panel => form.insertBefore(panel, form.querySelector('button[type="submit"]')?.parentElement || null));
+    });
+}
+document.addEventListener('DOMContentLoaded', organizeLongModalForms);
+
+// Keep the sidebar compact: expanding one navigation group collapses the others.
+document.querySelectorAll('.theme-nav-details').forEach(group => {
+    group.addEventListener('toggle', () => {
+        if (!group.open) return;
+        document.querySelectorAll('.theme-nav-details[open]').forEach(other => {
+            if (other !== group) other.open = false;
+        });
+    });
+});
+
+// Bring required fields in hidden tab panels into view before native validation.
+document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('invalid', event => {
+        const panel = event.target.closest('[data-tabpanel]');
+        if (panel) switchTab(panel.dataset.tabpanel, panel.dataset.tab);
+    }, true);
+});
 
 (function () {
     const root = document.documentElement;

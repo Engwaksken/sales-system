@@ -4,6 +4,9 @@ namespace App\Models;
 
 use App\Models\Concerns\HasUserstamps;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -39,23 +42,32 @@ class User extends Authenticatable
         'code_expires' => 'datetime',
     ];
 
-    public function customer()
+    public function customer(): HasOne
     {
         return $this->hasOne(Customer::class, 'user_id');
     }
 
-    public function branch()
+    public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id');
     }
 
-    public function createdBy()
+    public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updatedBy()
+    public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+    public function systemNotificationReads(): HasMany
+    {
+        return $this->hasMany(SystemNotificationRead::class);
+    }
+
+    public function orderNotificationReads(): HasMany
+    {
+        return $this->hasMany(OrderNotificationRead::class);
     }
 }

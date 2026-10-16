@@ -45,6 +45,7 @@ use App\Http\Controllers\EfrisApiLogsController;
 use App\Http\Controllers\AccountingJournalsController;
 use App\Http\Controllers\JournalEntriesController;
 use App\Http\Controllers\NotificationsAppController;
+use App\Http\Controllers\UserNotificationController;
 
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
@@ -64,11 +65,22 @@ Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/product-image/{product}', [ShopController::class, 'productImage'])->name('shop.product-image');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
-// Public chat widget endpoints — no auth, matching the storefront's other public routes.
-Route::post('/chat/start', [ChatController::class, 'start'])->name('chat.start');
-Route::post('/chat/{conversation}/message', [ChatController::class, 'sendMessage'])->name('chat.send');
-Route::get('/chat/{conversation}/messages', [ChatController::class, 'messages'])->name('chat.messages');
+// Authenticated customer chat widget endpoints retain web/CSRF protection.
+Route::prefix('chat')->name('chat.')->middleware(['auth', 'throttle:60,1'])->group(function () {
+    Route::post('/start', [ChatController::class, 'start'])->name('start');
+    Route::post('/{conversation}/message', [ChatController::class, 'sendMessage'])->name('send');
+    Route::get('/{conversation}/messages', [ChatController::class, 'messages'])->name('messages');
+});
 Route::get('/chat/file/{message}', [ChatController::class, 'attachment'])->name('chat.attachment')->middleware('signed');
+
+Route::prefix('my-notifications')->name('my-notifications.')->middleware(['auth', 'throttle:60,1'])->group(function () {
+    Route::get('/', [UserNotificationController::class, 'index'])->name('index');
+    Route::post('/read-all', [UserNotificationController::class, 'readAll'])->name('read-all');
+    Route::get('/orders/{order}', [UserNotificationController::class, 'showCustomerOrder'])->name('orders.show');
+    Route::post('/orders/{order}/read', [UserNotificationController::class, 'readOrder'])->name('orders.read');
+    Route::post('/customer-chats/{conversation}/read', [UserNotificationController::class, 'readCustomerChat'])->name('customer-chats.read');
+    Route::post('/{notification}/read', [UserNotificationController::class, 'read'])->name('read');
+});
 
 // Public mobile-money endpoints — called by the storefront/checkout (collect, status)
 // and by the IOTEC gateway itself (webhook). None require a logged-in user, matching

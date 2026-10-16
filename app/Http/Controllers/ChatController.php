@@ -4,6 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
+use App\Http\Requests\StartCustomerChatRequest;
+use App\Http\Requests\SendCustomerChatMessageRequest;
+use App\Http\Requests\StaffChatReplyRequest;
+use App\Http\Resources\ChatResultResource;
+use App\Http\Resources\ChatMessagesResource;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -11,23 +17,18 @@ use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
-    // ---------------- Public customer/storefront ----------------
+    use AuthorizesRequests;
 
-    public function start(Request $request)
+    // ---------------- Authenticated customer/storefront ----------------
+
+    public function start(StartCustomerChatRequest $request)
     {
-        $data = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'email' => 'required|email|max:150',
-            'phone' => 'required|string|max:30',
-            'branch_id' => 'nullable|exists:branches,id',
-            'message' => 'nullable|string|max:5000',
-        ]);
+        $data = $request->validated();
 
         $conversation = ChatConversation::create([
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
-            'email' => $data['email'],
+            'email' => $request->customerEmail(),
             'phone' => $data['phone'],
             'branch_id' => $data['branch_id'] ?? null,
             'status' => 'open',
@@ -41,28 +42,16 @@ class ChatController extends Controller
             ]);
         }
 
-        return response()->json([
+        return new ChatResultResource([
             'conversation_id' => $conversation->id,
         ]);
     }
 
     public function sendMessage(
-        Request $request,
+        SendCustomerChatMessageRequest $request,
         ChatConversation $conversation
     ) {
-        $data = $request->validate([
-            'message' => 'nullable|string|max:5000',
-            'attachment' => 'nullable|file|max:10240',
-        ]);
-
-        if (
-            empty(trim((string) ($data['message'] ?? ''))) &&
-            ! $request->hasFile('attachment')
-        ) {
-            return response()->json([
-                'message' => 'Message or attachment is required.',
-            ], 422);
-        }
+        $data = $request->validated();
 
         $attachmentPath = $request->hasFile('attachment')
             ? $request->file('attachment')
@@ -80,22 +69,21 @@ class ChatController extends Controller
             $conversation->update(['status' => 'open']);
         }
 
-        return response()->json(['status' => 'ok']);
+        return new ChatResultResource(['status' => 'ok']);
     }
 
     public function messages(ChatConversation $conversation)
     {
-        $messages = $conversation->messages()
-            ->orderBy('id')
-            ->get()
-            ->map(fn ($message) => $this->messagePayload(
-                $message,
-                $conversation
-            ));
+        $this->authorize('customerView', $conversation);
 
-        return response()->json([
+        $messages = $conversation->messages()
+            ->with('user')
+            ->orderBy('id')
+            ->get();
+
+        return new ChatMessagesResource([
             'messages' => $messages,
-            'status' => $conversation->status,
+            'conversation' => $conversation,
         ]);
     }
 
@@ -183,43 +171,22 @@ class ChatController extends Controller
 
     public function staffMessages(ChatConversation $conversation)
     {
-        $conversation->messages()
-            ->where('sender_type', 'customer')
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
-
         $messages = $conversation->messages()
             ->with('user')
             ->orderBy('id')
-            ->get()
-            ->map(fn ($message) => $this->messagePayload(
-                $message,
-                $conversation
-            ));
+            ->get();
 
-        return response()->json([
+        return new ChatMessagesResource([
             'messages' => $messages,
-            'status' => $conversation->status,
+            'conversation' => $conversation,
         ]);
     }
 
     public function reply(
-        Request $request,
+        StaffChatReplyRequest $request,
         ChatConversation $conversation
     ) {
-        $data = $request->validate([
-            'message' => 'nullable|string|max:5000',
-            'attachment' => 'nullable|file|max:10240',
-        ]);
-
-        if (
-            empty(trim((string) ($data['message'] ?? ''))) &&
-            ! $request->hasFile('attachment')
-        ) {
-            return back()->withErrors([
-                'message' => 'Message or attachment is required.',
-            ]);
-        }
+        $data = $request->validated();
 
         $attachmentPath = $request->hasFile('attachment')
             ? $request->file('attachment')
@@ -252,21 +219,14 @@ class ChatController extends Controller
             ->with('status', 'Conversation closed.');
     }
 
-    private function messagePayload(
-        ChatMessage $message,
-        ChatConversation $conversation
-    ): array {
-        return [
-            'id' => $message->id,
-            'sender_type' => $message->sender_type,
-            'sender_name' => $message->sender_type === 'staff'
-                ? ($message->user?->name ?? 'Support')
-                : trim($conversation->first_name.' '.$conversation->last_name),
-            'message' => $message->message,
-            'attachment_url' => $message->attachment_path
-                ? asset('storage/'.ltrim($message->attachment_path, '/'))
-                : null,
-            'created_at' => optional($message->created_at)->format('H:i'),
-        ];
+    public function attachment(ChatMessage $message)
+    {
+        abort_unless($message->attachment_path, 404);
+
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($message->attachment_path), 404);
+
+        return $disk->response($message->attachment_path);
     }
+
 }

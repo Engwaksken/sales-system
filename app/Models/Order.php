@@ -4,12 +4,21 @@ namespace App\Models;
 
 use App\Models\Concerns\HasUserstamps;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
     use HasUserstamps;
 
     protected $table = 'orders';
+
+    // Match the schema default on newly created instances without a refresh.
+    // This counter is deliberately not mass assignable.
+    protected $attributes = [
+        'notification_version' => 1,
+    ];
 
     protected $fillable = [
         'sale_id',
@@ -50,6 +59,7 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'notification_version' => 'integer',
         'total_amount' => 'decimal:2',
         'discount' => 'decimal:2',
         'amount_paid' => 'decimal:2',
@@ -60,61 +70,115 @@ class Order extends Model
         'subtotal' => 'decimal:2',
     ];
 
-    public function sale()
+    public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class, 'sale_id');
     }
 
-    public function customer()
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    public function delivery_zone()
+    public function delivery_zone(): BelongsTo
     {
         return $this->belongsTo(DeliveryZone::class, 'delivery_zone_id');
     }
 
-    public function branch()
+    public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id');
     }
 
-    public function gateway()
+    public function gateway(): BelongsTo
     {
         return $this->belongsTo(PaymentGateway::class, 'gateway_id');
     }
 
-    public function created_by_user()
+    public function created_by_user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
-    public function createdBy()
+    public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updatedBy()
+    public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    public function order_items()
+    public function order_items(): HasMany
     {
         return $this->hasMany(OrderItem::class, 'order_id');
     }
 
-    public function order_logs()
+    public function order_logs(): HasMany
     {
         return $this->hasMany(OrderLog::class, 'order_id');
     }
 
-    public function order_payment_receipts()
+    public function order_payment_receipts(): HasMany
     {
         return $this->hasMany(OrderPaymentReceipt::class, 'order_id');
     }
 
+
+    public function notificationReads(): HasMany
+    {
+        return $this->hasMany(OrderNotificationRead::class);
+    }
+
+    /**
+     * Preserve Eloquent's update lifecycle, but serialize status comparisons against
+     * the stored row. Bulk/query-builder updates bypass this model hook.
+     */
+    protected function performUpdate(Builder $query)
+    {
+        return $this->getConnection()->transaction(function () use ($query) {
+            if ($this->fireModelEvent('updating') === false) {
+                return false;
+            }
+
+            if ($this->usesTimestamps()) {
+                $this->updateTimestamps();
+            }
+
+            $dirty = $this->getDirtyForUpdate();
+            // The version is owned by this hook, never by a caller's update payload.
+            unset($dirty['notification_version']);
+
+            if (count($dirty) > 0) {
+                $stored = $this->setKeysForSaveQuery($this->newModelQuery())
+                    ->lockForUpdate()->first(['status', 'notification_version']);
+
+                if ($stored) {
+                    // A stale instance must use the locked counter, not its original
+                    // version. Merely catching up is not a version change by this save.
+                    $this->setAttribute('notification_version', $stored->notification_version);
+                    $this->syncOriginalAttribute('notification_version');
+                }
+
+                if ($stored && array_key_exists('status', $dirty)
+                    && $stored->status !== $this->status) {
+                    $column = $this->getConnection()->getQueryGrammar()->wrap('notification_version');
+                    $dirty['notification_version'] = $this->getConnection()->raw($column.' + 1');
+                    $this->setAttribute('notification_version', $stored->notification_version + 1);
+                }
+
+                $this->setKeysForSaveQuery($query)->update($dirty);
+
+                $this->syncChanges();
+                $this->fireModelEvent('updated', false);
+            } else {
+                $this->setAttribute('notification_version', $this->getRawOriginal('notification_version'));
+            }
+
+            return true;
+        });
+    }
 
     public const STAGES = [
         'pending' => 'Received',
