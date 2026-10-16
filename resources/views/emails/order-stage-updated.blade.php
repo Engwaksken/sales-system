@@ -1,4 +1,5 @@
 @component('mail::message')
+@php($brandName = $siteSettings['site_name'] ?? config('mail.from.name', config('app.name', 'Sales System')))
 # Order Update: {{ $stageLabel }}
 
 Hello {{ $order->customer_name }},
@@ -31,5 +32,5 @@ Thank you for shopping with us. Your order is complete.
 @endif
 
 Thanks,<br>
-{{ $order->branch?->name ?? config('app.name') }}
+{{ $order->branch?->name ?? $brandName }} · {{ $brandName }}
 @endcomponent

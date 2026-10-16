@@ -1,4 +1,5 @@
 @component('mail::message')
+@php($brandName = $siteSettings['site_name'] ?? config('mail.from.name', config('app.name', 'Sales System')))
 # Your Invoice
 
 Thank you for your purchase. Invoice **{{ $sale->invoice_no }}** is attached to this email.
@@ -10,5 +11,5 @@ Thank you for your purchase. Invoice **{{ $sale->invoice_no }}** is attached to 
 If you have any questions about this invoice, just reply to this email.
 
 Thanks,<br>
-{{ config('app.name') }}
+{{ $brandName }}
 @endcomponent

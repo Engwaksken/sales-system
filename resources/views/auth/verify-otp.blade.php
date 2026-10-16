@@ -1,8 +1,8 @@
 @extends('layouts.auth')
 @section('title','Verify Code')
-@section('subtitle','OTP verification')
+@section('subtitle','Secure password recovery')
 @section('content')
-<div class="auth-intro"><h2>Verify your identity</h2><p>Enter the 6-digit code sent to <strong>{{ $maskedEmail }}</strong>. The code expires in {{ $expiresMinutes }} minutes.</p></div>
+<div class="auth-intro"><h2>Verify your identity</h2><p>Enter the 6-digit code sent to <strong>{{ $maskedEmail }}</strong>. For your security, it expires in {{ $expiresMinutes }} minutes.</p></div>
 <form id="otpForm" method="POST" action="{{ route('password.otp.verify') }}">@csrf
 <input type="hidden" name="otp" id="otpValue">
 <div class="otp-grid" id="otpGrid">@for($i=0;$i<6;$i++)<input class="otp-box" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="OTP digit {{ $i+1 }}">@endfor</div>

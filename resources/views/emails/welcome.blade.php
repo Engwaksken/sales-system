@@ -1,7 +1,8 @@
 @component('mail::message')
+@php($brandName = $siteSettings['site_name'] ?? config('mail.from.name', config('app.name', 'Sales System')))
 # Welcome, {{ $user->name }}!
 
-An account has been created for you on **{{ config('app.name') }}**.
+An account has been created for you on **{{ $brandName }}**.
 
 - **Email:** {{ $user->email }}
 - **Role:** {{ ucfirst($user->role) }}
@@ -13,5 +14,5 @@ Log in now
 If you weren't expecting this, please contact your administrator.
 
 Thanks,<br>
-{{ config('app.name') }}
+{{ $brandName }}
 @endcomponent

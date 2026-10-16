@@ -1,4 +1,5 @@
 @component('mail::message')
+@php($brandName = $siteSettings['site_name'] ?? config('mail.from.name', config('app.name', 'Sales System')))
 # Thanks for your order, {{ $order->customer_name }}!
 
 Your order **{{ $order->order_number }}** from **{{ $branch->name }}** has been received.
@@ -24,5 +25,5 @@ Please have payment ready for delivery.
 @endif
 
 Thanks,<br>
-{{ $branch->name }}
+{{ $branch->name }} · {{ $brandName }}
 @endcomponent

@@ -1,4 +1,5 @@
 @component('mail::message')
+@php($brandName = $siteSettings['site_name'] ?? config('mail.from.name', config('app.name', 'Sales System')))
 # Payment Received
 
 We've received your payment. Receipt **{{ $receiptNo }}** is attached to this email.
@@ -7,5 +8,5 @@ We've received your payment. Receipt **{{ $receiptNo }}** is attached to this em
 **Method:** {{ $method }}
 
 Thanks,<br>
-{{ config('app.name') }}
+{{ $brandName }}
 @endcomponent

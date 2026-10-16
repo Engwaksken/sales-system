@@ -1,14 +1,14 @@
 @extends('layouts.auth')
 
 @section('title', 'Verify Login')
-@section('subtitle', 'Two-Step Login Verification')
+@section('subtitle', 'Secure sign-in verification')
 
 @section('content')
 <div class="auth-intro">
     <h2>Check your email</h2>
     <p>
         Enter the 6-digit code sent to <strong>{{ $maskedEmail }}</strong>.
-        The code expires in {{ $expiresMinutes }} minutes.
+        For your security, the code expires in {{ $expiresMinutes }} minutes.
     </p>
 </div>
 

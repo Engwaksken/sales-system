@@ -7,6 +7,7 @@ use App\Models\EmailSetting;
 use App\Models\User;
 use App\Models\Customer;
 use App\Models\Branch;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -429,15 +430,18 @@ class LoginController extends Controller
         $this->configureMailerFromDatabase();
 
         try {
-            Mail::raw(
-                "Your NSales login verification code is {$otp}.\n\n".
-                "This code expires in 10 minutes.\n\n".
-                "If you did not try to sign in, please change your password and contact your administrator.",
-                function ($message) use ($user): void {
-                    $message->to($user->email, $user->name)
-                        ->subject('NSales Login Verification Code');
-                }
-            );
+            $brand = $this->mailBranding();
+            Mail::send('emails.auth-code', $brand + [
+                'recipientName' => $user->name,
+                'headline' => 'Your sign-in verification code',
+                'intro' => 'Use this one-time code to securely sign in to your account.',
+                'otp' => $otp,
+                'expiresMinutes' => 10,
+                'notice' => 'If you did not try to sign in, change your password and contact your administrator.',
+            ], function ($message) use ($user, $brand): void {
+                $message->to($user->email, $user->name)
+                    ->subject($brand['brandName'].' sign-in verification code');
+            });
         } catch (Throwable $e) {
             report($e);
             $request->session()->forget('login_verification');
@@ -464,15 +468,18 @@ class LoginController extends Controller
         $this->configureMailerFromDatabase();
 
         try {
-            Mail::raw(
-                "Your password reset verification code is {$otp}.\n\n".
-                "This code expires in 10 minutes. ".
-                "If you did not request a password reset, you can ignore this email.",
-                function ($message) use ($user): void {
-                    $message->to($user->email, $user->name)
-                        ->subject('Password Reset Verification Code');
-                }
-            );
+            $brand = $this->mailBranding();
+            Mail::send('emails.auth-code', $brand + [
+                'recipientName' => $user->name,
+                'headline' => 'Reset your password',
+                'intro' => 'Use this one-time code to verify your identity and reset your password.',
+                'otp' => $otp,
+                'expiresMinutes' => 10,
+                'notice' => 'If you did not request a password reset, you can safely ignore this email.',
+            ], function ($message) use ($user, $brand): void {
+                $message->to($user->email, $user->name)
+                    ->subject($brand['brandName'].' password reset code');
+            });
         } catch (Throwable $e) {
             report($e);
             $request->session()->forget('password_reset');
@@ -513,6 +520,32 @@ class LoginController extends Controller
             'mail.from.address' => $mail->from_email ?: config('mail.from.address'),
             'mail.from.name' => $mail->from_name ?: config('app.name', 'NSales'),
         ]);
+    }
+
+    /** Branding is read defensively so auth mail still works before settings exist. */
+    private function mailBranding(): array
+    {
+        $settings = [];
+        try {
+            $settings = Setting::query()->whereIn('setting_key', [
+                'site_name', 'system_logo', 'theme_primary',
+            ])->pluck('setting_value', 'setting_key')->all();
+        } catch (Throwable) {
+            // The configured mail sender and app name remain valid fallbacks.
+        }
+
+        $brandName = trim((string) ($settings['site_name'] ?? ''))
+            ?: (config('mail.from.name') ?: config('app.name', 'Sales System'));
+        $logoPath = trim((string) ($settings['system_logo'] ?? ''));
+        $logoUrl = $logoPath === '' ? null : (str_starts_with($logoPath, 'http')
+            ? $logoPath
+            : asset(ltrim($logoPath, '/')));
+        $color = (string) ($settings['theme_primary'] ?? '#0f766e');
+        if (! preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
+            $color = '#0f766e';
+        }
+
+        return ['brandName' => $brandName, 'logoUrl' => $logoUrl, 'brandColor' => $color];
     }
 
     private function maskEmail(?string $email): string

@@ -6,7 +6,14 @@
     </button>
     <div id="topbarNotificationMenu" class="absolute right-0 top-12 z-[90] hidden w-[380px] max-w-[92vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b px-4 py-3">
-            <div><div class="font-black text-slate-800">Notifications</div><div class="text-xs text-slate-400"><span id="topbarUnreadText">0</span> unread</div></div>
+            <div class="flex min-w-0 items-center gap-2">
+                @if(!empty($siteSettings['system_logo']))
+                    <img src="{{ asset(ltrim($siteSettings['system_logo'], '/')) }}" alt="{{ $siteSettings['site_name'] ?? 'System' }}" class="h-8 w-8 rounded-lg border border-slate-100 object-contain p-1">
+                @else
+                    <span class="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600"><i class="fas fa-bell"></i></span>
+                @endif
+                <div class="min-w-0"><div class="truncate font-black text-slate-800">{{ $siteSettings['site_name'] ?? 'Notifications' }}</div><div class="text-xs text-slate-400"><span id="topbarUnreadText">0</span> unread notifications</div></div>
+            </div>
             <button type="button" id="markAllNotificationsRead" class="hidden text-xs font-bold text-indigo-600">Mark system read</button>
         </div>
         <div id="topbarNotificationItems" class="max-h-[65vh] overflow-y-auto" aria-live="polite"><p class="px-4 py-6 text-center text-sm text-slate-500">Loading notifications…</p></div>

@@ -1,8 +1,8 @@
 @extends('layouts.auth')
 @section('title','Sign In')
-@section('subtitle','Sales Management System')
+@section('subtitle','Your trusted sales and business management workspace')
 @section('content')
-<div class="auth-intro"><h2>Welcome back</h2><p>Sign in to your account.</p></div>
+<div class="auth-intro"><h2>Welcome back</h2><p>Sign in securely to continue to your account.</p></div>
 <form method="POST" action="{{ route('login') }}">
 @csrf
 <div class="auth-field"><label for="email">Email address</label><div class="auth-control"><i class="fas fa-envelope leading-icon"></i><input id="email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required autofocus></div></div>

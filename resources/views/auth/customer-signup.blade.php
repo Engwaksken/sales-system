@@ -1,6 +1,7 @@
 @extends('layouts.auth')
 
 @section('title', 'Customer Sign Up')
+@section('subtitle', 'Create your customer account')
 
 @section('content')
 <div class="auth-heading">

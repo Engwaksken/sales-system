@@ -189,6 +189,28 @@
     font-size:13px;
 }
 
+/* Center the brand and page introduction consistently across every auth step. */
+.auth-brand{
+    flex-direction:column;
+    justify-content:center;
+    gap:10px;
+    text-align:center;
+}
+
+.auth-logo{
+    margin-inline:auto;
+}
+
+.auth-intro,
+.auth-heading{
+    text-align:center;
+}
+
+.auth-intro p,
+.auth-heading p{
+    margin-inline:auto;
+}
+
 .auth-register-link a{
     display:inline-flex;
     align-items:center;
@@ -566,7 +588,7 @@
 @media (max-width:640px){
     .auth-page{
         padding:10px;
-        align-items:start;
+        align-items:center;
     }
 
     .auth-card{
