@@ -3,7 +3,7 @@
 @section('content')
 <h1 class="text-xl font-semibold text-slate-800 mb-4">New IotecCollection</h1>
 @if($errors->any())
-<div class="mb-4 rounded-md bg-red-50 text-red-700 px-4 py-2 text-sm">
+<div data-flash class="mb-4 rounded-md bg-red-50 text-red-700 px-4 py-2 text-sm">
 <ul>@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
 </div>
 @endif

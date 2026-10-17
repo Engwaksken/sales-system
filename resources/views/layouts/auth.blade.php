@@ -70,14 +70,14 @@
         </div>
 
         @if(session('status'))
-            <div class="auth-alert success">
+            <div data-flash class="auth-alert success">
                 <i class="fas fa-circle-check"></i>
                 <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if($errors->any())
-            <div class="auth-alert error">
+            <div data-flash class="auth-alert error">
                 <i class="fas fa-triangle-exclamation"></i>
                 <div>
                     @foreach($errors->all() as $error)
@@ -110,5 +110,6 @@ function togglePassword(button) {
 </script>
 
 @stack('scripts')
+@include('partials.flash-autohide')
 </body>
 </html>

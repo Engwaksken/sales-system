@@ -4,7 +4,7 @@
 @php($customer = $payment->customer ?? $payment->sale?->customer)
 <div class="max-w-5xl mx-auto">
     @if(session('status'))
-        <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3 flex items-start gap-3 text-sm">
+        <div data-flash class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3 flex items-start gap-3 text-sm">
             <i class="fas fa-circle-check mt-0.5"></i>
             <div>
                 <strong class="block">Payment successful</strong>

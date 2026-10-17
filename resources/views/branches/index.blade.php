@@ -54,10 +54,10 @@
   </form>
 </details>
 @if(session('status'))
-<div class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
+<div data-flash class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
 @endif
 @if($errors->any())
-<div class="mb-4 rounded-md bg-red-50 text-red-700 px-4 py-2 text-sm">
+<div data-flash class="mb-4 rounded-md bg-red-50 text-red-700 px-4 py-2 text-sm">
 <ul>@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
 </div>
 @endif

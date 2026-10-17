@@ -10,7 +10,7 @@
 </div>
 
 @if($errors->any())
-    <div class="auth-alert auth-alert-error">
+    <div data-flash class="auth-alert auth-alert-error">
         <i class="fas fa-circle-exclamation"></i>
         <div>
             <strong>We could not create your account.</strong>

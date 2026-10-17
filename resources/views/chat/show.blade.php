@@ -34,7 +34,7 @@
 </div>
 
 @if(session('status'))
-    <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+    <div data-flash class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
         {{ session('status') }}
     </div>
 @endif
@@ -71,7 +71,7 @@
 </div>
 
 @if($errors->any())
-    <div class="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div data-flash class="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
         {{ $errors->first() }}
     </div>
 @endif

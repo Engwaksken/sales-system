@@ -6,7 +6,7 @@
     <span class="text-sm text-slate-400">Submitted from a Sale's detail page &mdash; see "Submit to EFRIS"</span>
 </div>
 @if(session('status'))
-<div class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
+<div data-flash class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
 @endif
 <div class="bg-white shadow rounded-lg overflow-x-auto">
 <table class="min-w-full divide-y divide-slate-200">

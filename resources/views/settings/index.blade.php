@@ -22,14 +22,14 @@
     </div>
 
     @if(session('status'))
-        <div class="settings-alert settings-alert-success">
+        <div data-flash class="settings-alert settings-alert-success">
             <i class="fas fa-circle-check"></i>
             <div>{{ session('status') }}</div>
         </div>
     @endif
 
     @if($errors->any())
-        <div class="settings-alert settings-alert-error">
+        <div data-flash class="settings-alert settings-alert-error">
             <i class="fas fa-triangle-exclamation"></i>
             <div>
                 <strong>Please correct the following:</strong>

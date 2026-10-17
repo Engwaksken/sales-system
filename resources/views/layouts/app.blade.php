@@ -225,9 +225,21 @@ function closeMobileSidebar() {
 }
 
 // Generic modal helpers shared by every module.
+// Page modals sit inside the content column, so the sidebar (z-50) painted over
+// their left side and swallowed clicks on tabs and fields there. Lift every
+// full-screen modal to <body>, above the sidebar.
+function liftModal(el) {
+    if (el.parentElement !== document.body) document.body.appendChild(el);
+    el.style.zIndex = '60';
+}
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.fixed.inset-0[id$="-modal"], .fixed.inset-0[role="dialog"]').forEach(liftModal);
+});
+
 function openModal(id) {
     const el = document.getElementById(id);
     if (!el) return;
+    liftModal(el);
     el.classList.remove('hidden');
     el.classList.add('flex');
     document.body.classList.add('overflow-hidden');
@@ -555,5 +567,6 @@ document.querySelectorAll('form').forEach(form => {
 
 @include('partials.relationship-name-labels')
 @stack('scripts')
+@include('partials.flash-autohide')
 </body>
 </html>
