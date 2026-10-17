@@ -54,6 +54,23 @@ class SalesController extends Controller
         ]);
     }
 
+    /** Browser print view sized for 80mm thermal (XP-80C), A5 or A4 paper. */
+    public function invoicePrint(Request $request, Sale $sale)
+    {
+        $paper = strtolower((string) $request->query('paper', 'a4'));
+        if (! in_array($paper, ['80mm', 'a5', 'a4'], true)) {
+            $paper = 'a4';
+        }
+
+        $sale->load(['customer', 'sale_items.product', 'branch', 'payments', 'orders']);
+
+        return view('sales.invoice-print', [
+            'sale' => $sale,
+            'paper' => $paper,
+            'branding' => DocumentBranding::get(),
+        ]);
+    }
+
     /** Download the final invoice only after the user has had a chance to preview it. */
     public function invoiceDownload(Sale $sale)
     {
