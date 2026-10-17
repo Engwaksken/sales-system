@@ -7,6 +7,7 @@ use App\Models\Expense;
 use App\Models\RolePermission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -59,7 +60,7 @@ class ExpenseController extends Controller
         $data = $this->filterColumns($data);
 
         if ($request->hasFile('receipt_image')) {
-            $path = $request->file('receipt_image')->store('expense-receipts', 'public');
+            $path = $request->file('receipt_image')->store('expense-receipts', 'local');
 
             foreach (['receipt_image', 'receipt_path', 'attachment', 'file_path'] as $column) {
                 if (Schema::hasColumn('expenses', $column)) {
@@ -89,7 +90,7 @@ class ExpenseController extends Controller
         $this->enforceExpenseBranch($data, $request);
 
         if ($request->hasFile('receipt_image')) {
-            $path = $request->file('receipt_image')->store('expense-receipts', 'public');
+            $path = $request->file('receipt_image')->store('expense-receipts', 'local');
 
             foreach (['receipt_image', 'receipt_path', 'attachment', 'file_path'] as $column) {
                 if (Schema::hasColumn('expenses', $column)) {
@@ -118,6 +119,39 @@ class ExpenseController extends Controller
         $expense->delete();
 
         return response()->json(['message' => 'Expense deleted successfully.']);
+    }
+
+    public function receipt(Expense $expense): BinaryFileResponse
+    {
+        $request = request();
+        $this->authorizeExpenses($request);
+        $expense = $this->scopeBranch(Expense::query(), $request)->whereKey($expense->getKey())->firstOrFail();
+
+        $path = null;
+        foreach (['receipt_image', 'receipt_path', 'attachment', 'file_path'] as $column) {
+            if ($expense->{$column}) {
+                $path = $expense->{$column};
+                break;
+            }
+        }
+        abort_unless($path, 404);
+
+        // Legacy public receipts must be copied to private storage before this handler
+        // can serve them. Never fall back to the public disk here.
+        if (str_starts_with($path, 'http')) {
+            $path = parse_url($path, PHP_URL_PATH) ?: '';
+            $path = preg_replace('#^/storage/#', '', $path);
+        }
+        $path = ltrim((string) $path, '/');
+        abort_unless(str_starts_with($path, 'expense-receipts/') && !str_contains($path, '..'), 404);
+
+        $disk = Storage::disk('local');
+        abort_unless($disk->exists($path), 404);
+
+        return response()->file($disk->path($path), [
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     private function validateExpense(Request $request): array
@@ -202,9 +236,7 @@ class ExpenseController extends Controller
             $path = $expense->{$column} ?? null;
 
             if ($path) {
-                $data['receipt_url'] = str_starts_with($path, 'http')
-                    ? $path
-                    : Storage::disk('public')->url($path);
+                $data['receipt_url'] = url('/api/mobile/expenses/'.$expense->getKey().'/receipt');
                 break;
             }
         }
