@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Category;
 use App\Support\ExportsCsv;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductsController extends Controller
 {
@@ -14,7 +15,7 @@ class ProductsController extends Controller
 
     public function index(Request $request)
     {
-        $query = Product::query()->with(['branch', 'category']);
+        $query = Product::query()->with(['branch', 'category', 'product_branches:id,product_id,branch_id']);
         if ($request->filled('period') && $request->period !== 'all') {
             $query = $this->applyPeriod($query, $request->period, 'created_at');
         }
@@ -93,12 +94,15 @@ class ProductsController extends Controller
             'description' => 'nullable',
             'is_active' => 'boolean',
             'image' => 'nullable|image|max:4096',
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'integer|distinct|exists:branches,id',
         ]);
         if ($request->hasFile('image')) {
             $validated['image_url'] = $request->file('image')->store('products', 'public');
         }
-        unset($validated['image']);
-        Product::create($validated);
+        unset($validated['image'], $validated['branch_ids']);
+        $product = Product::create($validated);
+        $this->syncBranches($product, $request);
         return redirect()->route('products.index')->with('status', 'Product created successfully.');
     }
 
@@ -117,13 +121,35 @@ class ProductsController extends Controller
             'description' => 'nullable',
             'is_active' => 'boolean',
             'image' => 'nullable|image|max:4096',
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'integer|distinct|exists:branches,id',
         ]);
         if ($request->hasFile('image')) {
             $validated['image_url'] = $request->file('image')->store('products', 'public');
         }
-        unset($validated['image']);
+        unset($validated['image'], $validated['branch_ids']);
         $product->update($validated);
+        $this->syncBranches($product, $request);
         return redirect()->route('products.index')->with('status', 'Product updated successfully.');
+    }
+
+    /** Branches where the product is sold, from the form's branch checklist. */
+    private function syncBranches(Product $product, Request $request): void
+    {
+        if (! $request->boolean('branch_ids_submitted')) {
+            return; // older forms and API clients that do not send the checklist
+        }
+        $branchIds = array_map('intval', $request->input('branch_ids', []));
+
+        DB::transaction(function () use ($product, $branchIds): void {
+            $product->product_branches()->whereNotIn('branch_id', $branchIds ?: [0])->delete();
+            foreach ($branchIds as $branchId) {
+                $product->product_branches()->firstOrCreate(['branch_id' => $branchId]);
+            }
+            if (! $product->branch_id && $branchIds) {
+                $product->update(['branch_id' => $branchIds[0]]);
+            }
+        });
     }
 
     public function destroy(Product $product)

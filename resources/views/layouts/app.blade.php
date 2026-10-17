@@ -257,9 +257,15 @@ function fillFormFields(form, data) {
     for (const el of form.elements) {
         if (!el.name || el.name === '_token' || el.name === '_method') continue;
         if (el.type === 'file') continue;
-        const value = data[el.name];
+        const value = el.name.endsWith('[]') ? data[el.name.slice(0, -2)] : data[el.name];
         if (value === undefined) continue;
 
+        if (el.type === 'checkbox' && el.name.endsWith('[]')) {
+            const key = el.name.slice(0, -2);
+            const list = Array.isArray(data[key]) ? data[key].map(String) : [];
+            el.checked = list.includes(String(el.value));
+            continue;
+        }
         if (el.type === 'checkbox') {
             el.checked = !!Number(value);
         } else {
@@ -277,6 +283,38 @@ function setFormEnabled(form, enabled) {
     if (submitBtn) submitBtn.style.display = enabled ? '' : 'none';
 }
 
+// Parts of a shared create/edit form can be limited to one mode:
+// [data-mode-only="create"] (e.g. the multi-branch picker) or [data-mode-only="edit"].
+// Hidden parts are disabled so their fields are not submitted or validated.
+function setFormMode(form, mode) {
+    form.dataset.mode = mode;
+    form.querySelectorAll('[data-mode-only]').forEach(part => {
+        const show = part.dataset.modeOnly === mode || (mode === 'view' && part.dataset.modeOnly === 'edit');
+        part.hidden = !show;
+        part.querySelectorAll('input, select, textarea').forEach(field => {
+            if (!show) field.disabled = true;
+            else if (mode !== 'view') field.disabled = false;
+        });
+    });
+}
+
+// "Select all" checkbox for a list of checkboxes: <input type="checkbox" data-check-all="branch_ids[]">
+document.addEventListener('change', event => {
+    const all = event.target.closest('[data-check-all]');
+    if (all) {
+        all.form.querySelectorAll(`input[type="checkbox"][name="${all.dataset.checkAll}"]:not(:disabled)`).forEach(box => { box.checked = all.checked; });
+        return;
+    }
+    const box = event.target;
+    if (box.type === 'checkbox' && box.form && box.name.endsWith('[]')) {
+        const toggle = box.form.querySelector(`[data-check-all="${box.name}"]`);
+        if (toggle) {
+            const boxes = [...box.form.querySelectorAll(`input[type="checkbox"][name="${box.name}"]:not(:disabled)`)];
+            toggle.checked = boxes.length > 0 && boxes.every(b => b.checked);
+        }
+    }
+});
+
 function setModalTitle(modalId, text) {
     const el = document.getElementById(modalId.replace('-modal', '-modal-title'));
     if (el) el.textContent = text;
@@ -288,6 +326,7 @@ function openEditModal(modalId, formId, updateUrl, data) {
     form.querySelector('input[name="_method"]').value = 'PUT';
     fillFormFields(form, data);
     setFormEnabled(form, true);
+    setFormMode(form, 'edit');
     setModalTitle(modalId, 'Edit');
     openModal(modalId);
 }
@@ -298,6 +337,7 @@ function openCreateModal(modalId, formId, storeUrl) {
     form.action = storeUrl;
     form.querySelector('input[name="_method"]').value = 'POST';
     setFormEnabled(form, true);
+    setFormMode(form, 'create');
     setModalTitle(modalId, 'New');
     openModal(modalId);
 }
@@ -306,6 +346,7 @@ function openViewModal(modalId, formId, data) {
     const form = document.getElementById(formId);
     fillFormFields(form, data);
     setFormEnabled(form, false);
+    setFormMode(form, 'view');
     setModalTitle(modalId, 'View');
     openModal(modalId);
 }

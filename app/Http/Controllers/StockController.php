@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Support\ExportsCsv;
 use Illuminate\Http\Request;
 
@@ -111,16 +112,55 @@ class StockController extends Controller
         $validated = $request->validate([
             'supplier_id' => 'nullable|exists:suppliers,id',
             'product_id' => 'required|exists:products,id',
-            'branch_id' => 'required|exists:branches,id',
+            // New stock form sends several branches; a single branch_id is still accepted.
+            'branch_ids' => 'required_without:branch_id|array|min:1',
+            'branch_ids.*' => 'integer|distinct|exists:branches,id',
+            'branch_id' => 'nullable|exists:branches,id',
             'total_stock' => 'required|numeric',
             'quantity' => 'required|numeric',
             'unit_type' => 'nullable',
             'cost_price' => 'required|numeric',
             'expiry_date' => 'nullable|date',
             'selling_price' => 'required|numeric',
-        ]);
-        Stock::create($validated);
-        return redirect()->route('stock.index')->with('status', 'Stock created successfully.');
+        ], ['branch_ids.required_without' => 'Select at least one branch.']);
+
+        $branchIds = array_map('intval', $validated['branch_ids'] ?? [$validated['branch_id']]);
+        unset($validated['branch_ids'], $validated['branch_id']);
+        $added = $toppedUp = 0;
+
+        DB::transaction(function () use ($validated, $branchIds, &$added, &$toppedUp): void {
+            foreach ($branchIds as $branchId) {
+                // One row per product, branch and supplier: sales read the first row, so top it up.
+                $stock = Stock::query()
+                    ->where('product_id', $validated['product_id'])
+                    ->where('branch_id', $branchId)
+                    ->when($validated['supplier_id'] ?? null, fn ($q, $id) => $q->where('supplier_id', $id), fn ($q) => $q->whereNull('supplier_id'))
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($stock) {
+                    $stock->fill(array_filter([
+                        'unit_type' => $validated['unit_type'] ?? null,
+                        'cost_price' => $validated['cost_price'],
+                        'selling_price' => $validated['selling_price'],
+                        'expiry_date' => $validated['expiry_date'] ?? null,
+                    ], fn ($value) => $value !== null));
+                    $stock->quantity = (float) $stock->quantity + (float) $validated['quantity'];
+                    $stock->total_stock = (float) $stock->total_stock + (float) $validated['total_stock'];
+                    $stock->save();
+                    $toppedUp++;
+                } else {
+                    Stock::create($validated + ['branch_id' => $branchId]);
+                    $added++;
+                }
+            }
+        });
+
+        $message = count($branchIds) === 1
+            ? ($toppedUp ? 'Stock topped up successfully.' : 'Stock created successfully.')
+            : 'Stock saved to '.count($branchIds)." branches ({$added} new, {$toppedUp} topped up).";
+
+        return redirect()->route('stock.index')->with('status', $message);
     }
 
     public function show(Stock $stock)

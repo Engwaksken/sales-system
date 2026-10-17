@@ -3,6 +3,7 @@
 @section('content')
 <div class="flex items-center justify-between mb-4">
     <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-code-branch text-slate-400"></i> ProductBranches</h1>
+    @include('partials.import-button', ['module' => 'product_branches'])
     <button type="button" onclick="openCreateModal('product_branches-modal', 'product_branches-form', '{{ route('product_branches.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New ProductBranch</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">

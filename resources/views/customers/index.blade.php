@@ -5,6 +5,7 @@
     <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-users text-slate-400"></i> Customers</h1>
     <div class="flex items-center gap-2">
         <a href="{{ route('bulk-upload.index') }}" class="text-sm text-slate-500 hover:text-slate-700"><i class="fa-solid fa-file-arrow-up"></i> Bulk Upload</a>
+        @include('partials.import-button', ['module' => 'customers'])
         <button type="button" onclick="openCreateModal('customers-modal', 'customers-form', '{{ route('customers.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Customer</button>
     </div>
 </div>

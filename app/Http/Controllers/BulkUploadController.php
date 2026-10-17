@@ -229,15 +229,17 @@ class BulkUploadController extends Controller
             if ($branchName === '' || strtolower($branchName) === 'all branches') {
                 $branchIds = $branchesMap->values()->all();
             } else {
-                $branchId = $branchesMap->get(strtolower($branchName));
+                // One branch, or several separated by ";" or "," (e.g. "Kampala; Gulu").
+                $names = array_values(array_filter(array_map('trim', preg_split('/[;,]/', $branchName))));
+                $unknown = array_filter($names, fn ($name) => ! $branchesMap->has(strtolower($name)));
 
-                if (! $branchId) {
-                    $errors[] = "Row {$rowNumber}: Branch '{$branchName}' was not found.";
+                if ($unknown !== []) {
+                    $errors[] = "Row {$rowNumber}: Branch '".implode("', '", $unknown)."' was not found.";
                     $skipped++;
                     continue;
                 }
 
-                $branchIds = [$branchId];
+                $branchIds = array_values(array_unique(array_map(fn ($name) => $branchesMap->get(strtolower($name)), $names)));
             }
 
             if (empty($branchIds)) {

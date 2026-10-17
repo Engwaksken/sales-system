@@ -5,6 +5,7 @@
     <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-warehouse text-slate-400"></i> Stock</h1>
     <div class="flex items-center gap-2">
         <a href="{{ route('stock.report.pdf') }}" class="text-sm text-slate-500 hover:text-slate-700"><i class="fa-solid fa-file-pdf"></i> Detailed Stock Report (PDF)</a>
+        @include('partials.import-button', ['module' => 'stock'])
         <button type="button" onclick="openCreateModal('stock-modal', 'stock-form', '{{ route('stock.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Stock</button>
     </div>
 </div>
@@ -114,14 +115,18 @@
     @endforeach
   </select>
 </div>
-<div>
-  <label class="block text-sm font-medium text-slate-700 mb-1">Branch Id</label>
+<div data-mode-only="edit">
+  <label class="block text-sm font-medium text-slate-700 mb-1">Branch</label>
   <select name="branch_id" class="w-full rounded-md border-slate-300 shadow-sm" required>
-    <option value="">-- Select Branch Id --</option>
+    <option value="">-- Select Branch --</option>
     @foreach($branch_options as $opt)
     <option value="{{ $opt->id }}">{{ $opt->name }}</option>
     @endforeach
   </select>
+</div>
+<div data-mode-only="create">
+  @include('partials.branch-checklist', ['branches' => $branch_options, 'label' => 'Add to branches',
+      'hint' => 'The same quantity and prices are added to every selected branch. Where the product already has stock from the same supplier, the quantity is added to it.'])
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Total Stock</label>

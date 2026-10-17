@@ -113,6 +113,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/bulk-upload/products', [BulkUploadController::class, 'importProducts'])->name('bulk-upload.products')->middleware('permission:manage_products');
     Route::post('/bulk-upload/customers', [BulkUploadController::class, 'importCustomers'])->name('bulk-upload.customers')->middleware('permission:manage_customers');
 
+    // CSV import for data pages (each page's permission is checked in ImportController)
+    Route::get('/imports/{module}/template', [\App\Http\Controllers\ImportController::class, 'template'])->name('imports.template');
+    Route::post('/imports/{module}/preview', [\App\Http\Controllers\ImportController::class, 'preview'])->name('imports.preview')->middleware('throttle:20,1');
+    Route::post('/imports/{module}/confirm', [\App\Http\Controllers\ImportController::class, 'confirm'])->name('imports.confirm')->middleware('throttle:20,1');
+
     Route::resource('efris_invoices', EfrisInvoiceController::class)->only(['index', 'show'])->middleware('permission:manage_settings');
     Route::post('/sales/{sale}/efris-submit', [EfrisInvoiceController::class, 'submit'])->name('sales.efris-submit')->middleware('permission:manage_settings');
 

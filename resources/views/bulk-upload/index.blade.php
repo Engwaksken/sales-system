@@ -75,6 +75,11 @@
             </div>
 
             <div class="mt-2">
+                <strong>Branches:</strong> one branch name, several separated by a semicolon
+                (e.g. <code>Main Branch; Gulu Branch</code>), or <code>All Branches</code>. Blank also means all branches.
+            </div>
+
+            <div class="mt-2">
                 <strong>Date format:</strong> YYYY-MM-DD.
                 Example: <code>{{ now()->format('Y-m-d') }}</code>.
             </div>

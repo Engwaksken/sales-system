@@ -5,6 +5,7 @@
     <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-box text-slate-400"></i> Products</h1>
     <div class="flex items-center gap-2">
         <a href="{{ route('bulk-upload.index') }}" class="text-sm text-slate-500 hover:text-slate-700"><i class="fa-solid fa-file-arrow-up"></i> Bulk Upload</a>
+        @include('partials.import-button', ['module' => 'products'])
         <button type="button" onclick="openCreateModal('products-modal', 'products-form', '{{ route('products.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Product</button>
     </div>
 </div>
@@ -92,8 +93,8 @@ $isMoney = false;
         </div>
     @endif
 </td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category?->category_name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->is_active ? 'Yes' : 'No' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
-<button type="button" title="View" onclick='openViewModal("products-modal", "products-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
-<button type="button" title="Edit" onclick='openEditModal("products-modal", "products-form", "{{ route('products.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
+<button type="button" title="View" onclick='openViewModal("products-modal", "products-form", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id')]))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
+<button type="button" title="Edit" onclick='openEditModal("products-modal", "products-form", "{{ route('products.update', $row->id) }}", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id')]))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
 <form method="POST" action="{{ route('products.destroy', $row->id) }}" class="inline" onsubmit="return confirm('Delete this record?')">
 @csrf @method('DELETE')
 <button title="Delete" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
@@ -124,8 +125,13 @@ $isMoney = false;
   <label class="block text-sm font-medium text-slate-700 mb-1">Sku</label>
   <input type="text" name="sku" class="w-full rounded-md border-slate-300 shadow-sm" >
 </div>
+<div class="md:col-span-2">
+  <input type="hidden" name="branch_ids_submitted" value="1">
+  @include('partials.branch-checklist', ['branches' => $branch_options, 'label' => 'Available in branches',
+      'hint' => 'Add stock for each branch on the Stock page (New Stock lets you pick several branches at once).'])
+</div>
 <div>
-  <label class="block text-sm font-medium text-slate-700 mb-1">Branch Name</label>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Home branch</label>
   <select name="branch_id" class="w-full rounded-md border-slate-300 shadow-sm" >
     <option value="">-- Select Branch Name --</option>
     @foreach($branch_options as $opt)

@@ -24,22 +24,30 @@ class CheckPermission
             return redirect()->route('login');
         }
 
-        if ($user->role === 'admin') {
-            return $next($request);
+        if (! self::allows($user, $permissionKey)) {
+            abort(403, 'You do not have permission to access this module.');
         }
 
-        $allowed = Cache::remember(
+        return $next($request);
+    }
+
+    /** Same rule as the route middleware, for checks made inside controllers and views. */
+    public static function allows($user, string $permissionKey): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        return Cache::remember(
             "role_perm:{$user->role}:{$permissionKey}",
             60,
             fn () => RolePermission::where('role', $user->role)
                 ->where('permission_key', $permissionKey)
                 ->exists()
         );
-
-        if (! $allowed) {
-            abort(403, 'You do not have permission to access this module.');
-        }
-
-        return $next($request);
     }
 }
