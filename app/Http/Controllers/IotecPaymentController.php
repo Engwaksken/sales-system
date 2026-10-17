@@ -9,7 +9,6 @@ use App\Models\PaymentGateway;
 use App\Services\Iotec\IotecClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Throwable;
 
 class IotecPaymentController extends Controller
@@ -133,7 +132,7 @@ class IotecPaymentController extends Controller
                 OrderPaymentReceipt::create([
                     'order_id' => $order->id,
                     'order_number' => $order->order_number ?? $order->order_id,
-                    'receipt_number' => 'RCT-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
+                    'receipt_number' => \App\Support\DocumentNumber::receipt(),
                     'customer_id' => $order->customer_id,
                     'customer_name' => $order->customer_name,
                     'phone' => $order->phone,

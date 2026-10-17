@@ -80,7 +80,8 @@ class EfrisInvoiceController extends Controller
 
             $invoiceNo = trim((string) $request->input('invoice_no', ''));
             if ($invoiceNo === '') {
-                $invoiceNo = 'INV-'.now()->format('Ymd').'-'.str_pad((string) $sale->id, 6, '0', STR_PAD_LEFT);
+                // Fiscalise under the sale's own number so EFRIS and the printed invoice match.
+                $invoiceNo = (string) ($sale->invoice_no ?: \App\Support\DocumentNumber::invoice());
             }
 
             $issuedAt = $sale->sale_date ?? $sale->created_at ?? now();

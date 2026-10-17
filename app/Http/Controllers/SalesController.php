@@ -14,6 +14,7 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use App\Support\ExportsCsv;
 use App\Support\DocumentBranding;
+use App\Support\DocumentNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -270,8 +271,7 @@ public function index(Request $request)
             }
 
             if (empty($validated['invoice_no'])) {
-                $validated['invoice_no'] =
-                    'INV-'.now()->format('Ymd').'-'.strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+                $validated['invoice_no'] = DocumentNumber::invoice();
             }
 
             $validated['payment_status'] = $status;
@@ -394,7 +394,7 @@ public function index(Request $request)
                     'transaction_type' => 'sale',
                     'customer_id' => $data['customer_id'] ?? null,
                     'user_id' => auth()->id(),
-                    'invoice_no' => 'INV-'.now()->format('Ymd').'-'.strtoupper(substr(bin2hex(random_bytes(3)), 0, 6)),
+                    'invoice_no' => DocumentNumber::invoice(),
                     'total_amount' => $totalAmount,
                     'discount' => $discount,
                     'vat' => $vat,
@@ -512,13 +512,7 @@ public function index(Request $request)
 
     private function newReceiptNumber(): string
     {
-        do {
-            $receiptNo = 'RCT-'.now()->format('Ymd').'-'.strtoupper(
-                substr(bin2hex(random_bytes(4)), 0, 8)
-            );
-        } while (Payment::where('receipt_no', $receiptNo)->exists());
-
-        return $receiptNo;
+        return DocumentNumber::receipt();
     }
 
     public function destroy(Sale $sale)
