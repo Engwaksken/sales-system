@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Mobile;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\RolePermission;
 use App\Models\User;
 use App\Services\MobileOtpService;
 use Illuminate\Http\JsonResponse;
@@ -336,6 +337,15 @@ class AuthController extends Controller
         ]);
     }
 
+    private function permissionKeys(User $user): array
+    {
+        $role = $user->role ?: 'customer';
+        if ($role === 'customer' || ! Schema::hasTable('role_permissions')) return [];
+        if ($role === 'admin') return ['*'];
+
+        return RolePermission::where('role', $role)->pluck('permission_key')->values()->all();
+    }
+
     private function userPayload(User $user): array
     {
         $customer = null;
@@ -354,7 +364,8 @@ class AuthController extends Controller
             'id' => $user->id,
             'name' => $user->name ?? 'Customer',
             'email' => $user->email,
-            'role' => 'customer',
+            'role' => $user->role ?: 'customer',
+            'permissions' => $this->permissionKeys($user),
             'branch_id' => $user->branch_id ?? null,
             'customer_id' => $customer?->id,
             'phone' => $customer?->phone,
