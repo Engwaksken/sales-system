@@ -14,6 +14,36 @@
 @include('partials.stat-card', ['icon' => 'fa-triangle-exclamation', 'color' => 'amber', 'label' => 'Low Stock (&le;5)', 'value' => $stat1])
 @include('partials.stat-card', ['icon' => 'fa-coins', 'color' => 'indigo', 'label' => 'Total Stock Value', 'value' => $stat2])
 </div>
+<section class="mb-6 rounded-lg bg-white p-4 shadow" aria-labelledby="barcode-lookup-heading" data-barcode-lookup data-endpoint="{{ route('stock.lookup-barcode') }}">
+    <h2 id="barcode-lookup-heading" class="mb-3 text-sm font-semibold text-slate-700"><i class="fa-solid fa-barcode mr-2 text-indigo-500" aria-hidden="true"></i>Barcode lookup</h2>
+    <form class="flex flex-col gap-2 sm:flex-row" data-barcode-lookup-form>
+        <label for="stock-barcode" class="sr-only">Barcode</label>
+        <input id="stock-barcode" name="barcode" type="text" inputmode="numeric" autocomplete="off" autofocus required
+               class="w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:flex-1"
+               placeholder="Scan or enter a barcode" aria-describedby="barcode-lookup-help barcode-lookup-status">
+        <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"><i class="fa-solid fa-magnifying-glass mr-1" aria-hidden="true"></i>Look up</button>
+    </form>
+    <p id="barcode-lookup-help" class="mt-2 text-xs text-slate-500">Scan a barcode or type it in, then submit to find matching stock.</p>
+    <div id="barcode-lookup-status" class="mt-3 text-sm" role="status" aria-live="polite" aria-atomic="true" data-barcode-lookup-status>
+        <p data-state="idle">Ready to scan or enter a barcode.</p>
+        <p data-state="loading" hidden>Looking up barcode…</p>
+        <p data-state="no-match" hidden>No matching stock was found.</p>
+        <p data-state="error" hidden>Unable to look up this barcode. Please try again.</p>
+        <div data-state="success" hidden aria-label="Barcode lookup results" data-image-base="{{ asset('storage') }}">
+            <div class="flex items-start gap-3">
+                <img data-result-image src="" alt="Product image" class="hidden h-16 w-16 shrink-0 rounded-lg border border-slate-200 object-cover">
+                <div class="min-w-0 flex-1">
+                    <div data-result-name class="text-base font-semibold text-slate-800"></div>
+                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                        <span>SKU: <span data-result-sku class="font-medium text-slate-700"></span></span>
+                        <span>Barcode: <span data-result-barcode class="font-medium text-slate-700"></span></span>
+                        <span data-result-status class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 @php($isMoney = true)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
 <form method="GET" class="flex items-center gap-2 text-sm mb-4">
@@ -160,3 +190,125 @@
   </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    'use strict';
+
+    const section = document.querySelector('[data-barcode-lookup]');
+    if (!section) return;
+
+    const form = section.querySelector('[data-barcode-lookup-form]');
+    const input = document.getElementById('stock-barcode');
+    const status = section.querySelector('[data-barcode-lookup-status]');
+    const endpoint = section.dataset.endpoint;
+
+    if (!form || !input || !status || !endpoint) return;
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    const states = status.querySelectorAll('[data-state]');
+    const success = status.querySelector('[data-state="success"]');
+
+    const resultName = success ? success.querySelector('[data-result-name]') : null;
+    const resultSku = success ? success.querySelector('[data-result-sku]') : null;
+    const resultBarcode = success ? success.querySelector('[data-result-barcode]') : null;
+    const resultStatus = success ? success.querySelector('[data-result-status]') : null;
+    const resultImage = success ? success.querySelector('[data-result-image]') : null;
+    const imageBase = success ? (success.dataset.imageBase || '') : '';
+
+    function showState(name) {
+        states.forEach(el => {
+            el.hidden = el.getAttribute('data-state') !== name;
+        });
+    }
+
+    function clearResult() {
+        if (resultName) resultName.textContent = '';
+        if (resultSku) resultSku.textContent = '';
+        if (resultBarcode) resultBarcode.textContent = '';
+        if (resultStatus) {
+            resultStatus.textContent = '';
+            resultStatus.className = '';
+        }
+        if (resultImage) {
+            resultImage.removeAttribute('src');
+            resultImage.hidden = true;
+        }
+    }
+
+    function resolveImageUrl(imageUrl) {
+        const value = String(imageUrl || '').trim();
+        if (!value) return '';
+        if (/^https?:\/\//i.test(value)) return value;
+        return imageBase + '/' + value.replace(/^\/+/, '').replace(/^storage\//, '');
+    }
+
+    function renderStatus(active) {
+        if (!resultStatus) return;
+        resultStatus.className = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold';
+        if (active) {
+            resultStatus.classList.add('bg-emerald-100', 'text-emerald-700');
+            resultStatus.textContent = 'Active';
+        } else {
+            resultStatus.classList.add('bg-slate-200', 'text-slate-600');
+            resultStatus.textContent = 'Inactive';
+        }
+    }
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const value = input.value.trim();
+        if (!value) {
+            input.focus();
+            return;
+        }
+
+        clearResult();
+        showState('loading');
+
+        if (submitButton) submitButton.disabled = true;
+
+        const url = new URL(endpoint, window.location.origin);
+        url.searchParams.set('barcode', value);
+
+        try {
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (resultName) resultName.textContent = data.name ?? '';
+                if (resultSku) resultSku.textContent = data.sku ?? '';
+                if (resultBarcode) resultBarcode.textContent = data.barcode ?? '';
+                renderStatus(data.is_active === true);
+
+                const imageUrl = resolveImageUrl(data.image_url);
+                if (resultImage && imageUrl) {
+                    resultImage.src = imageUrl;
+                    resultImage.hidden = false;
+                }
+
+                showState('success');
+            } else if (response.status === 404) {
+                showState('no-match');
+            } else {
+                showState('error');
+            }
+        } catch (error) {
+            showState('error');
+        } finally {
+            if (submitButton) submitButton.disabled = false;
+            input.focus();
+        }
+    });
+})();
+</script>
+@endpush

@@ -189,6 +189,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('product_branches', ProductBranchesController::class)->except(['create', 'edit'])->middleware('permission:manage_products');
     Route::get('/stock/export/csv', [StockController::class, 'exportCsv'])->name('stock.export.csv')->middleware('permission:manage_stock');
     Route::get('/stock/export/pdf', [StockController::class, 'exportPdf'])->name('stock.export.pdf')->middleware('permission:manage_stock');
+    Route::get('/stock/lookup-barcode', [StockController::class, 'lookupBarcode'])->name('stock.lookup-barcode')->middleware(['throttle:60,1', 'permission:manage_stock']);
     Route::resource('stock', StockController::class)->except(['create', 'edit'])->middleware('permission:manage_stock');
     Route::get('/sales/export/csv', [SalesController::class, 'exportCsv'])->name('sales.export.csv')->middleware('permission:manage_sales');
     Route::get('/sales/export/pdf', [SalesController::class, 'exportPdf'])->name('sales.export.pdf')->middleware('permission:manage_sales');

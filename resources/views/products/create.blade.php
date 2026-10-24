@@ -18,6 +18,10 @@
   <input type="text" name="sku" value="{{ old('sku') }}" class="w-full rounded-md border-slate-300 shadow-sm" >
 </div>
 <div>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Barcode</label>
+  <input type="text" name="barcode" value="{{ old('barcode') }}" class="w-full rounded-md border-slate-300 shadow-sm" >
+</div>
+<div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Branch Id</label>
   <select name="branch_id" class="w-full rounded-md border-slate-300 shadow-sm" >
     <option value="">-- Select Branch Id --</option>

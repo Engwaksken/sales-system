@@ -51,6 +51,21 @@ class StockController extends Controller
         return view('stock.index', ['items' => $stock, 'supplier_options' => $supplier_options, 'product_options' => $product_options, 'branch_options' => $branch_options, 'stat1' => $stat1, 'stat2' => $stat2, 'periodStats' => $periodStats]);
     }
 
+    public function lookupBarcode(Request $request)
+    {
+        $validated = $request->validate([
+            'barcode' => ['required', 'string', 'max:100'],
+        ]);
+
+        $product = Product::query()->where('barcode', $validated['barcode'])->first();
+
+        if (! $product) {
+            return response()->json(['message' => 'No product found for this barcode.'], 404);
+        }
+
+        return response()->json($product->only(['id', 'name', 'sku', 'barcode', 'image_url', 'is_active']));
+    }
+
     public function exportCsv(Request $request)
     {
         $allColumns = ['supplier_id', 'product_id', 'branch_id', 'total_stock', 'quantity', 'unit_type', 'cost_price', 'expiry_date', 'selling_price', 'created_by', 'updated_by', 'created_at', 'updated_at'];

@@ -89,6 +89,7 @@ class ProductsController extends Controller
         $validated = $request->validate([
             'name' => 'required',
             'sku' => 'nullable',
+            'barcode' => 'nullable|string|max:100|unique:products,barcode',
             'branch_id' => 'nullable|exists:branches,id',
             'category_id' => 'nullable|exists:categories,id',
             'description' => 'nullable',
@@ -116,6 +117,7 @@ class ProductsController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required',
             'sku' => 'nullable',
+            'barcode' => 'nullable|string|max:100|unique:products,barcode,'.$product->id,
             'branch_id' => 'nullable|exists:branches,id',
             'category_id' => 'nullable|exists:categories,id',
             'description' => 'nullable',
