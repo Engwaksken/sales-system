@@ -240,7 +240,7 @@
     function resolveImageUrl(imageUrl) {
         const value = String(imageUrl || '').trim();
         if (!value) return '';
-        if (/^https?:\/\//i.test(value)) return value;
+        if (/^https?:\/\//i.test(value)) return '';
         return imageBase + '/' + value.replace(/^\/+/, '').replace(/^storage\//, '');
     }
 

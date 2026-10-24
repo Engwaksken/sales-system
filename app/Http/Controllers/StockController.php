@@ -53,6 +53,8 @@ class StockController extends Controller
 
     public function lookupBarcode(Request $request)
     {
+        abort_unless(\App\Http\Middleware\CheckPermission::allows(Auth::user(), 'manage_stock'), 403);
+
         $validated = $request->validate([
             'barcode' => ['required', 'string', 'max:100'],
         ]);

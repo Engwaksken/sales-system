@@ -40,6 +40,7 @@ class BulkUploadController extends Controller
                 'product_name',
                 'category_name',
                 'sku',
+                'barcode',
                 'branch_name',
                 'supplier_name',
                 'quantity',
@@ -57,6 +58,7 @@ class BulkUploadController extends Controller
                 'Example Product',
                 'Example Category',
                 'SKU-001',
+                '0000000000001',
                 'Main Branch',
                 'Example Supplier',
                 '100',
@@ -113,7 +115,7 @@ class BulkUploadController extends Controller
 
     /**
      * Product CSV columns:
-     * product_name, category_name, sku, branch_name, supplier_name, quantity,
+     * product_name, category_name, sku, barcode, branch_name, supplier_name, quantity,
      * unit_type, cost_price, selling_price, expiry_date, stock_date,
      * description, image_url.
      *
@@ -141,6 +143,8 @@ class BulkUploadController extends Controller
             fn ($header) => strtolower(trim((string) $header)),
             $headers
         );
+
+        $hasBarcodeColumn = in_array('barcode', $headers, true);
 
         foreach (['product_name', 'category_name'] as $required) {
             if (! in_array($required, $headers, true)) {
@@ -187,6 +191,7 @@ class BulkUploadController extends Controller
             $productName = trim((string) ($row['product_name'] ?? ''));
             $categoryName = trim((string) ($row['category_name'] ?? ''));
             $sku = trim((string) ($row['sku'] ?? ''));
+            $barcode = trim((string) ($row['barcode'] ?? ''));
             $branchName = trim((string) ($row['branch_name'] ?? ''));
             $supplierName = trim((string) ($row['supplier_name'] ?? ''));
             $quantity = trim((string) ($row['quantity'] ?? ''));
@@ -308,9 +313,31 @@ class BulkUploadController extends Controller
                 continue;
             }
 
+            $barcode = $hasBarcodeColumn && $barcode !== '' ? $barcode : null;
+
+            if ($barcode !== null && strlen($barcode) > 100) {
+                $errors[] = "Row {$rowNumber}: Barcode must be 100 characters or less.";
+                $skipped++;
+                continue;
+            }
+
+            $existing = $sku !== '' ? Product::where('sku', $sku)->orderBy('id')->first() : null;
+
+            if ($barcode !== null) {
+                $barcodeOwner = Product::where('barcode', $barcode)->first();
+
+                if ($barcodeOwner && (! $existing || $existing->id !== $barcodeOwner->id)) {
+                    $errors[] = "Row {$rowNumber}: This barcode is already assigned to a product.";
+                    $skipped++;
+                    continue;
+                }
+            }
+
             try {
                 DB::transaction(function () use (
                     $sku,
+                    $barcode,
+                    $existing,
                     $productName,
                     $branchIds,
                     $categoryId,
@@ -329,23 +356,25 @@ class BulkUploadController extends Controller
                     &$stockCreated,
                     &$stockUpdated
                 ): void {
-                    $existing = $sku !== ''
-                        ? Product::where('sku', $sku)->first()
-                        : null;
-
                     if ($existing) {
-                        $existing->update([
+                        $updateData = [
                             'name' => $productName,
                             'branch_id' => $branchIds[0],
                             'category_id' => $categoryId,
                             'description' => $description ?: null,
                             'image_url' => $imageUrl ?: null,
-                        ]);
+                        ];
+
+                        if ($barcode !== null) {
+                            $updateData['barcode'] = $barcode;
+                        }
+
+                        $existing->update($updateData);
 
                         $product = $existing;
                         $updated++;
                     } else {
-                        $product = Product::create([
+                        $createData = [
                             'name' => $productName,
                             'sku' => $sku ?: null,
                             'branch_id' => $branchIds[0],
@@ -353,7 +382,13 @@ class BulkUploadController extends Controller
                             'description' => $description ?: null,
                             'image_url' => $imageUrl ?: null,
                             'is_active' => true,
-                        ]);
+                        ];
+
+                        if ($barcode !== null) {
+                            $createData['barcode'] = $barcode;
+                        }
+
+                        $product = Product::create($createData);
 
                         $imported++;
                     }
@@ -405,7 +440,7 @@ class BulkUploadController extends Controller
                 });
             } catch (Throwable $e) {
                 report($e);
-                $errors[] = "Row {$rowNumber}: ".$e->getMessage();
+                $errors[] = "Row {$rowNumber}: Unable to import this product due to an unexpected error.";
                 $skipped++;
             }
         }

@@ -110,7 +110,7 @@ Route::middleware('auth')->group(function () {
 
     // Bulk upload
     Route::get('/bulk-upload', [BulkUploadController::class, 'index'])->name('bulk-upload.index')->middleware('permission:manage_products');
-    Route::post('/bulk-upload/products', [BulkUploadController::class, 'importProducts'])->name('bulk-upload.products')->middleware('permission:manage_products');
+    Route::post('/bulk-upload/products', [BulkUploadController::class, 'importProducts'])->name('bulk-upload.products')->middleware(['permission:manage_products', 'throttle:20,1']);
     Route::post('/bulk-upload/customers', [BulkUploadController::class, 'importCustomers'])->name('bulk-upload.customers')->middleware('permission:manage_customers');
 
     // CSV import for data pages (each page's permission is checked in ImportController)
