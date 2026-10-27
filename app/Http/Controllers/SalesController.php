@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\DeliveryNoteMail;
 use App\Models\Sale;
 use App\Models\OrderLog;
 use App\Models\Branch;
@@ -17,6 +18,7 @@ use App\Support\DocumentBranding;
 use App\Support\DocumentNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class SalesController extends Controller
 {
@@ -92,6 +94,83 @@ class SalesController extends Controller
             'Content-Disposition' => 'attachment; filename="invoice-'.$sale->invoice_no.'.pdf"',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    /** Stream the delivery note PDF inline inside the preview page. */
+    public function deliveryNotePdf(Sale $sale)
+    {
+        return $this->deliveryNoteResponse($sale, 'inline');
+    }
+
+    /** In-app delivery note preview with download and email actions. */
+    public function deliveryNotePreview(Sale $sale)
+    {
+        $sale->load(['customer', 'sale_items.product', 'branch', 'orders']);
+
+        return view('sales.delivery-note-preview', [
+            'sale' => $sale,
+            'branding' => DocumentBranding::get(),
+        ]);
+    }
+
+    public function deliveryNoteDownload(Sale $sale)
+    {
+        return $this->deliveryNoteResponse($sale, 'attachment');
+    }
+
+    /** Emails the branded delivery note PDF to the customer, or any address the user enters. */
+    public function deliveryNoteEmail(Request $request, Sale $sale)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'message' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $sale->load(['customer', 'sale_items.product', 'branch', 'orders']);
+
+        try {
+            Mail::to($data['email'])->send(new DeliveryNoteMail(
+                $sale,
+                $this->renderDeliveryNote($sale),
+                $sale->delivery_note_no.'.pdf',
+                $data['message'] ?? null,
+            ));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->withErrors([
+                'email' => 'The delivery note could not be sent. Check the email settings and try again.',
+            ]);
+        }
+
+        return redirect()->route('sales.delivery-note-preview', $sale->id)
+            ->with('status', "Delivery note {$sale->delivery_note_no} sent to {$data['email']}.");
+    }
+
+    private function deliveryNoteResponse(Sale $sale, string $disposition)
+    {
+        $sale->load(['customer', 'sale_items.product', 'branch', 'orders']);
+
+        return response($this->renderDeliveryNote($sale), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $disposition.'; filename="'.$sale->delivery_note_no.'.pdf"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    private function renderDeliveryNote(Sale $sale): string
+    {
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml(view('sales.delivery-note-pdf', [
+            'sale' => $sale,
+            'branding' => DocumentBranding::get(),
+        ])->render());
+        $dompdf->setPaper('A4');
+        $dompdf->render();
+
+        return $dompdf->output();
     }
 
 

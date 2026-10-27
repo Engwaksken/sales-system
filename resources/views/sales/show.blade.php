@@ -42,6 +42,7 @@
         </div>
         <div class="flex items-center gap-2">
         <a href="{{ route('sales.invoice-preview',$sale->id) }}" class="text-sm border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-md hover:bg-emerald-100 font-semibold"><i class="fas fa-eye"></i> Preview Invoice</a>
+        <a href="{{ route('sales.delivery-note-preview',$sale->id) }}" class="text-sm border border-sky-200 bg-sky-50 text-sky-700 px-3 py-1.5 rounded-md hover:bg-sky-100 font-semibold"><i class="fas fa-truck"></i> Delivery Note</a>
         @if((float)$sale->balance_amount > 0)
         <button type="button" onclick="openModal('record-payment-modal')" class="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700">
             <i class="fa-solid fa-money-bill-wave"></i> Pay

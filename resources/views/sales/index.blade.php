@@ -257,6 +257,12 @@
                                         <i class="fas fa-file-invoice"></i>
                                     </a>
 
+                                    <a href="{{ route('sales.delivery-note-preview', $row->id) }}"
+                                       title="Delivery Note"
+                                       class="inline-grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-sky-600 hover:bg-sky-50">
+                                        <i class="fas fa-truck"></i>
+                                    </a>
+
                                     <form method="POST"
                                           action="{{ route('sales.destroy', $row->id) }}"
                                           class="inline"

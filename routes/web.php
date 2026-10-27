@@ -101,6 +101,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales/{sale}/invoice/preview', [SalesController::class, 'invoicePreview'])->name('sales.invoice-preview')->middleware('permission:manage_sales');
     Route::get('/sales/{sale}/invoice/download', [SalesController::class, 'invoiceDownload'])->name('sales.invoice-download')->middleware('permission:manage_sales');
     Route::get('/sales/{sale}/invoice/print', [SalesController::class, 'invoicePrint'])->name('sales.invoice-print')->middleware('permission:manage_sales');
+    Route::get('/sales/{sale}/delivery-note.pdf', [SalesController::class, 'deliveryNotePdf'])->name('sales.delivery-note-pdf')->middleware('permission:manage_sales');
+    Route::get('/sales/{sale}/delivery-note/preview', [SalesController::class, 'deliveryNotePreview'])->name('sales.delivery-note-preview')->middleware('permission:manage_sales');
+    Route::get('/sales/{sale}/delivery-note/download', [SalesController::class, 'deliveryNoteDownload'])->name('sales.delivery-note-download')->middleware('permission:manage_sales');
+    Route::post('/sales/{sale}/delivery-note/email', [SalesController::class, 'deliveryNoteEmail'])->name('sales.delivery-note-email')->middleware(['permission:manage_sales', 'throttle:10,1']);
     Route::post('/sales/pos', [SalesController::class, 'posStore'])->name('sales.pos-store')->middleware('permission:manage_sales');
     Route::post('/sales/{sale}/payments', [SalesController::class, 'recordPayment'])->name('sales.record-payment')->middleware('permission:manage_sales');
     Route::get('/payments/{payment}/receipt.pdf', [PaymentsController::class, 'receiptPdf'])->name('payments.receipt-pdf')->middleware('permission:manage_sales');

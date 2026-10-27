@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasUserstamps;
+use App\Support\DocumentNumber;
 use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
@@ -38,6 +39,32 @@ class Sale extends Model
         'partial_amount' => 'decimal:2',
         'balance_amount' => 'decimal:2',
     ];
+
+    /** The delivery note shares the invoice's sequence: INV-20261027-001 → DN-20261027-001. */
+    public function getDeliveryNoteNoAttribute(): string
+    {
+        $invoiceNo = trim((string) $this->invoice_no);
+
+        if ($invoiceNo === '') {
+            return 'DN-'.str_pad((string) $this->id, DocumentNumber::PAD, '0', STR_PAD_LEFT);
+        }
+
+        return 'DN-'.preg_replace('/^[A-Za-z]+-/', '', $invoiceNo);
+    }
+
+    /** Where the goods are going: the linked online order's details first, then the customer record. */
+    public function deliveryRecipient(): array
+    {
+        $order = $this->orders->first();
+
+        return [
+            'name' => $order?->customer_name ?: ($this->customer?->name ?: 'Walk-in Customer'),
+            'phone' => $order?->phone ?: $this->customer?->phone,
+            'email' => $order?->email ?: $this->customer?->email,
+            'address' => $order?->delivery_location ?: ($order?->address ?: $this->customer?->address),
+            'order_number' => $order?->order_number,
+        ];
+    }
 
     public function customer()
     {
