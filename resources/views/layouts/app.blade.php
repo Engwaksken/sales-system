@@ -277,6 +277,8 @@ function fillFormFields(form, data) {
 function setFormEnabled(form, enabled) {
     for (const el of form.elements) {
         if (el.name === '_token' || el.name === '_method') continue;
+        // Section tabs are buttons inside the form; they must stay clickable in view mode.
+        if (el.dataset.tabgroup) continue;
         el.disabled = !enabled;
     }
     const submitBtn = form.querySelector('button[type="submit"]');
