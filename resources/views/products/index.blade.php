@@ -125,6 +125,24 @@ $isMoney = false;
   <label class="block text-sm font-medium text-slate-700 mb-1">Sku</label>
   <input type="text" name="sku" class="w-full rounded-md border-slate-300 shadow-sm" >
 </div>
+<div>
+  <label class="block text-sm font-medium text-slate-700 mb-1" for="product-barcode">Barcode</label>
+  <div class="flex gap-2">
+    <input id="product-barcode" type="text" name="barcode" autocomplete="off"
+           placeholder="Scan or type barcode" class="min-w-0 flex-1 rounded-md border-slate-300 shadow-sm">
+    <button type="button" id="start-product-barcode-camera" class="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+      <i class="fa-solid fa-camera mr-1" aria-hidden="true"></i>Use camera
+    </button>
+  </div>
+  <p class="mt-1 text-xs text-slate-400">Use a camera or click the field and scan with a USB/Bluetooth barcode scanner.</p>
+  <div id="product-barcode-camera-wrap" class="mt-3 hidden">
+    <video id="product-barcode-video" class="max-h-64 w-full rounded-lg bg-black" muted playsinline></video>
+    <div class="mt-2 flex items-center gap-3">
+      <p id="product-barcode-camera-status" class="text-xs text-slate-500" role="status" aria-live="polite">Starting camera…</p>
+      <button type="button" id="stop-product-barcode-camera" class="ml-auto text-xs text-red-600 hover:text-red-800">Stop camera</button>
+    </div>
+  </div>
+</div>
 <div class="md:col-span-2">
   <input type="hidden" name="branch_ids_submitted" value="1">
   @include('partials.branch-checklist', ['branches' => $branch_options, 'label' => 'Available in branches',
@@ -195,6 +213,63 @@ $isMoney = false;
 @push('scripts')
 <script>
 (function () {
+    const barcodeInput = document.getElementById('product-barcode');
+    const cameraWrap = document.getElementById('product-barcode-camera-wrap');
+    const video = document.getElementById('product-barcode-video');
+    const cameraStatus = document.getElementById('product-barcode-camera-status');
+    let cameraStream = null;
+    let scanFrame = null;
+    let scanning = false;
+
+    function stopBarcodeCamera() {
+        scanning = false;
+        if (scanFrame !== null) cancelAnimationFrame(scanFrame);
+        scanFrame = null;
+        cameraStream?.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+        if (video) video.srcObject = null;
+        cameraWrap?.classList.add('hidden');
+    }
+
+    document.getElementById('stop-product-barcode-camera')?.addEventListener('click', stopBarcodeCamera);
+    document.getElementById('start-product-barcode-camera')?.addEventListener('click', async () => {
+        if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
+            alert('Camera barcode scanning is not supported by this browser. Use a USB/Bluetooth scanner or type the barcode.');
+            return;
+        }
+        try {
+            cameraWrap.classList.remove('hidden');
+            cameraStatus.textContent = 'Starting camera…';
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+            video.srcObject = cameraStream;
+            await video.play();
+            const detector = new BarcodeDetector();
+            scanning = true;
+            cameraStatus.textContent = 'Point the camera at a barcode.';
+            const detect = async () => {
+                if (!scanning) return;
+                try {
+                    const codes = await detector.detect(video);
+                    if (codes.length && codes[0].rawValue) {
+                        barcodeInput.value = codes[0].rawValue;
+                        barcodeInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        cameraStatus.textContent = 'Barcode captured.';
+                        stopBarcodeCamera();
+                        barcodeInput.focus();
+                        return;
+                    }
+                } catch (error) {
+                    cameraStatus.textContent = 'Could not read barcode. Try adjusting the camera position.';
+                }
+                scanFrame = requestAnimationFrame(detect);
+            };
+            detect();
+        } catch (error) {
+            stopBarcodeCamera();
+            alert('Could not access the camera. Check browser permissions and use a secure (HTTPS) connection.');
+        }
+    });
+
     const modal = document.getElementById('product-image-modal');
     const image = document.getElementById('productImageLarge');
     const caption = document.getElementById('productImageCaption');
