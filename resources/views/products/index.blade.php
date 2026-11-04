@@ -117,6 +117,12 @@ $isMoney = false;
     <form id="products-form" method="POST" action="{{ route('products.store') }}" class="space-y-4" enctype="multipart/form-data">
       @csrf
       <input type="hidden" name="_method" value="POST">
+      <div class="flex gap-1 border-b border-slate-200" role="tablist" aria-label="Product form sections">
+        <button type="button" role="tab" id="product-tab-details" aria-controls="product-panel-details" aria-selected="true" data-product-tab="details" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-700">Details</button>
+        <button type="button" role="tab" id="product-tab-availability" aria-controls="product-panel-availability" aria-selected="false" data-product-tab="availability" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500">Availability</button>
+        <button type="button" role="tab" id="product-tab-media" aria-controls="product-panel-media" aria-selected="false" data-product-tab="media" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500">Image & status</button>
+      </div>
+      <section id="product-panel-details" role="tabpanel" aria-labelledby="product-tab-details" data-product-panel="details" class="space-y-4">
       <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
   <input type="text" name="name" class="w-full rounded-md border-slate-300 shadow-sm" required>
@@ -143,6 +149,21 @@ $isMoney = false;
     </div>
   </div>
 </div>
+<div>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Category Name</label>
+  <select name="category_id" class="w-full rounded-md border-slate-300 shadow-sm" >
+    <option value="">-- Select Category Name --</option>
+    @foreach($category_options as $opt)
+    <option value="{{ $opt->id }}">{{ $opt->category_name }}</option>
+    @endforeach
+  </select>
+</div>
+<div>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+  <textarea name="description" rows="3" class="w-full rounded-md border-slate-300 shadow-sm" ></textarea>
+</div>
+      </section>
+      <section id="product-panel-availability" role="tabpanel" aria-labelledby="product-tab-availability" data-product-panel="availability" class="hidden space-y-4" hidden>
 <div class="md:col-span-2">
   <input type="hidden" name="branch_ids_submitted" value="1">
   @include('partials.branch-checklist', ['branches' => $branch_options, 'label' => 'Available in branches',
@@ -157,19 +178,8 @@ $isMoney = false;
     @endforeach
   </select>
 </div>
-<div>
-  <label class="block text-sm font-medium text-slate-700 mb-1">Category Name</label>
-  <select name="category_id" class="w-full rounded-md border-slate-300 shadow-sm" >
-    <option value="">-- Select Category Name --</option>
-    @foreach($category_options as $opt)
-    <option value="{{ $opt->id }}">{{ $opt->category_name }}</option>
-    @endforeach
-  </select>
-</div>
-<div>
-  <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-  <textarea name="description" rows="3" class="w-full rounded-md border-slate-300 shadow-sm" ></textarea>
-</div>
+      </section>
+      <section id="product-panel-media" role="tabpanel" aria-labelledby="product-tab-media" data-product-panel="media" class="hidden space-y-4" hidden>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Product Image</label>
   <input type="file" name="image" accept="image/*" class="w-full rounded-md border-slate-300 shadow-sm text-sm">
@@ -187,6 +197,7 @@ $isMoney = false;
   <input type="checkbox" name="is_active" value="1" class="rounded border-slate-300">
   <label class="text-sm font-medium text-slate-700">Is Active</label>
 </div>
+      </section>
       <div class="pt-2 flex items-center gap-2">
         <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-check"></i> Save</button>
         <button type="button" onclick="closeModal('products-modal')" class="text-sm text-slate-500">Cancel</button>
@@ -213,6 +224,27 @@ $isMoney = false;
 @push('scripts')
 <script>
 (function () {
+    const productTabs = [...document.querySelectorAll('[data-product-tab]')];
+    const productPanels = [...document.querySelectorAll('[data-product-panel]')];
+    productTabs.forEach(tab => { tab.tabIndex = tab.getAttribute('aria-selected') === 'true' ? 0 : -1; });
+    productTabs.forEach(tab => tab.addEventListener('click', () => {
+        const selected = tab.dataset.productTab;
+        productTabs.forEach(item => {
+            const active = item === tab;
+            item.setAttribute('aria-selected', String(active));
+            item.tabIndex = active ? 0 : -1;
+            item.classList.toggle('border-indigo-600', active);
+            item.classList.toggle('text-indigo-700', active);
+            item.classList.toggle('border-transparent', !active);
+            item.classList.toggle('text-slate-500', !active);
+        });
+        productPanels.forEach(panel => {
+            const active = panel.dataset.productPanel === selected;
+            panel.hidden = !active;
+            panel.classList.toggle('hidden', !active);
+        });
+    }));
+
     const barcodeInput = document.getElementById('product-barcode');
     const cameraWrap = document.getElementById('product-barcode-camera-wrap');
     const video = document.getElementById('product-barcode-video');
