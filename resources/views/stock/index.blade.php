@@ -127,6 +127,11 @@
     <form id="stock-form" method="POST" action="{{ route('stock.store') }}" class="space-y-4">
       @csrf
       <input type="hidden" name="_method" value="POST">
+      <div class="mb-4 flex flex-wrap gap-2 border-b border-slate-200" role="tablist" aria-label="Stock form sections">
+        <button type="button" role="tab" id="stock-tab-product" aria-controls="stock-panel-product" aria-selected="true" tabindex="0" data-tabgroup="stock-form-sections" data-tab="0" onclick="switchTab('stock-form-sections', '0')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">Product & branches</button>
+        <button type="button" role="tab" id="stock-tab-inventory" aria-controls="stock-panel-inventory" aria-selected="false" tabindex="-1" data-tabgroup="stock-form-sections" data-tab="1" onclick="switchTab('stock-form-sections', '1')" class="border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500">Stock & pricing</button>
+      </div>
+      <section id="stock-panel-product" role="tabpanel" aria-labelledby="stock-tab-product" data-tabpanel="stock-form-sections" data-tab="0" class="space-y-4">
       <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Supplier Id</label>
   <select name="supplier_id" class="w-full rounded-md border-slate-300 shadow-sm" >
@@ -158,6 +163,8 @@
   @include('partials.branch-checklist', ['branches' => $branch_options, 'label' => 'Add to branches',
       'hint' => 'The same quantity and prices are added to every selected branch. Where the product already has stock from the same supplier, the quantity is added to it.'])
 </div>
+      </section>
+      <section id="stock-panel-inventory" role="tabpanel" aria-labelledby="stock-tab-inventory" data-tabpanel="stock-form-sections" data-tab="1" class="hidden space-y-4">
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Total Stock</label>
   <input type="number" name="total_stock" class="w-full rounded-md border-slate-300 shadow-sm" required>
@@ -182,6 +189,7 @@
   <label class="block text-sm font-medium text-slate-700 mb-1">Selling Price</label>
   <input type="number" step='0.01' name="selling_price" class="w-full rounded-md border-slate-300 shadow-sm" required>
 </div>
+      </section>
       <div class="pt-2 flex items-center gap-2">
         <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-check"></i> Save</button>
         <button type="button" onclick="closeModal('stock-modal')" class="text-sm text-slate-500">Cancel</button>
