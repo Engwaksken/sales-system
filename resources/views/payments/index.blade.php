@@ -77,7 +77,7 @@
 <a href="{{ route('payments.receipt-preview', $row->id) }}" title="Preview Receipt Before Download" class="text-emerald-600 hover:text-emerald-800"><i class="fa-solid fa-receipt"></i></a>
 <button type="button" title="View Payment Details" onclick='openViewModal("payments-modal", "payments-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("payments-modal", "payments-form", "{{ route('payments.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
-<form method="POST" action="{{ route('payments.destroy', $row->id) }}" class="inline" onsubmit="return confirm('Delete this record?')">
+<form method="POST" action="{{ route('payments.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
 @csrf @method('DELETE')
 <button title="Delete" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
 </form>

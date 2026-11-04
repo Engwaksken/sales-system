@@ -100,7 +100,7 @@
 <form method="POST" action="{{ route('sales.efris-submit', $sale->id) }}" class="mt-4">
     @csrf
     <button class="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm hover:bg-emerald-700"
-            onclick="return confirm('Submit this sale to EFRIS as a T103 invoice?')">
+            data-confirm="Submit this sale to EFRIS as a T103 invoice?">
         Submit to EFRIS
     </button>
 </form>

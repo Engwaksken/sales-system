@@ -95,7 +95,7 @@ $isMoney = false;
 </td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category?->category_name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->is_active ? 'Yes' : 'No' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("products-modal", "products-form", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id')]))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("products-modal", "products-form", "{{ route('products.update', $row->id) }}", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id')]))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
-<form method="POST" action="{{ route('products.destroy', $row->id) }}" class="inline" onsubmit="return confirm('Delete this record?')">
+<form method="POST" action="{{ route('products.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
 @csrf @method('DELETE')
 <button title="Delete" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
 </form>
@@ -266,7 +266,7 @@ $isMoney = false;
     document.getElementById('stop-product-barcode-camera')?.addEventListener('click', stopBarcodeCamera);
     document.getElementById('start-product-barcode-camera')?.addEventListener('click', async () => {
         if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
-            alert('Camera barcode scanning is not supported by this browser. Use a USB/Bluetooth scanner or type the barcode.');
+            appAlert('Camera barcode scanning is not supported by this browser. Use a USB/Bluetooth scanner or type the barcode.');
             return;
         }
         try {
@@ -298,7 +298,7 @@ $isMoney = false;
             detect();
         } catch (error) {
             stopBarcodeCamera();
-            alert('Could not access the camera. Check browser permissions and use a secure (HTTPS) connection.');
+            appAlert('Could not access the camera. Check browser permissions and use a secure (HTTPS) connection.');
         }
     });
 

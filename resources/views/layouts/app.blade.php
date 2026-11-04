@@ -210,7 +210,77 @@
     </div>
 @endif
 
+<div id="app-dialog" class="fixed inset-0 z-[200] hidden items-center justify-center bg-slate-950/50 p-4" role="presentation">
+    <section class="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl" role="alertdialog" aria-modal="true" aria-labelledby="app-dialog-title" aria-describedby="app-dialog-message">
+        <div class="mb-3 flex items-center gap-3">
+            <span class="grid h-10 w-10 place-items-center rounded-full bg-indigo-50 text-indigo-600"><i class="fa-solid fa-circle-info" aria-hidden="true"></i></span>
+            <h2 id="app-dialog-title" class="text-lg font-semibold text-slate-800">Notice</h2>
+        </div>
+        <p id="app-dialog-message" class="whitespace-pre-line text-sm leading-6 text-slate-600"></p>
+        <div class="mt-6 flex justify-end gap-2">
+            <button type="button" id="app-dialog-cancel" class="hidden rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button type="button" id="app-dialog-ok" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">OK</button>
+        </div>
+    </section>
+</div>
+
 <script>
+const appDialog = (() => {
+    const root = document.getElementById('app-dialog');
+    const title = document.getElementById('app-dialog-title');
+    const message = document.getElementById('app-dialog-message');
+    const cancel = document.getElementById('app-dialog-cancel');
+    const ok = document.getElementById('app-dialog-ok');
+    let resolveDialog = null;
+    function show(text, confirmation = false) {
+        title.textContent = confirmation ? 'Please confirm' : 'Notice';
+        message.textContent = text;
+        cancel.classList.toggle('hidden', !confirmation);
+        ok.textContent = confirmation ? 'Continue' : 'OK';
+        root.classList.remove('hidden');
+        root.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+        (confirmation ? cancel : ok).focus();
+        return new Promise(resolve => { resolveDialog = resolve; });
+    }
+    function close(result) {
+        if (!resolveDialog) return;
+        root.classList.add('hidden');
+        root.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+        const resolve = resolveDialog;
+        resolveDialog = null;
+        resolve(result);
+    }
+    cancel.addEventListener('click', () => close(false));
+    ok.addEventListener('click', () => close(true));
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && resolveDialog) close(false); });
+    return { alert: text => show(text), confirm: text => show(text, true) };
+})();
+function appAlert(message) { return appDialog.alert(message); }
+function appConfirm(message) { return appDialog.confirm(message); }
+
+document.addEventListener('submit', async event => {
+    const form = event.target;
+    if (!form.matches('form[data-confirm]') || form.dataset.confirmed === '1') return;
+    event.preventDefault();
+    if (await appConfirm(form.dataset.confirm)) {
+        form.dataset.confirmed = '1';
+        if (event.submitter) form.requestSubmit(event.submitter);
+        else form.requestSubmit();
+    }
+});
+document.addEventListener('click', async event => {
+    const button = event.target.closest('[data-confirm]:not(form)');
+    if (!button || button.dataset.confirmed === '1') return;
+    event.preventDefault();
+    if (await appConfirm(button.dataset.confirm)) {
+        button.dataset.confirmed = '1';
+        button.click();
+        button.dataset.confirmed = '0';
+    }
+});
+
 function openMobileSidebar() {
     document.getElementById('appSidebar')?.classList.remove('-translate-x-full');
     document.getElementById('mobileSidebarOverlay')?.classList.remove('hidden');
@@ -514,7 +584,7 @@ document.querySelectorAll('form').forEach(form => {
 
     function readPageAloud() {
         if (!('speechSynthesis' in window)) {
-            alert('Voice reading is not supported by this browser.');
+            appAlert('Voice reading is not supported by this browser.');
             return;
         }
         window.speechSynthesis.cancel();

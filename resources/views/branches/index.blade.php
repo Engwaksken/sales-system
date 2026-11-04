@@ -70,7 +70,7 @@
 <tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->name }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->location }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->contact }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("branches-modal", "branches-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("branches-modal", "branches-form", "{{ route('branches.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
-<form method="POST" action="{{ route('branches.destroy', $row->id) }}" class="inline" onsubmit="return confirm('Delete this record?')">
+<form method="POST" action="{{ route('branches.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
 @csrf @method('DELETE')
 <button title="Delete" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
 </form>

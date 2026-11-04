@@ -70,7 +70,7 @@
 <tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->journal?->journal_no ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->account_code }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->debit }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->credit }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("journal_entries-modal", "journal_entries-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("journal_entries-modal", "journal_entries-form", "{{ route('journal_entries.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
-<form method="POST" action="{{ route('journal_entries.destroy', $row->id) }}" class="inline" onsubmit="return confirm('Delete this record?')">
+<form method="POST" action="{{ route('journal_entries.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
 @csrf @method('DELETE')
 <button title="Delete" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
 </form>
