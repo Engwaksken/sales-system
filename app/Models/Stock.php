@@ -30,7 +30,7 @@ class Stock extends Model
         'cost_price' => 'decimal:2',
         'expiry_date' => 'date',
         'selling_price' => 'decimal:2',
-        'stock_date' => 'date',
+        'stock_date' => 'datetime',
     ];
 
     public function supplier()

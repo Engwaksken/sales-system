@@ -9,34 +9,45 @@ use Illuminate\Http\Request;
 
 class ExpensesController extends Controller
 {
+    public const PAYMENT_METHODS = \App\Services\SalePaymentService::METHODS;
+
     use ExportsCsv;
 
-    public function index(Request $request)
+    /** Period, search, branch and payment method filters shared by the list and its exports. */
+    private function applyExpenseFilters($query, Request $request)
     {
-        $query = Expense::query();
         if ($request->filled('period') && $request->period !== 'all') {
             $query = $this->applyPeriod($query, $request->period, 'expense_date');
         }
         $query = $this->applySearch($query, (string) $request->query('q', ''), ['title', 'category', 'description']);
-        $expenses = $query->latest()->paginate($this->perPage($request));
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->integer('branch_id'));
+        }
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->query('payment_method'));
+        }
+
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->applyExpenseFilters(Expense::query(), $request);
+        $expenses = $query->with(['branch', 'createdBy', 'updatedBy'])->latest()->paginate($this->perPage($request))->withQueryString();
         $stat1 = 'UGX '.number_format(Expense::sum('amount'), 0);
         $stat2 = 'UGX '.number_format(Expense::whereMonth('expense_date', now()->month)->whereYear('expense_date', now()->year)->sum('amount'), 0);
         $periodStats = $this->periodStats(Expense::class, 'expense_date', 'amount');
         $branch_options = Branch::orderBy('id')->get();
-        return view('expenses.index', ['items' => $expenses, 'branch_options' => $branch_options, 'stat1' => $stat1, 'stat2' => $stat2, 'periodStats' => $periodStats]);
+        return view('expenses.index', ['items' => $expenses, 'branch_options' => $branch_options, 'paymentMethods' => self::PAYMENT_METHODS, 'stat1' => $stat1, 'stat2' => $stat2, 'periodStats' => $periodStats]);
     }
 
     public function exportCsv(Request $request)
     {
-        $allColumns = ['title', 'amount', 'expense_date', 'category', 'description', 'branch_id', 'created_by', 'updated_by', 'created_at', 'updated_at'];
+        $allColumns = ['title', 'amount', 'payment_method', 'expense_date', 'category', 'description', 'branch_id', 'created_by', 'updated_by', 'created_at', 'updated_at'];
         $columns = $request->query('columns', $allColumns);
         $columns = array_values(array_intersect($allColumns, $columns));
         if (empty($columns)) { $columns = $allColumns; }
-        $query = Expense::query();
-        if ($request->filled('period') && $request->period !== 'all') {
-            $query = $this->applyPeriod($query, $request->period, 'expense_date');
-        }
-        $query = $this->applySearch($query, (string) $request->query('q', ''), ['title', 'category', 'description']);
+        $query = $this->applyExpenseFilters(Expense::query(), $request);
         $rows = $query->with(['branch'])->get();
         $data = $rows->map(function ($row) use ($columns) {
             $out = [];
@@ -52,15 +63,11 @@ class ExpensesController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $allColumns = ['title', 'amount', 'expense_date', 'category', 'description', 'branch_id', 'created_by', 'updated_by', 'created_at', 'updated_at'];
+        $allColumns = ['title', 'amount', 'payment_method', 'expense_date', 'category', 'description', 'branch_id', 'created_by', 'updated_by', 'created_at', 'updated_at'];
         $columns = $request->query('columns', $allColumns);
         $columns = array_values(array_intersect($allColumns, $columns));
         if (empty($columns)) { $columns = $allColumns; }
-        $query = Expense::query();
-        if ($request->filled('period') && $request->period !== 'all') {
-            $query = $this->applyPeriod($query, $request->period, 'expense_date');
-        }
-        $query = $this->applySearch($query, (string) $request->query('q', ''), ['title', 'category', 'description']);
+        $query = $this->applyExpenseFilters(Expense::query(), $request);
         $rows = $query->with(['branch'])->get();
         $data = $rows->map(function ($row) use ($columns) {
             $out = [];
@@ -85,6 +92,7 @@ class ExpensesController extends Controller
         $validated = $request->validate([
             'title' => 'required',
             'amount' => 'required|numeric',
+            'payment_method' => ['nullable', 'string', 'max:100'],
             'expense_date' => 'required|date',
             'category' => 'required',
             'description' => 'nullable',
@@ -104,6 +112,7 @@ class ExpensesController extends Controller
         $validated = $request->validate([
             'title' => 'sometimes|required',
             'amount' => 'sometimes|required|numeric',
+            'payment_method' => ['nullable', 'string', 'max:100'],
             'expense_date' => 'sometimes|required|date',
             'category' => 'sometimes|required',
             'description' => 'nullable',

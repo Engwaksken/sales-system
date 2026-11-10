@@ -109,6 +109,7 @@ class ImportModules
                 'columns' => [
                     'title' => ['rules' => 'required|string|max:255', 'example' => 'Fuel for delivery van'],
                     'amount' => ['rules' => 'required|numeric|min:0', 'example' => '150000'],
+                    'payment_method' => ['rules' => 'nullable|string|max:100', 'example' => 'Cash'],
                     'expense_date' => ['rules' => 'required|date', 'type' => 'date', 'example' => '2026-08-15'],
                     'category' => ['rules' => 'required|string|max:150', 'example' => 'Transport'],
                     'branch' => ['field' => 'branch_id', 'lookup' => 'branch', 'rules' => 'required', 'example' => 'Main Branch'],

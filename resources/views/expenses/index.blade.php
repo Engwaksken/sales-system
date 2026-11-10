@@ -30,7 +30,19 @@
         <option value="month" {{ request('period')=='month'?'selected':'' }}>This Month</option>
         <option value="year" {{ request('period')=='year'?'selected':'' }}>This Year</option>
     </select>
-    @if(request('q') || (request('period') && request('period') !== 'all'))
+    <select name="branch_id" onchange="this.form.submit()" aria-label="Branch" class="rounded-md border-slate-300 text-sm">
+        <option value="">All Branches</option>
+        @foreach($branch_options as $opt)
+        <option value="{{ $opt->id }}" @selected((string) request('branch_id') === (string) $opt->id)>{{ $opt->name }}</option>
+        @endforeach
+    </select>
+    <select name="payment_method" onchange="this.form.submit()" aria-label="Payment method" class="rounded-md border-slate-300 text-sm">
+        <option value="">All Payment Methods</option>
+        @foreach($paymentMethods as $method)
+        <option value="{{ $method }}" @selected(request('payment_method') === $method)>{{ $method }}</option>
+        @endforeach
+    </select>
+    @if(request('q') || request('branch_id') || request('payment_method') || (request('period') && request('period') !== 'all'))
     <a href="{{ route('expenses.index') }}" class="filter-clear"><i class="fa-solid fa-xmark"></i> Clear</a>
     @endif
 </form>
@@ -44,6 +56,7 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 text-sm">
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="title" checked class="rounded border-slate-300"> Title</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="amount" checked class="rounded border-slate-300"> Amount</label>
+<label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="payment_method" checked class="rounded border-slate-300"> Payment Method</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="expense_date" checked class="rounded border-slate-300"> Expense Date</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="category" checked class="rounded border-slate-300"> Category</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="description" checked class="rounded border-slate-300"> Description</label>
@@ -55,6 +68,8 @@
     </div>
     <input type="hidden" name="period" value="{{ request('period', 'all') }}">
     <input type="hidden" name="q" value="{{ request('q', '') }}">
+    <input type="hidden" name="branch_id" value="{{ request('branch_id', '') }}">
+    <input type="hidden" name="payment_method" value="{{ request('payment_method', '') }}">
     <div class="flex items-center gap-2">
       <button formaction="{{ route('expenses.export.csv') }}" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
       <button formaction="{{ route('expenses.export.pdf') }}" class="bg-slate-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
@@ -73,10 +88,10 @@
 @endif
 <div class="bg-white shadow rounded-lg overflow-x-auto">
 <table class="min-w-full divide-y divide-slate-200">
-<thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Title</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Amount</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Expense Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Category</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Branch</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
+<thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Title</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Amount</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Payment Method</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Expense Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Category</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Branch</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
 <tbody class="divide-y divide-slate-100">
 @forelse($items as $row)
-<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->title }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->amount }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expense_date }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
+<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->title }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ number_format((float) $row->amount, 0) }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->payment_method ?: '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expense_date?->format('d M Y') }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("expenses-modal", "expenses-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("expenses-modal", "expenses-form", "{{ route('expenses.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
 <form method="POST" action="{{ route('expenses.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
@@ -85,7 +100,7 @@
 </form>
 </td></tr>
 @empty
-<tr><td colspan="10" class="px-4 py-6 text-center text-sm text-slate-400">No records yet.</td></tr>
+<tr><td colspan="11" class="px-4 py-6 text-center text-sm text-slate-400">No records yet.</td></tr>
 @endforelse
 </tbody>
 </table>
@@ -110,8 +125,17 @@
   <input type="number" step='0.01' name="amount" class="w-full rounded-md border-slate-300 shadow-sm" required>
 </div>
 <div>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+  <select name="payment_method" class="w-full rounded-md border-slate-300 shadow-sm">
+    <option value="">-- Select Payment Method --</option>
+    @foreach($paymentMethods as $method)
+    <option value="{{ $method }}">{{ $method }}</option>
+    @endforeach
+  </select>
+</div>
+<div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Expense Date</label>
-  <input type="date" name="expense_date" class="w-full rounded-md border-slate-300 shadow-sm" required>
+  <input type="date" name="expense_date" data-default-now class="w-full rounded-md border-slate-300 shadow-sm" required>
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>

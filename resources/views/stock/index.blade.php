@@ -15,11 +15,18 @@
 @include('partials.stat-card', ['icon' => 'fa-triangle-exclamation', 'color' => 'amber', 'label' => 'Low Stock (≤ 5)', 'value' => $stat1])
 @include('partials.stat-card', ['icon' => 'fa-coins', 'color' => 'indigo', 'label' => 'Total Stock Value', 'value' => $stat2])
 </div>
-<section class="mb-6 rounded-lg bg-white p-4 shadow" aria-labelledby="barcode-lookup-heading" data-barcode-lookup data-endpoint="{{ route('stock.lookup-barcode') }}">
-    <h2 id="barcode-lookup-heading" class="mb-3 text-sm font-semibold text-slate-700"><i class="fa-solid fa-barcode mr-2 text-indigo-500" aria-hidden="true"></i>Barcode lookup</h2>
+<section class="mb-6 rounded-lg bg-white shadow" aria-labelledby="barcode-lookup-heading" data-barcode-lookup data-endpoint="{{ route('stock.lookup-barcode') }}">
+    <h2 id="barcode-lookup-heading" class="text-sm font-semibold text-slate-700">
+        <button type="button" class="flex w-full items-center justify-between gap-2 rounded-lg px-4 py-3 text-left hover:bg-slate-50"
+                aria-expanded="false" aria-controls="barcode-lookup-body" data-barcode-toggle>
+            <span><i class="fa-solid fa-barcode mr-2 text-indigo-500" aria-hidden="true"></i>Barcode lookup</span>
+            <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform" aria-hidden="true" data-barcode-chevron></i>
+        </button>
+    </h2>
+    <div id="barcode-lookup-body" class="px-4 pb-4" hidden data-barcode-body>
     <form class="flex flex-col gap-2 sm:flex-row" data-barcode-lookup-form>
         <label for="stock-barcode" class="sr-only">Barcode</label>
-        <input id="stock-barcode" name="barcode" type="text" inputmode="numeric" autocomplete="off" autofocus required
+        <input id="stock-barcode" name="barcode" type="text" inputmode="numeric" autocomplete="off" required
                class="w-full rounded-md border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:flex-1"
                placeholder="Scan or enter a barcode" aria-describedby="barcode-lookup-help barcode-lookup-status">
         <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"><i class="fa-solid fa-magnifying-glass mr-1" aria-hidden="true"></i>Look up</button>
@@ -43,6 +50,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </section>
 @php($isMoney = true)
@@ -92,6 +100,7 @@
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="cost_price" checked class="rounded border-slate-300"> Cost Price</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="expiry_date" checked class="rounded border-slate-300"> Expiry Date</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="selling_price" checked class="rounded border-slate-300"> Selling Price</label>
+<label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="stock_date" checked class="rounded border-slate-300"> Stock Date</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="created_by" checked class="rounded border-slate-300"> Createdby</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="updated_by" checked class="rounded border-slate-300"> Updatedby</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="created_at" checked class="rounded border-slate-300"> Created At</label>
@@ -119,10 +128,10 @@
 @endif
 <div class="bg-white shadow rounded-lg overflow-x-auto">
 <table class="min-w-full divide-y divide-slate-200">
-<thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Product</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Branch</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Total Stock</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>In Stock</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Selling Price</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Expiry Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
+<thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Product</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Branch</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Total Stock</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>In Stock</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Selling Price</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Stock Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Expiry Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
 <tbody class="divide-y divide-slate-100">
 @forelse($items as $row)
-<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->product?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ rtrim(rtrim(number_format((float) $row->total_stock, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm font-semibold {{ (float) $row->quantity <= 5 ? 'text-amber-700' : 'text-slate-700' }}'>{{ rtrim(rtrim(number_format((float) $row->quantity, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm text-slate-700'>@if($row->selling_price === null)<span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Not set</span>@else{{ number_format((float) $row->selling_price, 0) }}@endif</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expiry_date }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
+<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->product?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ rtrim(rtrim(number_format((float) $row->total_stock, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm font-semibold {{ (float) $row->quantity <= 5 ? 'text-amber-700' : 'text-slate-700' }}'>{{ rtrim(rtrim(number_format((float) $row->quantity, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm text-slate-700'>@if($row->selling_price === null)<span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Not set</span>@else{{ number_format((float) $row->selling_price, 0) }}@endif</td><td class='px-4 py-2 text-sm text-slate-700 whitespace-nowrap'>{{ $row->stock_date?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expiry_date?->format('d M Y') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("stock-modal", "stock-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("stock-modal", "stock-form", "{{ route('stock.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
 <form method="POST" action="{{ route('stock.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
@@ -131,7 +140,7 @@
 </form>
 </td></tr>
 @empty
-<tr><td colspan="11" class="px-4 py-6 text-center text-sm text-slate-400">No records yet.</td></tr>
+<tr><td colspan="12" class="px-4 py-6 text-center text-sm text-slate-400">No records yet.</td></tr>
 @endforelse
 </tbody>
 @if($items->total() > 0)
@@ -140,7 +149,7 @@
 <td class="px-4 py-2 text-sm text-slate-700" colspan="2">Total{{ request('product_id') || request('branch_id') || (request('period') && request('period') !== 'all') ? ' (filtered)' : '' }}</td>
 <td class="px-4 py-2 text-sm text-slate-800">{{ rtrim(rtrim(number_format((float) $totals->total_stock, 2), '0'), '.') }}</td>
 <td class="px-4 py-2 text-sm text-slate-800">{{ rtrim(rtrim(number_format((float) $totals->quantity, 2), '0'), '.') }}</td>
-<td class="px-4 py-2 text-sm text-slate-500" colspan="7">Value at cost: {{ $stat2 }}</td>
+<td class="px-4 py-2 text-sm text-slate-500" colspan="8">Value at cost: {{ $stat2 }}</td>
 </tr>
 </tfoot>
 @endif
@@ -196,6 +205,11 @@
       </section>
       <section id="stock-panel-inventory" role="tabpanel" aria-labelledby="stock-tab-inventory" data-tabpanel="stock-form-sections" data-tab="1" class="hidden space-y-4">
 <div>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Stock Date &amp; Time</label>
+  <input type="datetime-local" name="stock_date" data-default-now class="w-full rounded-md border-slate-300 shadow-sm">
+  <p class="mt-1 text-[11px] text-slate-400">When the stock was received. Defaults to now (Kampala time) — change it for stock received earlier.</p>
+</div>
+<div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Total Stock</label>
   <input type="number" name="total_stock" class="w-full rounded-md border-slate-300 shadow-sm" required>
 </div>
@@ -237,6 +251,23 @@
 
     const section = document.querySelector('[data-barcode-lookup]');
     if (!section) return;
+
+    // Collapse / expand, remembered per browser. Collapsed by default.
+    const toggle = section.querySelector('[data-barcode-toggle]');
+    const body = section.querySelector('[data-barcode-body]');
+    const chevron = section.querySelector('[data-barcode-chevron]');
+    const openKey = 'stock.barcodeLookup.open';
+    function setOpen(open, focus) {
+        body.hidden = !open;
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        chevron.classList.toggle('rotate-180', open);
+        try { localStorage.setItem(openKey, open ? '1' : '0'); } catch (e) {}
+        if (open && focus) document.getElementById('stock-barcode')?.focus();
+    }
+    let startOpen = false;
+    try { startOpen = localStorage.getItem(openKey) === '1'; } catch (e) {}
+    setOpen(startOpen, startOpen);
+    toggle.addEventListener('click', () => setOpen(body.hidden, true));
 
     const form = section.querySelector('[data-barcode-lookup-form]');
     const input = document.getElementById('stock-barcode');

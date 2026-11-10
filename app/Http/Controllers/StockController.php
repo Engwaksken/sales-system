@@ -86,7 +86,7 @@ class StockController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $allColumns = ['supplier_id', 'product_id', 'branch_id', 'total_stock', 'quantity', 'unit_type', 'cost_price', 'expiry_date', 'selling_price', 'created_by', 'updated_by', 'created_at', 'updated_at'];
+        $allColumns = ['supplier_id', 'product_id', 'branch_id', 'total_stock', 'quantity', 'unit_type', 'cost_price', 'expiry_date', 'selling_price', 'stock_date', 'created_by', 'updated_by', 'created_at', 'updated_at'];
         $columns = $request->query('columns', $allColumns);
         $columns = array_values(array_intersect($allColumns, $columns));
         if (empty($columns)) { $columns = $allColumns; }
@@ -98,6 +98,7 @@ class StockController extends Controller
                 if ($col === 'supplier_id') { $out[] = $row->supplier?->name ?? $row->supplier_id; continue; }
                 if ($col === 'product_id') { $out[] = $row->product?->name ?? $row->product_id; continue; }
                 if ($col === 'branch_id') { $out[] = $row->branch?->name ?? $row->branch_id; continue; }
+                if ($col === 'stock_date') { $out[] = $row->stock_date?->format('Y-m-d H:i'); continue; }
                 $out[] = $row->{$col};
             }
             return $out;
@@ -108,7 +109,7 @@ class StockController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $allColumns = ['supplier_id', 'product_id', 'branch_id', 'total_stock', 'quantity', 'unit_type', 'cost_price', 'expiry_date', 'selling_price', 'created_by', 'updated_by', 'created_at', 'updated_at'];
+        $allColumns = ['supplier_id', 'product_id', 'branch_id', 'total_stock', 'quantity', 'unit_type', 'cost_price', 'expiry_date', 'selling_price', 'stock_date', 'created_by', 'updated_by', 'created_at', 'updated_at'];
         $columns = $request->query('columns', $allColumns);
         $columns = array_values(array_intersect($allColumns, $columns));
         if (empty($columns)) { $columns = $allColumns; }
@@ -120,6 +121,7 @@ class StockController extends Controller
                 if ($col === 'supplier_id') { $out[] = $row->supplier?->name ?? $row->supplier_id; continue; }
                 if ($col === 'product_id') { $out[] = $row->product?->name ?? $row->product_id; continue; }
                 if ($col === 'branch_id') { $out[] = $row->branch?->name ?? $row->branch_id; continue; }
+                if ($col === 'stock_date') { $out[] = $row->stock_date?->format('Y-m-d H:i'); continue; }
                 $out[] = $row->{$col};
             }
             return $out;
@@ -149,7 +151,13 @@ class StockController extends Controller
             'cost_price' => 'nullable|numeric|min:0',
             'expiry_date' => 'nullable|date',
             'selling_price' => 'nullable|numeric|min:0',
+            'stock_date' => 'nullable|date',
         ], ['branch_ids.required_without' => 'Select at least one branch.']);
+
+        // When the stock was received; defaults to right now (app time zone: Kampala).
+        $validated['stock_date'] = filled($validated['stock_date'] ?? null)
+            ? \Illuminate\Support\Carbon::parse($validated['stock_date'])
+            : now();
 
         $branchIds = array_map('intval', $validated['branch_ids'] ?? [$validated['branch_id']]);
         unset($validated['branch_ids'], $validated['branch_id']);
@@ -171,6 +179,7 @@ class StockController extends Controller
                         'cost_price' => $validated['cost_price'] ?? null,
                         'selling_price' => $validated['selling_price'] ?? null,
                         'expiry_date' => $validated['expiry_date'] ?? null,
+                        'stock_date' => $validated['stock_date'],
                     ], fn ($value) => $value !== null));
                     $stock->quantity = (float) $stock->quantity + (float) $validated['quantity'];
                     $stock->total_stock = (float) $stock->total_stock + (float) $validated['total_stock'];
@@ -207,6 +216,7 @@ class StockController extends Controller
             'cost_price' => 'nullable|numeric|min:0',
             'expiry_date' => 'nullable|date',
             'selling_price' => 'nullable|numeric|min:0',
+            'stock_date' => 'sometimes|nullable|date',
         ]);
         $stock->update($validated);
         return redirect()->route('stock.index')->with('status', 'Stock updated successfully.');

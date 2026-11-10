@@ -426,7 +426,7 @@ class BulkUploadController extends Controller
                             'cost_price' => $costPrice === '' ? null : (float) $costPrice,
                             'selling_price' => $sellingPrice === '' ? null : (float) $sellingPrice,
                             'expiry_date' => $parsedExpiryDate,
-                            'stock_date' => $parsedStockDate ?: now()->toDateString(),
+                            'stock_date' => $parsedStockDate ?: now(),
                         ];
 
                         if ($stock) {

@@ -323,6 +323,35 @@ function closeModal(id) {
     document.body.classList.remove('overflow-hidden');
 }
 
+// All dates are shown and entered in the business time zone (Kampala), whatever
+// the viewer's device is set to.
+const APP_TIMEZONE = @json(config('app.timezone'));
+
+/** Value for a date / datetime-local input from an ISO string, "Y-m-d H:i:s" or a Date. */
+function zonedInputValue(value, type) {
+    const withTime = type === 'datetime-local';
+    if (typeof value === 'string') {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return withTime ? value + 'T00:00' : value;
+        // Already local wall-clock time (no zone suffix): use as is.
+        if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(value)) {
+            return withTime ? value.replace(' ', 'T').slice(0, 16) : value.slice(0, 10);
+        }
+    }
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date)) return typeof value === 'string' ? value : '';
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+        timeZone: APP_TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(date).map(p => [p.type, p.value]));
+    const day = `${parts.year}-${parts.month}-${parts.day}`;
+    return withTime ? `${day}T${parts.hour}:${parts.minute}` : day;
+}
+
+/** Fields marked data-default-now start at the current Kampala date/time on a new record. */
+function applyDefaultNow(form) {
+    form.querySelectorAll('[data-default-now]').forEach(el => { el.value = zonedInputValue(new Date(), el.type); });
+}
+
 function fillFormFields(form, data) {
     for (const el of form.elements) {
         if (!el.name || el.name === '_token' || el.name === '_method') continue;
@@ -338,6 +367,8 @@ function fillFormFields(form, data) {
         }
         if (el.type === 'checkbox') {
             el.checked = !!Number(value);
+        } else if ((el.type === 'date' || el.type === 'datetime-local') && value) {
+            el.value = zonedInputValue(value, el.type);
         } else {
             el.value = value === null ? '' : value;
         }
@@ -410,6 +441,7 @@ function openCreateModal(modalId, formId, storeUrl) {
     clearRestoredErrors(form);
     form._modalData = null;
     form.reset();
+    applyDefaultNow(form);
     form.action = storeUrl;
     form.querySelector('input[name="_method"]').value = 'POST';
     setFormEnabled(form, true);

@@ -14,6 +14,7 @@ class Expense extends Model
     protected $fillable = [
         'title',
         'amount',
+        'payment_method',
         'expense_date',
         'category',
         'description',

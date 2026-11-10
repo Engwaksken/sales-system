@@ -229,7 +229,7 @@ class ExpenseController extends Controller
     private function payload(Expense $expense): array
     {
         $data = array_intersect_key($expense->toArray(), array_flip([
-            'id', 'title', 'amount', 'expense_date', 'category', 'description', 'branch_id', 'created_at', 'updated_at',
+            'id', 'title', 'amount', 'payment_method', 'expense_date', 'category', 'description', 'branch_id', 'created_at', 'updated_at',
         ]));
 
         foreach (['receipt_image', 'receipt_path', 'attachment', 'file_path'] as $column) {

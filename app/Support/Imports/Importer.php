@@ -355,7 +355,7 @@ class Importer
                     'supplier_id' => $data['supplier_id'],
                     'quantity' => $quantity,
                     'total_stock' => $quantity,
-                    'stock_date' => $data['stock_date'] ?? now()->toDateString(),
+                    'stock_date' => $data['stock_date'] ?? now(),
                 ]);
                 $counts['created']++;
             }
