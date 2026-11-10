@@ -23,7 +23,7 @@
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
-  <select name="role" class="w-full rounded-md border-slate-300 shadow-sm" required><option value='admin' {{ ($user->role == 'admin') ? 'selected' : '' }}>admin</option><option value='cashier' {{ ($user->role == 'cashier') ? 'selected' : '' }}>cashier</option><option value='customer' {{ ($user->role == 'customer') ? 'selected' : '' }}>customer</option><option value='manager' {{ ($user->role == 'manager') ? 'selected' : '' }}>manager</option></select>
+  <select name="role" class="w-full rounded-md border-slate-300 shadow-sm" required>@foreach(\App\Models\User::ROLES as $roleKey => $roleName)<option value="{{ $roleKey }}" @selected(old('role', $user->role) === $roleKey)>{{ $roleName }}</option>@endforeach</select>
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Branch Id</label>

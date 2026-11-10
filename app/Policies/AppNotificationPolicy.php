@@ -41,6 +41,6 @@ class AppNotificationPolicy
         }
 
         // Each inbox type is independently gated by NotificationInbox.
-        return in_array($user->role, ['admin', 'manager', 'cashier', 'customer'], true);
+        return array_key_exists((string) $user->role, \App\Models\User::ROLES);
     }
 }

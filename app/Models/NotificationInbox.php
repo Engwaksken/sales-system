@@ -25,7 +25,7 @@ final class NotificationInbox
             return true;
         }
 
-        return in_array($user->role, ['manager', 'cashier'], true)
+        return in_array($user->role, User::STAFF_ROLES, true)
             && RolePermission::query()->where('role', $user->role)
                 ->where('permission_key', $permission)->exists();
     }
@@ -277,7 +277,7 @@ final class NotificationInbox
         }
 
         if ($scope === 'all') {
-            abort_unless(in_array($user->role, ['admin', 'manager', 'cashier', 'customer'], true), 403);
+            abort_unless(array_key_exists((string) $user->role, User::ROLES), 403);
         }
 
         $updated = (new AppNotification)->getConnection()->transaction(function () use ($user, $scope) {

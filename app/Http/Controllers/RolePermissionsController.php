@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Permission;
 use App\Models\RolePermission;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,10 +16,9 @@ use Illuminate\Support\Facades\DB;
  */
 class RolePermissionsController extends Controller
 {
-    /** Matches the roles enum on the users table. 'admin' is intentionally excluded —
-     *  it always passes every permission check (see CheckPermission middleware) and
-     *  showing it here would incorrectly imply it can be restricted. */
-    protected array $roles = ['manager', 'cashier', 'customer'];
+    /** Every role except 'admin', which always passes every permission check (see
+     *  CheckPermission middleware); showing it would imply it can be restricted. */
+    protected array $roles = [...User::STAFF_ROLES, 'customer'];
 
     public function index(\Illuminate\Http\Request $request)
     {

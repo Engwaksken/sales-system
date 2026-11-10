@@ -26,7 +26,7 @@ class ChatPermissionSeeder extends Seeder
             ]
         );
 
-        foreach (['manager', 'cashier'] as $role) {
+        foreach (\App\Models\User::STAFF_ROLES as $role) {
             RolePermission::firstOrCreate(['role' => $role, 'permission_key' => 'manage_chats']);
         }
     }

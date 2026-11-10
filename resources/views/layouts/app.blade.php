@@ -163,7 +163,7 @@
                         <i class="fas fa-circle-user text-lg text-slate-400"></i>
                         <span class="max-w-40 truncate">{{ auth()->user()->name }}</span>
                         <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full hidden lg:inline">
-                            {{ auth()->user()->role }}
+                            {{ \App\Models\User::roleLabel(auth()->user()->role) }}
                         </span>
                     </span>
 

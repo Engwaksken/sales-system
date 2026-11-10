@@ -5,7 +5,7 @@
 An account has been created for you on **{{ $brandName }}**.
 
 - **Email:** {{ $user->email }}
-- **Role:** {{ ucfirst($user->role) }}
+- **Role:** {{ \App\Models\User::roleLabel($user->role) }}
 
 @component('mail::button', ['url' => $loginUrl])
 Log in now

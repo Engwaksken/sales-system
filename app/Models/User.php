@@ -16,6 +16,25 @@ class User extends Authenticatable
 
     protected $table = 'users';
 
+    /** Every role a user can hold, with its display label. Keep in sync with the users.role column. */
+    public const ROLES = [
+        'admin' => 'Admin',
+        'general_manager' => 'General Manager',
+        'manager' => 'Manager',
+        'marketing_manager' => 'Marketing Manager',
+        'accountant' => 'Accountant',
+        'cashier' => 'Cashier',
+        'customer' => 'Customer',
+    ];
+
+    /** Back-office roles whose access is controlled by role_permissions (admin always passes). */
+    public const STAFF_ROLES = ['general_manager', 'manager', 'marketing_manager', 'accountant', 'cashier'];
+
+    public static function roleLabel(?string $role): string
+    {
+        return self::ROLES[$role] ?? ucwords(str_replace('_', ' ', (string) $role));
+    }
+
     protected $fillable = [
         'name',
         'email',

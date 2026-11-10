@@ -36,7 +36,7 @@
                     <tr>
                         <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Permission</th>
                         @foreach ($roles as $role)
-                        <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500 uppercase">{{ ucfirst($role) }}</th>
+                        <th class="px-4 py-2 text-center text-xs font-semibold text-slate-500 uppercase">{{ \App\Models\User::roleLabel($role) }}</th>
                         @endforeach
                     </tr>
                 </thead>
