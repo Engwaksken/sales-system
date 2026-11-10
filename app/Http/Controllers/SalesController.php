@@ -11,6 +11,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Stock;
 use App\Models\Payment;
+use App\Services\SalePaymentService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use App\Support\ExportsCsv;
@@ -19,6 +20,8 @@ use App\Support\DocumentNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class SalesController extends Controller
 {
@@ -195,6 +198,16 @@ public function index(Request $request)
         $query->where('supplier_id', $request->integer('supplier_id'));
     }
 
+    if ($request->filled('customer_id')) {
+        $query->where('customer_id', $request->integer('customer_id'));
+    }
+
+    if (in_array($request->query('payment_status'), ['paid', 'partial', 'pending'], true)) {
+        $query->where('payment_status', $request->query('payment_status'));
+    } elseif ($request->query('payment_status') === 'outstanding') {
+        $query->where('balance_amount', '>', 0);
+    }
+
     $query = $this->applySearch(
         $query,
         (string) $request->query('q', ''),
@@ -222,10 +235,13 @@ public function index(Request $request)
 
     $stat1 = 'UGX '.number_format(Sale::sum('total_amount'), 0);
     $periodStats = $this->periodStats(Sale::class, 'sale_date', 'total_amount');
-    $customer_options = Customer::orderBy('name')->get();
+    $customer_options = Customer::orderBy('name')
+        ->withSum(['sales as outstanding_balance' => fn ($q) => $q->where('transaction_type', 'sale')], 'balance_amount')
+        ->get();
     $supplier_options = Supplier::orderBy('name')->get();
     $user_options = User::orderBy('name')->get();
     $branch_options = Branch::orderBy('name')->get();
+    $receivables = (float) Sale::where('transaction_type', 'sale')->sum('balance_amount');
 
     return view('sales.index', [
         'items' => $sales,
@@ -240,6 +256,8 @@ public function index(Request $request)
         'supplierStat' => Supplier::count(),
         'filteredStat' => $filteredStat,
         'totalStat' => Sale::count(),
+        'receivables' => $receivables,
+        'paymentMethods' => SalePaymentService::METHODS,
         'filteredStatLabel' => 'Filtered Sales',
         'totalStatLabel' => 'All Sales',
     ]);
@@ -305,7 +323,7 @@ public function index(Request $request)
         return $dompdf->stream('sales-'.now()->format('Ymd').'.pdf');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, SalePaymentService $payments)
     {
         $validated = $request->validate([
             'transaction_type' => 'required|in:sale,purchase',
@@ -316,76 +334,27 @@ public function index(Request $request)
             'total_amount' => 'required|numeric|min:0',
             'discount' => 'required|numeric|min:0',
             'vat' => 'required|numeric|min:0',
-            'payment_method' => 'required|string|max:50',
             'sale_date' => 'required|date',
-            'payment_status' => 'required|in:pending,partial,paid',
-            'partial_amount' => 'nullable|numeric|min:0',
-            'balance_amount' => 'nullable|numeric|min:0',
+            'payments' => 'nullable|array|max:10',
+            'payments.*.method' => ['required_with:payments.*.amount', 'nullable', 'string', 'max:50'],
+            'payments.*.amount' => 'nullable|numeric|min:0',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
-        $sale = DB::transaction(function () use ($validated) {
-            $total = (float) $validated['total_amount'];
-            $status = $validated['payment_status'];
+        $tenders = $payments->normalise($validated['payments'] ?? []);
+        $payments->assertTendersFit((float) $validated['total_amount'], $tenders, $validated['customer_id'] ?? null);
+        unset($validated['payments']);
 
-            $paidNow = match ($status) {
-                'paid' => $total,
-                'partial' => min(
-                    max((float) ($validated['partial_amount'] ?? 0), 0),
-                    $total
-                ),
-                default => 0.0,
-            };
+        [$sale, $receipts] = DB::transaction(function () use ($validated, $tenders, $payments) {
+            $sale = Sale::create(array_merge($validated, [
+                'invoice_no' => ($validated['invoice_no'] ?? '') ?: DocumentNumber::invoice(),
+                'user_id' => ($validated['user_id'] ?? null) ?: auth()->id(),
+            ], $payments->openingState((float) $validated['total_amount'], $tenders)));
 
-            if ($status === 'partial' && $paidNow <= 0) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'partial_amount' => 'Enter the amount received for a partial payment.',
-                ]);
-            }
-
-            $balance = max($total - $paidNow, 0);
-
-            if ($status === 'partial' && $balance <= 0) {
-                $status = 'paid';
-            }
-
-            if (empty($validated['invoice_no'])) {
-                $validated['invoice_no'] = DocumentNumber::invoice();
-            }
-
-            $validated['payment_status'] = $status;
-            $validated['partial_amount'] = $paidNow;
-            $validated['balance_amount'] = $balance;
-            $validated['user_id'] = $validated['user_id'] ?: auth()->id();
-
-            $sale = Sale::create($validated);
-
-            if ($paidNow > 0) {
-                Payment::create([
-                    'transaction_type' => 'sale',
-                    'invoice_no' => $sale->invoice_no,
-                    'receipt_no' => $this->newReceiptNumber(),
-                    'customer_id' => $sale->customer_id,
-                    'supplier_id' => $sale->supplier_id,
-                    'sale_id' => $sale->id,
-                    'amount' => $paidNow,
-                    'method' => $sale->payment_method,
-                    'status' => 'successful',
-                    'received_by' => auth()->id(),
-                ]);
-            }
-
-            return $sale;
+            return [$sale, $payments->record($sale, $tenders)];
         });
 
-        return redirect()
-            ->route('sales.index')
-            ->with(
-                'status',
-                $sale->payment_status === 'pending'
-                    ? 'Sale created successfully. No receipt was generated because no payment has been received yet.'
-                    : 'Sale created successfully and receipt generated for the amount received.'
-            );
+        return $this->afterSaleRecorded($sale->fresh(), $receipts);
     }
 
     public function show(Sale $sale)
@@ -393,65 +362,88 @@ public function index(Request $request)
         return view('sales.show', ['sale' => $sale]);
     }
 
-    public function update(Request $request, Sale $sale)
+    public function update(Request $request, Sale $sale, SalePaymentService $payments)
     {
+        // Paid / balance / status are derived from the sale's payments, never typed in.
         $validated = $request->validate([
             'transaction_type' => 'sometimes|required|in:sale,purchase',
             'customer_id' => 'nullable|exists:customers,id',
             'supplier_id' => 'nullable|exists:suppliers,id',
             'user_id' => 'nullable|exists:users,id',
-            'invoice_no' => 'nullable',
-            'total_amount' => 'nullable|numeric',
-            'discount' => 'sometimes|required|numeric',
-            'vat' => 'sometimes|required|numeric',
-            'payment_method' => 'sometimes|required',
+            'invoice_no' => 'nullable|string|max:100',
+            'total_amount' => 'nullable|numeric|min:0',
+            'discount' => 'sometimes|required|numeric|min:0',
+            'vat' => 'sometimes|required|numeric|min:0',
             'sale_date' => 'sometimes|required|date',
-            'payment_status' => 'sometimes|required',
-            'partial_amount' => 'sometimes|required|numeric',
-            'balance_amount' => 'nullable|numeric',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
-        $sale->update($validated);
+
+        if (array_key_exists('total_amount', $validated) && $validated['total_amount'] === null) {
+            unset($validated['total_amount']);
+        }
+
+        $paid = (float) $sale->payments()->where('status', 'successful')->sum('amount');
+        $total = (float) ($validated['total_amount'] ?? $sale->total_amount);
+        $customerId = array_key_exists('customer_id', $validated) ? $validated['customer_id'] : $sale->customer_id;
+
+        if ($total + 0.005 < $paid) {
+            return back()->withInput()->withErrors(['total_amount' => 'The total cannot be less than the UGX '.number_format($paid, 0).' already received.']);
+        }
+        if ($paid + 0.005 < $total && ! $customerId) {
+            return back()->withInput()->withErrors(['customer_id' => 'A sale with an outstanding balance must belong to a registered customer.']);
+        }
+
+        DB::transaction(function () use ($sale, $validated, $payments) {
+            $sale->update($validated);
+            $payments->sync($sale);
+        });
+
         return redirect()->route('sales.index')->with('status', 'Sale updated successfully.');
     }
 
-
     /**
-     * POS sale: pick real in-stock items (not raw field entry). Creates the Sale +
-     * SaleItems, decrements stock transactionally, matching CheckoutController's pattern.
+     * POS sale: pick real in-stock items, then settle it with any mix of tenders.
+     * Paying less than the total (part payment, or nothing = on credit) is allowed
+     * only for registered customers. Every tender becomes its own receipt.
      */
-    public function posStore(Request $request)
+    public function posStore(Request $request, SalePaymentService $payments)
     {
         $data = $request->validate([
             'branch_id' => 'required|exists:branches,id',
             'customer_id' => 'nullable|exists:customers,id',
-            'payment_method' => 'required|string',
             'discount' => 'nullable|numeric|min:0',
             'vat' => 'nullable|numeric|min:0',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
+            'payments' => 'nullable|array|max:10',
+            'payments.*.method' => ['required_with:payments.*.amount', 'nullable', 'string', 'max:50'],
+            'payments.*.amount' => 'nullable|numeric|min:0',
+            // Older clients send a single method and expect the sale to be paid in full.
+            'payment_method' => 'nullable|string|max:50',
         ]);
 
         $discount = (float) ($data['discount'] ?? 0);
         $vat = (float) ($data['vat'] ?? 0);
+        $legacyFullPayment = ! $request->has('payments') && ! empty($data['payment_method']);
+        $tenders = $payments->normalise($data['payments'] ?? []);
+        $customerId = $data['customer_id'] ?? null;
 
         try {
-            $sale = \DB::transaction(function () use ($data, $discount, $vat) {
+            [$sale, $receipts] = DB::transaction(function () use ($data, $discount, $vat, $legacyFullPayment, $tenders, $customerId, $payments) {
                 $lines = [];
                 $subtotal = 0.0;
 
                 foreach ($data['items'] as $item) {
-                    $stock = Stock::where('product_id', $item['product_id'])
+                    $stock = Stock::with('product')
+                        ->where('product_id', $item['product_id'])
                         ->where('branch_id', $data['branch_id'])
                         ->lockForUpdate()
                         ->first();
 
                     if (! $stock || $stock->quantity < $item['quantity']) {
-                        throw new \RuntimeException(
-                            'Insufficient stock for "'.($stock?->product?->name ?? 'product #'.$item['product_id']).'". '.
-                            'Available: '.($stock?->quantity ?? 0).', requested: '.$item['quantity'].'.'
-                        );
+                        throw ValidationException::withMessages(['pos' => 'Insufficient stock for "'.($stock?->product?->name ?? 'product #'.$item['product_id']).'". '
+                            .'Available: '.($stock?->quantity ?? 0).', requested: '.$item['quantity'].'.']);
                     }
 
                     $lineTotal = (float) $stock->selling_price * $item['quantity'];
@@ -467,23 +459,26 @@ public function index(Request $request)
                     $stock->decrement('quantity', $item['quantity']);
                 }
 
-                $totalAmount = max($subtotal - $discount + $vat, 0);
+                $totalAmount = round(max($subtotal - $discount + $vat, 0), 2);
+
+                if ($legacyFullPayment && $totalAmount > 0) {
+                    $tenders = [['method' => $data['payment_method'], 'amount' => $totalAmount]];
+                }
+
+                // Checked against the server-side total, not what the browser displayed.
+                $payments->assertTendersFit($totalAmount, $tenders, $customerId);
 
                 $sale = Sale::create([
                     'transaction_type' => 'sale',
-                    'customer_id' => $data['customer_id'] ?? null,
+                    'customer_id' => $customerId,
                     'user_id' => auth()->id(),
                     'invoice_no' => DocumentNumber::invoice(),
                     'total_amount' => $totalAmount,
                     'discount' => $discount,
                     'vat' => $vat,
-                    'payment_method' => $data['payment_method'],
                     'sale_date' => now()->format('Y-m-d'),
-                    'payment_status' => 'paid',
-                    'partial_amount' => 0,
-                    'balance_amount' => 0,
                     'branch_id' => $data['branch_id'],
-                ]);
+                ] + $payments->openingState($totalAmount, $tenders));
 
                 foreach ($lines as $line) {
                     $sale->sale_items()->create([
@@ -495,103 +490,101 @@ public function index(Request $request)
                     ]);
                 }
 
-                Payment::create([
-                    'transaction_type' => 'sale',
-                    'invoice_no' => $sale->invoice_no,
-                    'receipt_no' => $this->newReceiptNumber(),
-                    'customer_id' => $sale->customer_id,
-                    'sale_id' => $sale->id,
-                    'amount' => $totalAmount,
-                    'method' => $sale->payment_method,
-                    'status' => 'successful',
-                    'received_by' => auth()->id(),
-                ]);
-
-                return $sale;
+                return [$sale, $payments->record($sale, $tenders)];
             });
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Throwable $e) {
-            return back()->withErrors(['pos' => $e->getMessage()]);
+            report($e);
+
+            return back()->withInput()->withErrors(['pos' => $e->getMessage()]);
         }
 
-        return redirect()->route('sales.index')->with('status', "Sale {$sale->invoice_no} recorded successfully.");
+        return $this->afterSaleRecorded($sale->fresh(), $receipts);
     }
 
-
-    /** Records a new payment against a sale. Multiple payments (and therefore
-     *  multiple receipts) per sale are fully supported — this just appends another
-     *  Payment row; PaymentObserver handles generating + emailing that payment's receipt. */
-    public function recordPayment(Request $request, Sale $sale)
+    /**
+     * Records one or more payments against an existing sale (e.g. a customer paying
+     * off credit in cash + mobile money). Each tender gets its own receipt;
+     * PaymentObserver emails it and posts it to the ledger.
+     */
+    public function recordPayment(Request $request, Sale $sale, SalePaymentService $payments)
     {
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'method' => ['required', 'string', 'max:50'],
+            // Either a list of tenders, or the single amount/method pair older forms send.
+            'payments' => 'required_without:amount|array|max:10',
+            'payments.*.method' => ['required_with:payments.*.amount', 'nullable', 'string', 'max:50'],
+            'payments.*.amount' => 'nullable|numeric|min:0',
+            'amount' => 'required_without:payments|nullable|numeric|min:0.01',
+            'method' => 'required_with:amount|nullable|string|max:50',
         ]);
 
-        $sale->loadMissing(['customer', 'orders']);
-        $currentPaid = (float) $sale->payments()->where('status', 'successful')->sum('amount');
-        $remaining = max((float) $sale->total_amount - $currentPaid, 0);
-        $amount = (float) $data['amount'];
+        $tenders = $payments->normalise($data['payments'] ?? [['method' => $data['method'] ?? '', 'amount' => $data['amount'] ?? 0]]);
 
-        if ($remaining <= 0) {
-            return back()->withErrors(['payment' => 'This sale is already fully paid.']);
+        if ($tenders === []) {
+            return back()->withErrors(['payment' => 'Enter at least one payment amount.']);
         }
 
-        if ($amount > $remaining + 0.001) {
-            return back()->withErrors(['payment' => 'Payment cannot exceed the outstanding balance of UGX '.number_format($remaining, 0).'.']);
+        try {
+            $receipts = DB::transaction(function () use ($sale, $tenders, $payments) {
+                $locked = Sale::whereKey($sale->id)->lockForUpdate()->firstOrFail();
+                $alreadyPaid = (float) $locked->payments()->where('status', 'successful')->sum('amount');
+
+                if ((float) $locked->total_amount - $alreadyPaid <= 0.005) {
+                    throw ValidationException::withMessages(['payment' => 'This sale is already fully paid.']);
+                }
+
+                // Paying towards an existing balance is always allowed (walk-in sales
+                // from before this rule included); only overpaying is rejected.
+                $payments->assertTendersFit((float) $locked->total_amount, $tenders, $locked->customer_id ?: -1, $alreadyPaid);
+
+                $receipts = $payments->record($locked, $tenders);
+                $paidNow = $receipts->sum(fn ($p) => (float) $p->amount);
+                $locked->refresh();
+
+                foreach ($locked->orders as $order) {
+                    OrderLog::create([
+                        'order_id' => $order->id,
+                        'action' => 'payment_recorded',
+                        'description' => 'POS payment of UGX '.number_format($paidNow, 0).' recorded ('.$receipts->pluck('method')->unique()->join(', ').'). Receipt '.$receipts->pluck('receipt_no')->join(', ').'.'
+                            .((float) $locked->balance_amount <= 0 ? ' Order completed.' : ' Outstanding balance UGX '.number_format((float) $locked->balance_amount, 0).'.'),
+                    ]);
+                }
+
+                return $receipts;
+            });
+        } catch (ValidationException $e) {
+            return back()->withErrors(['payment' => collect($e->errors())->flatten()->first()]);
         }
 
-        $payment = DB::transaction(function () use ($sale, $amount, $data, $currentPaid) {
-            $payment = Payment::create([
-                'transaction_type' => 'sale',
-                'invoice_no' => $sale->invoice_no,
-                'receipt_no' => $this->newReceiptNumber(),
-                'customer_id' => $sale->customer_id,
-                'sale_id' => $sale->id,
-                'amount' => $amount,
-                'method' => $data['method'],
-                'status' => 'successful',
-                'received_by' => auth()->id(),
-            ]);
+        $sale->refresh();
+        $numbers = $receipts->pluck('receipt_no')->join(', ');
+        $message = $sale->payment_status === 'paid'
+            ? "Payment recorded. Sale fully paid. Receipt(s) {$numbers} generated."
+            : "Part payment recorded. Receipt(s) {$numbers} generated. Balance UGX ".number_format((float) $sale->balance_amount, 0).'.';
 
-            $newPaid = $currentPaid + $amount;
-            $newBalance = max((float) $sale->total_amount - $newPaid, 0);
-            $paymentStatus = $newBalance <= 0 ? 'paid' : 'partial';
-
-            $sale->update([
-                'payment_method' => $data['method'],
-                'payment_status' => $paymentStatus,
-                'partial_amount' => $newPaid,
-                'balance_amount' => $newBalance,
-            ]);
-
-            foreach ($sale->orders as $order) {
-                $order->update([
-                    'amount_paid' => $newPaid,
-                    'balance_amount' => $newBalance,
-                    'payment_status' => $paymentStatus,
-                    'paid_at' => $newBalance <= 0 ? now() : null,
-                    'status' => $newBalance <= 0 ? 'completed' : $order->status,
-                ]);
-
-                OrderLog::create([
-                    'order_id' => $order->id,
-                    'action' => 'payment_recorded',
-                    'description' => 'POS payment of UGX '.number_format($amount, 0).' recorded using '.$data['method'].'. Receipt '.$payment->receipt_no.'.'.($newBalance <= 0 ? ' Order completed.' : ' Outstanding balance UGX '.number_format($newBalance, 0).'.'),
-                ]);
-            }
-
-            return $payment;
-        });
-
-        return redirect()->route('payments.receipt-preview', $payment->id)
-            ->with('status', $sale->fresh()->payment_status === 'paid'
-                ? "Payment recorded successfully. Sale fully paid and receipt {$payment->receipt_no} generated."
-                : "Part payment recorded successfully and receipt {$payment->receipt_no} generated.");
+        return $receipts->count() === 1
+            ? redirect()->route('payments.receipt-preview', $receipts->first()->id)->with('status', $message)
+            : redirect()->route('sales.index', ['q' => $sale->invoice_no])->with('status', $message);
     }
 
-    private function newReceiptNumber(): string
+    /** Where to land after a new sale: its receipt when there is exactly one, otherwise the sale list. */
+    private function afterSaleRecorded(Sale $sale, Collection $receipts)
     {
-        return DocumentNumber::receipt();
+        $balance = (float) $sale->balance_amount;
+        $numbers = $receipts->pluck('receipt_no')->join(', ');
+
+        $message = match (true) {
+            $receipts->isEmpty() => "Sale {$sale->invoice_no} recorded on credit. UGX ".number_format($balance, 0)." added to the customer's balance.",
+            $balance > 0 => "Sale {$sale->invoice_no} recorded with a part payment. Receipt(s) {$numbers} generated; UGX ".number_format($balance, 0).' left on credit.',
+            default => "Sale {$sale->invoice_no} recorded and fully paid. Receipt(s) {$numbers} generated.",
+        };
+
+        if ($receipts->count() === 1) {
+            return redirect()->route('payments.receipt-preview', $receipts->first()->id)->with('status', $message);
+        }
+
+        return redirect()->route('sales.index')->with('status', $message);
     }
 
     public function destroy(Sale $sale)

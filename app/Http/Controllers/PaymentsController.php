@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ReceiptPdfService;
+use App\Services\SalePaymentService;
 use App\Support\DocumentBranding;
 use App\Support\ExportsCsv;
 use Illuminate\Http\Request;
@@ -181,7 +182,10 @@ class PaymentsController extends Controller
             'status' => 'required|in:successful,failed',
             'received_by' => 'required|exists:users,id',
         ]);
-        Payment::create($validated);
+        $payment = Payment::create($validated);
+        if ($payment->sale) {
+            app(SalePaymentService::class)->sync($payment->sale);
+        }
         return redirect()->route('payments.index')->with('status', 'Payment created successfully.');
     }
 

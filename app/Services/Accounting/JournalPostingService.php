@@ -4,6 +4,7 @@ namespace App\Services\Accounting;
 
 use App\Models\AccountingJournal;
 use App\Models\Expense;
+use App\Models\Payment;
 use App\Models\Sale;
 
 /**
@@ -17,11 +18,16 @@ use App\Models\Sale;
  * existed, and the account-code mapping below should be reviewed/adjusted for your
  * actual bookkeeping practice rather than trusted blindly.
  *
- * Sale posting (journal_type = SJ):
- *   Dr  Cash/Mobile Money/Accounts Receivable   total_amount
+ * Sale posting (journal_type = SJ) — the whole invoice goes to receivables:
+ *   Dr  Accounts Receivable (1100)              total_amount
  *   Dr  Discount Allowed (4900)                 discount        [if > 0]
  *   Cr  VAT Payable (2100)                      vat             [if > 0]
  *   Cr  Sales Revenue (4000)                    total_amount + discount - vat
+ *
+ * Payment posting (journal_type = CRJ) — one per payment/receipt, so part
+ * payments, split tenders and credit settled later all clear receivables:
+ *   Dr  Cash (branch) / Mobile Money (1010)     amount
+ *   Cr  Accounts Receivable (1100)              amount
  *
  * Expense posting (journal_type = CPJ):
  *   Dr  <mapped expense account>                amount
@@ -50,12 +56,7 @@ class JournalPostingService
         $vat = (float) $sale->vat;
         $discount = (float) $sale->discount;
 
-        $method = strtolower((string) $sale->payment_method);
-        $debitAccount = match (true) {
-            str_contains($method, 'mobile') => '1010',
-            $sale->payment_status === 'pending' || $sale->payment_status === 'partial' => '1100',
-            default => $this->cashAccountFor($sale->branch_id),
-        };
+        $debitAccount = '1100';
 
         $journal = AccountingJournal::create([
             'journal_no' => 'SJ-'.$sale->id.'-'.now()->format('YmdHis'),
@@ -71,7 +72,7 @@ class JournalPostingService
 
         $journal->journal_entries()->create([
             'account_code' => $debitAccount,
-            'description' => 'Amount received/receivable for sale',
+            'description' => 'Amount receivable for sale',
             'debit' => $total,
             'credit' => 0,
         ]);
@@ -103,6 +104,59 @@ class JournalPostingService
         ]);
 
         return $journal;
+    }
+
+    public function postForPayment(Payment $payment): ?AccountingJournal
+    {
+        $amount = round((float) $payment->amount, 2);
+        if ($amount <= 0 || ! $payment->sale_id) {
+            return null;
+        }
+
+        $sale = $payment->sale;
+        $method = strtolower((string) $payment->method);
+        $debitAccount = str_contains($method, 'mobile') ? '1010' : $this->cashAccountFor($sale?->branch_id);
+
+        $journal = AccountingJournal::create([
+            'journal_no' => 'CRJ-'.$payment->id.'-'.now()->format('YmdHis'),
+            'journal_type' => 'CRJ',
+            'reference_no' => $payment->receipt_no,
+            'reference_type' => 'payment',
+            'reference_id' => $payment->id,
+            'journal_date' => $payment->created_at ?? now(),
+            'description' => "Receipt {$payment->receipt_no} for invoice {$payment->invoice_no} ({$payment->method})",
+            'branch_id' => $sale?->branch_id,
+            'is_posted' => true,
+        ]);
+
+        $journal->journal_entries()->create([
+            'account_code' => $debitAccount,
+            'description' => "{$payment->method} received",
+            'debit' => $amount,
+            'credit' => 0,
+        ]);
+
+        $journal->journal_entries()->create([
+            'account_code' => '1100',
+            'description' => 'Customer payment against invoice '.$payment->invoice_no,
+            'debit' => 0,
+            'credit' => $amount,
+        ]);
+
+        return $journal;
+    }
+
+    /** Removes a payment's journal, e.g. when the payment is deleted or marked failed. */
+    public function reverseForPayment(Payment $payment): void
+    {
+        AccountingJournal::query()
+            ->where('reference_type', 'payment')
+            ->where('reference_id', $payment->id)
+            ->get()
+            ->each(function (AccountingJournal $journal) {
+                $journal->journal_entries()->delete();
+                $journal->delete();
+            });
     }
 
     public function postForExpense(Expense $expense): AccountingJournal

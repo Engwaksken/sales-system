@@ -832,7 +832,7 @@ function organizeLongModalForms() {
         },
         'sales-form': {
             'Sale details': /^(customer_id|supplier_id|branch_id|user_id|invoice_no|sale_date)$/,
-            'Payment': /^(payment_method|payment_status|partial_amount)$/,
+            'Payment': /^payments\[0\]\[(amount|method)\]$/,
             'Totals': /^(total_amount|discount|vat)$/
         }
     };

@@ -225,6 +225,16 @@
             <td>Total</td>
             <td class="right">{{ $branding['currency'] }} {{ number_format((float)$sale->total_amount, 2) }}</td>
         </tr>
+        @foreach($sale->payments->where('status', 'successful')->sortBy('id') as $payment)
+            <tr>
+                <td>Paid · {{ $payment->method }} ({{ $payment->receipt_no }})</td>
+                <td class="right">{{ $branding['currency'] }} {{ number_format((float)$payment->amount, 2) }}</td>
+            </tr>
+        @endforeach
+        <tr>
+            <td><strong>Balance Due</strong></td>
+            <td class="right"><strong>{{ $branding['currency'] }} {{ number_format((float)$sale->balance_amount, 2) }}</strong></td>
+        </tr>
     </table>
 
     <div class="footer">
