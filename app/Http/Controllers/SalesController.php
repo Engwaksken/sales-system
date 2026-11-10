@@ -202,6 +202,8 @@ public function index(Request $request)
         $query->where('customer_id', $request->integer('customer_id'));
     }
 
+    $this->applyProductAndMethodFilters($query, $request);
+
     if (in_array($request->query('payment_status'), ['paid', 'partial', 'pending'], true)) {
         $query->where('payment_status', $request->query('payment_status'));
     } elseif ($request->query('payment_status') === 'outstanding') {
@@ -242,6 +244,8 @@ public function index(Request $request)
     $user_options = User::orderBy('name')->get();
     $branch_options = Branch::orderBy('name')->get();
     $receivables = (float) Sale::where('transaction_type', 'sale')->sum('balance_amount');
+    $collected = (float) Payment::where('transaction_type', 'sale')->where('status', 'successful')->sum('amount');
+    $product_options = \App\Models\Product::orderBy('name')->get(['id', 'name']);
 
     return view('sales.index', [
         'items' => $sales,
@@ -257,11 +261,35 @@ public function index(Request $request)
         'filteredStat' => $filteredStat,
         'totalStat' => Sale::count(),
         'receivables' => $receivables,
+        'collected' => $collected,
+        'product_options' => $product_options,
         'paymentMethods' => SalePaymentService::METHODS,
         'filteredStatLabel' => 'Filtered Sales',
         'totalStatLabel' => 'All Sales',
     ]);
 }
+
+    /**
+     * Sales containing a product, and sales paid with a method. A method matches the
+     * sale's own label (Cash, Credit, Split (...)) or any of its payments, so a
+     * split cash + mobile money sale shows under both.
+     */
+    private function applyProductAndMethodFilters($query, Request $request): void
+    {
+        if ($request->filled('product_id')) {
+            $productId = $request->integer('product_id');
+            $query->whereHas('sale_items', fn ($q) => $q->where('product_id', $productId));
+        }
+
+        $method = trim((string) $request->query('payment_method', ''));
+        if ($method === 'Credit') {
+            $query->where('balance_amount', '>', 0);
+        } elseif ($method !== '') {
+            $query->where(fn ($q) => $q
+                ->where('payment_method', $method)
+                ->orWhereHas('payments', fn ($p) => $p->where('status', 'successful')->where('method', $method)));
+        }
+    }
 
     public function exportCsv(Request $request)
     {
@@ -273,6 +301,7 @@ public function index(Request $request)
         $query = $this->applyRequestedDateFilter($query, $request, 'sale_date');
         if ($request->filled('branch_id')) { $query->where('branch_id', $request->integer('branch_id')); }
         if ($request->filled('supplier_id')) { $query->where('supplier_id', $request->integer('supplier_id')); }
+        $this->applyProductAndMethodFilters($query, $request);
         $query = $this->applySearch($query, (string) $request->query('q', ''), ['invoice_no', 'payment_method']);
         $rows = $query->with(['customer', 'supplier', 'user', 'branch'])->get();
         $data = $rows->map(function ($row) use ($columns) {
@@ -300,6 +329,7 @@ public function index(Request $request)
         $query = $this->applyRequestedDateFilter($query, $request, 'sale_date');
         if ($request->filled('branch_id')) { $query->where('branch_id', $request->integer('branch_id')); }
         if ($request->filled('supplier_id')) { $query->where('supplier_id', $request->integer('supplier_id')); }
+        $this->applyProductAndMethodFilters($query, $request);
         $query = $this->applySearch($query, (string) $request->query('q', ''), ['invoice_no', 'payment_method']);
         $rows = $query->with(['customer', 'supplier', 'user', 'branch'])->get();
         $data = $rows->map(function ($row) use ($columns) {

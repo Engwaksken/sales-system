@@ -35,20 +35,36 @@ class StockController extends Controller
         return $dompdf->stream('stock-report-'.now()->format('Ymd').'.pdf');
     }
 
-    public function index(Request $request)
+    /** Product and branch filters shared by the list and its exports. */
+    private function applyStockFilters($query, Request $request)
     {
-        $query = Stock::query();
         if ($request->filled('period') && $request->period !== 'all') {
             $query = $this->applyPeriod($query, $request->period, 'created_at');
         }
-        $stock = $query->latest()->paginate($this->perPage($request));
-        $stat1 = Stock::where('quantity', '<=', 5)->count();
-        $stat2 = 'UGX '.number_format(Stock::all()->sum(fn ($s) => $s->quantity * $s->cost_price), 0);
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->integer('product_id'));
+        }
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->integer('branch_id'));
+        }
+
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->applyStockFilters(Stock::query()->with(['product', 'branch', 'createdBy', 'updatedBy']), $request);
+        $totals = (clone $query)->reorder()->toBase()
+            ->selectRaw('COALESCE(SUM(total_stock), 0) as total_stock, COALESCE(SUM(quantity), 0) as quantity, COALESCE(SUM(quantity * cost_price), 0) as value')
+            ->first();
+        $stock = $query->latest()->paginate($this->perPage($request))->withQueryString();
+        $stat1 = (clone $query)->reorder()->where('quantity', '<=', 5)->count();
+        $stat2 = 'UGX '.number_format((float) $totals->value, 0);
         $periodStats = $this->periodStats(Stock::class, 'created_at', 'selling_price');
         $supplier_options = Supplier::orderBy('id')->get();
         $product_options = Product::orderBy('id')->get();
         $branch_options = Branch::orderBy('id')->get();
-        return view('stock.index', ['items' => $stock, 'supplier_options' => $supplier_options, 'product_options' => $product_options, 'branch_options' => $branch_options, 'stat1' => $stat1, 'stat2' => $stat2, 'periodStats' => $periodStats]);
+        return view('stock.index', ['items' => $stock, 'supplier_options' => $supplier_options, 'product_options' => $product_options, 'branch_options' => $branch_options, 'stat1' => $stat1, 'stat2' => $stat2, 'totals' => $totals, 'periodStats' => $periodStats]);
     }
 
     public function lookupBarcode(Request $request)
@@ -74,10 +90,7 @@ class StockController extends Controller
         $columns = $request->query('columns', $allColumns);
         $columns = array_values(array_intersect($allColumns, $columns));
         if (empty($columns)) { $columns = $allColumns; }
-        $query = Stock::query();
-        if ($request->filled('period') && $request->period !== 'all') {
-            $query = $this->applyPeriod($query, $request->period, 'created_at');
-        }
+        $query = $this->applyStockFilters(Stock::query(), $request);
         $rows = $query->with(['supplier', 'product', 'branch'])->get();
         $data = $rows->map(function ($row) use ($columns) {
             $out = [];
@@ -99,10 +112,7 @@ class StockController extends Controller
         $columns = $request->query('columns', $allColumns);
         $columns = array_values(array_intersect($allColumns, $columns));
         if (empty($columns)) { $columns = $allColumns; }
-        $query = Stock::query();
-        if ($request->filled('period') && $request->period !== 'all') {
-            $query = $this->applyPeriod($query, $request->period, 'created_at');
-        }
+        $query = $this->applyStockFilters(Stock::query(), $request);
         $rows = $query->with(['supplier', 'product', 'branch'])->get();
         $data = $rows->map(function ($row) use ($columns) {
             $out = [];

@@ -29,7 +29,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 lg:grid-cols-4">
     @include('partials.stat-card', [
         'icon' => 'fa-cash-register',
         'color' => 'indigo',
@@ -42,6 +42,13 @@
         'color' => 'emerald',
         'label' => 'Total Sales Value',
         'value' => $stat1
+    ])
+
+    @include('partials.stat-card', [
+        'icon' => 'fa-hand-holding-dollar',
+        'color' => 'sky',
+        'label' => 'Total Collected',
+        'value' => 'UGX '.number_format($collected, 0)
     ])
 
     <a href="{{ route('sales.index', ['payment_status' => 'outstanding']) }}" title="Show sales with a balance due" class="block">
@@ -75,7 +82,7 @@
 @endif
 
 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
-    <form method="GET" action="{{ route('sales.index') }}" class="flex flex-col sm:flex-row gap-2 text-sm">
+    <form method="GET" action="{{ route('sales.index') }}" class="flex flex-col sm:flex-row sm:flex-wrap gap-2 text-sm">
         <div class="relative">
             <i class="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-300"></i>
             <input type="search"
@@ -101,6 +108,20 @@
             <option value="outstanding" @selected(request('payment_status') === 'outstanding')>Any Balance Due</option>
         </select>
 
+        <select name="product_id" class="rounded-lg border-slate-300 sm:max-w-[200px]" onchange="this.form.submit()">
+            <option value="">All Products</option>
+            @foreach($product_options as $product)
+                <option value="{{ $product->id }}" @selected((string) request('product_id') === (string) $product->id)>{{ $product->name }}</option>
+            @endforeach
+        </select>
+
+        <select name="payment_method" class="rounded-lg border-slate-300" onchange="this.form.submit()">
+            <option value="">All Payment Methods</option>
+            @foreach(array_merge($paymentMethods, ['Credit']) as $method)
+                <option value="{{ $method }}" @selected(request('payment_method') === $method)>{{ $method === 'Credit' ? 'On Credit (balance due)' : $method }}</option>
+            @endforeach
+        </select>
+
         <select name="customer_id" class="rounded-lg border-slate-300 sm:max-w-[200px]" onchange="this.form.submit()">
             <option value="">All Customers</option>
             @foreach($customer_options as $customer)
@@ -112,7 +133,7 @@
             <i class="fas fa-filter"></i> Apply
         </button>
 
-        @if(request('q') || request('period', 'all') !== 'all' || request('payment_status') || request('customer_id'))
+        @if(request('q') || request('period', 'all') !== 'all' || request('payment_status') || request('customer_id') || request('product_id') || request('payment_method'))
             <a href="{{ route('sales.index') }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 font-bold text-slate-500 hover:bg-slate-50">
                 <i class="fas fa-rotate-left mr-1"></i> Reset
             </a>

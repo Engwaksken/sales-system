@@ -9,8 +9,9 @@
         <button type="button" onclick="openCreateModal('stock-modal', 'stock-form', '{{ route('stock.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Stock</button>
     </div>
 </div>
-<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-warehouse', 'color' => 'indigo', 'label' => 'Total Stock', 'value' => $items->total()])
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+@include('partials.stat-card', ['icon' => 'fa-warehouse', 'color' => 'indigo', 'label' => 'Stock Records', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-cubes', 'color' => 'emerald', 'label' => 'Units In Stock', 'value' => number_format((float) $totals->quantity, 0).' of '.number_format((float) $totals->total_stock, 0)])
 @include('partials.stat-card', ['icon' => 'fa-triangle-exclamation', 'color' => 'amber', 'label' => 'Low Stock (&le;5)', 'value' => $stat1])
 @include('partials.stat-card', ['icon' => 'fa-coins', 'color' => 'indigo', 'label' => 'Total Stock Value', 'value' => $stat2])
 </div>
@@ -46,9 +47,23 @@
 </section>
 @php($isMoney = true)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
-<form method="GET" class="flex items-center gap-2 text-sm mb-4">
+<form method="GET" class="flex flex-wrap items-center gap-2 text-sm mb-4">
     
-    <label class="text-slate-500 ml-2"><i class="fa-solid fa-filter"></i> Period:</label>
+    <label class="text-slate-500"><i class="fa-solid fa-filter"></i> Product:</label>
+    <select name="product_id" onchange="this.form.submit()" class="rounded-md border-slate-300 text-sm max-w-[220px]">
+        <option value="">All Products</option>
+        @foreach($product_options->sortBy('name') as $opt)
+        <option value="{{ $opt->id }}" @selected((string) request('product_id') === (string) $opt->id)>{{ $opt->name }}</option>
+        @endforeach
+    </select>
+    <label class="text-slate-500 ml-2">Branch:</label>
+    <select name="branch_id" onchange="this.form.submit()" class="rounded-md border-slate-300 text-sm">
+        <option value="">All Branches</option>
+        @foreach($branch_options as $opt)
+        <option value="{{ $opt->id }}" @selected((string) request('branch_id') === (string) $opt->id)>{{ $opt->name }}</option>
+        @endforeach
+    </select>
+    <label class="text-slate-500 ml-2">Period:</label>
     <select name="period" onchange="this.form.submit()" class="rounded-md border-slate-300 text-sm">
         <option value="all" {{ request('period','all')=='all'?'selected':'' }}>All Time</option>
         <option value="today" {{ request('period')=='today'?'selected':'' }}>Today</option>
@@ -56,7 +71,7 @@
         <option value="month" {{ request('period')=='month'?'selected':'' }}>This Month</option>
         <option value="year" {{ request('period')=='year'?'selected':'' }}>This Year</option>
     </select>
-    @if(request('q') || (request('period') && request('period') !== 'all'))
+    @if(request('q') || request('product_id') || request('branch_id') || (request('period') && request('period') !== 'all'))
     <a href="{{ route('stock.index') }}" class="text-slate-400 hover:text-slate-600 text-xs">Clear <i class="fa-solid fa-xmark"></i></a>
     @endif
 </form>
@@ -83,6 +98,8 @@
     </div>
     <input type="hidden" name="period" value="{{ request('period', 'all') }}">
     <input type="hidden" name="q" value="{{ request('q', '') }}">
+    <input type="hidden" name="product_id" value="{{ request('product_id', '') }}">
+    <input type="hidden" name="branch_id" value="{{ request('branch_id', '') }}">
     <div class="flex items-center gap-2">
       <button formaction="{{ route('stock.export.csv') }}" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
       <button formaction="{{ route('stock.export.pdf') }}" class="bg-slate-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
@@ -99,10 +116,10 @@
 @endif
 <div class="bg-white shadow rounded-lg overflow-x-auto">
 <table class="min-w-full divide-y divide-slate-200">
-<thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Product</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Branch</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Quantity</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Selling Price</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Expiry Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
+<thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Product</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Branch</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Total Stock</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>In Stock</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Selling Price</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Expiry Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
 <tbody class="divide-y divide-slate-100">
 @forelse($items as $row)
-<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->product?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->quantity }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->selling_price }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expiry_date }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
+<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->product?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ rtrim(rtrim(number_format((float) $row->total_stock, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm font-semibold {{ (float) $row->quantity <= 5 ? 'text-amber-700' : 'text-slate-700' }}'>{{ rtrim(rtrim(number_format((float) $row->quantity, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->selling_price }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expiry_date }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("stock-modal", "stock-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("stock-modal", "stock-form", "{{ route('stock.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
 <form method="POST" action="{{ route('stock.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
@@ -111,9 +128,19 @@
 </form>
 </td></tr>
 @empty
-<tr><td colspan="10" class="px-4 py-6 text-center text-sm text-slate-400">No records yet.</td></tr>
+<tr><td colspan="11" class="px-4 py-6 text-center text-sm text-slate-400">No records yet.</td></tr>
 @endforelse
 </tbody>
+@if($items->total() > 0)
+<tfoot class="bg-slate-50 font-semibold">
+<tr>
+<td class="px-4 py-2 text-sm text-slate-700" colspan="2">Total{{ request('product_id') || request('branch_id') || (request('period') && request('period') !== 'all') ? ' (filtered)' : '' }}</td>
+<td class="px-4 py-2 text-sm text-slate-800">{{ rtrim(rtrim(number_format((float) $totals->total_stock, 2), '0'), '.') }}</td>
+<td class="px-4 py-2 text-sm text-slate-800">{{ rtrim(rtrim(number_format((float) $totals->quantity, 2), '0'), '.') }}</td>
+<td class="px-4 py-2 text-sm text-slate-500" colspan="7">Value at cost: {{ $stat2 }}</td>
+</tr>
+</tfoot>
+@endif
 </table>
 </div>
 <div class="mt-4">@include('partials.table-pagination', ['paginator' => $items])</div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\Stock;
@@ -61,6 +62,11 @@ class DashboardController extends Controller
             $expiringProducts = collect();
             $openChats = collect();
             $openChatsCount = 0;
+            $outstandingCredit = $customerId ? (float) Sale::where('customer_id', $customerId)->sum('balance_amount') : 0;
+            $monthCollected = $customerId
+                ? (float) Payment::where('customer_id', $customerId)->where('status', 'successful')
+                    ->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->sum('amount')
+                : 0;
 
             // Business-wide supplier/branch performance is intentionally hidden
             // from customer accounts.
@@ -126,7 +132,9 @@ class DashboardController extends Controller
                 'expiringSoonCount',
                 'expiringProducts',
                 'openChats',
-                'openChatsCount'
+                'openChatsCount',
+                'outstandingCredit',
+                'monthCollected'
             ));
         }
 
@@ -160,6 +168,9 @@ class DashboardController extends Controller
             ->get();
 
         $openChatsCount = ChatConversation::where('status', 'open')->count();
+        $outstandingCredit = (float) Sale::where('transaction_type', 'sale')->sum('balance_amount');
+        $monthCollected = (float) Payment::where('transaction_type', 'sale')->where('status', 'successful')
+            ->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->sum('amount');
 
         /*
          * Monthly Best Branch:
@@ -246,7 +257,7 @@ class DashboardController extends Controller
             'todaySales', 'monthSales', 'monthExpenses', 'pendingOrders',
             'lowStock', 'totalCustomers', 'totalProducts', 'recentSales', 'recentOrders',
             'expiredCount', 'expiringSoonCount', 'expiringProducts',
-            'openChats', 'openChatsCount',
+            'openChats', 'openChatsCount', 'outstandingCredit', 'monthCollected',
             'monthlyBestBranch', 'monthlySuppliers',
             'monthlySupplierTotalAmount', 'monthlySupplierProductCount',
             'chartLabels', 'chartSales', 'chartOrders'

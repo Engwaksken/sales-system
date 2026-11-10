@@ -13,10 +13,12 @@
     </p>
 </div>
 
-<div class="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+<div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
     @foreach([
         [$isCustomer ? 'My Purchases Today' : "Today's Sales", 'UGX '.number_format((float)$todaySales,0), 'fas fa-cash-register'],
         [$isCustomer ? 'My Purchases This Month' : 'Month Sales', 'UGX '.number_format((float)$monthSales,0), 'fas fa-chart-line'],
+        [$isCustomer ? 'Paid This Month' : 'Collected This Month', 'UGX '.number_format((float)$monthCollected,0), 'fas fa-hand-holding-dollar'],
+        [$isCustomer ? 'My Balance Due' : 'Outstanding Credit', 'UGX '.number_format((float)$outstandingCredit,0), 'fas fa-file-invoice-dollar'],
         [$isCustomer ? 'Pending Orders' : 'Month Expenses', $isCustomer ? number_format((int)$pendingOrders) : 'UGX '.number_format((float)$monthExpenses,0), $isCustomer ? 'fas fa-cart-shopping' : 'fas fa-receipt'],
         [$isCustomer ? 'Products Available' : 'Pending Orders', $isCustomer ? number_format((int)$totalProducts) : number_format((int)$pendingOrders), $isCustomer ? 'fas fa-box-open' : 'fas fa-clock'],
         [$isCustomer ? 'Account' : 'Low Stock', $isCustomer ? 'Active' : number_format((int)$lowStock), $isCustomer ? 'fas fa-user-check' : 'fas fa-triangle-exclamation'],
