@@ -770,3 +770,28 @@ html.a11y-spacing body { letter-spacing: .04em; word-spacing: .08em; line-height
     .export-menu { width: 100%; }
     .export-menu > form { position: static; width: 100%; margin-top: .5rem; box-shadow: none; }
 }
+
+/* Tablets: let fields share each wrapped row evenly instead of leaving ragged gaps. */
+@media (min-width: 641px) and (max-width: 1023px) {
+    .filter-toolbar__filters select { flex: 1 1 10rem; max-width: none; }
+    .filter-toolbar__filters .filter-search { flex: 1 1 100%; }
+}
+
+/* Desktop: one row whenever the fields fit at a readable size (every page does
+ * from ~1280px). Flex-basis is each field's smallest readable width, so a line
+ * only breaks when that minimum genuinely can't fit; then rows fill evenly. */
+@media (min-width: 1024px) {
+    .filter-toolbar { flex-wrap: nowrap; }
+    .filter-toolbar__filters { flex: 1 1 0; gap: .375rem; }
+    .filter-toolbar__filters > * { flex-shrink: 0; }
+    .filter-toolbar__filters .filter-search { flex: 2 1 9rem; min-width: 9rem; }
+    .filter-toolbar__filters select { flex: 1 1 7.5rem; min-width: 7.5rem; max-width: 14rem; text-overflow: ellipsis; padding: 0 1.6rem 0 .625rem; font-size: .8125rem; background-position: right .4rem center; }
+    .filter-toolbar__filters input { font-size: .8125rem; }
+    .filter-toolbar .filter-btn--ghost, .filter-toolbar__filters a.filter-clear { padding: 0 .625rem; }
+    .filter-toolbar__filters input[type="date"] { flex: 0 0 8.75rem; width: 8.75rem; }
+    .filter-toolbar__actions { flex-shrink: 0; align-self: flex-start; }
+}
+
+/* Custom date range fields only show when they're in use. */
+.filter-toolbar__filters [data-range-fields] { display: contents; }
+.filter-toolbar__filters [data-range-fields][hidden] { display: none !important; }
