@@ -122,7 +122,7 @@
 <thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Product</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Branch</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Total Stock</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>In Stock</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Selling Price</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Expiry Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
 <tbody class="divide-y divide-slate-100">
 @forelse($items as $row)
-<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->product?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ rtrim(rtrim(number_format((float) $row->total_stock, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm font-semibold {{ (float) $row->quantity <= 5 ? 'text-amber-700' : 'text-slate-700' }}'>{{ rtrim(rtrim(number_format((float) $row->quantity, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->selling_price }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expiry_date }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
+<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->product?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ rtrim(rtrim(number_format((float) $row->total_stock, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm font-semibold {{ (float) $row->quantity <= 5 ? 'text-amber-700' : 'text-slate-700' }}'>{{ rtrim(rtrim(number_format((float) $row->quantity, 2), '0'), '.') }}</td><td class='px-4 py-2 text-sm text-slate-700'>@if($row->selling_price === null)<span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">Not set</span>@else{{ number_format((float) $row->selling_price, 0) }}@endif</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expiry_date }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("stock-modal", "stock-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("stock-modal", "stock-form", "{{ route('stock.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
 <form method="POST" action="{{ route('stock.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
@@ -208,16 +208,17 @@
   <input type="text" name="unit_type" class="w-full rounded-md border-slate-300 shadow-sm" >
 </div>
 <div>
-  <label class="block text-sm font-medium text-slate-700 mb-1">Cost Price</label>
-  <input type="number" step='0.01' name="cost_price" class="w-full rounded-md border-slate-300 shadow-sm" required>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Cost Price <span class="font-normal text-slate-400">(optional)</span></label>
+  <input type="number" step='0.01' min="0" name="cost_price" class="w-full rounded-md border-slate-300 shadow-sm" placeholder="Leave blank if not known yet">
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Expiry Date</label>
   <input type="date" name="expiry_date" class="w-full rounded-md border-slate-300 shadow-sm" >
 </div>
 <div>
-  <label class="block text-sm font-medium text-slate-700 mb-1">Selling Price</label>
-  <input type="number" step='0.01' name="selling_price" class="w-full rounded-md border-slate-300 shadow-sm" required>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Selling Price <span class="font-normal text-slate-400">(optional)</span></label>
+  <input type="number" step='0.01' min="0" name="selling_price" class="w-full rounded-md border-slate-300 shadow-sm" placeholder="Leave blank if not set yet">
+  <p data-field-hint="1" class="mt-1 text-[11px] text-slate-400">Stock without a selling price can't be sold at the POS or online until one is added.</p>
 </div>
       </section>
       <div class="pt-2 flex items-center gap-2">

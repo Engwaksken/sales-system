@@ -423,13 +423,19 @@ class BulkUploadController extends Controller
                             'total_stock' => $qty,
                             'quantity' => $qty,
                             'unit_type' => $unitType ?: null,
-                            'cost_price' => $costPrice === '' ? 0 : (float) $costPrice,
-                            'selling_price' => $sellingPrice === '' ? 0 : (float) $sellingPrice,
+                            'cost_price' => $costPrice === '' ? null : (float) $costPrice,
+                            'selling_price' => $sellingPrice === '' ? null : (float) $sellingPrice,
                             'expiry_date' => $parsedExpiryDate,
                             'stock_date' => $parsedStockDate ?: now()->toDateString(),
                         ];
 
                         if ($stock) {
+                            // A blank price in the file keeps the price already recorded.
+                            foreach (['cost_price', 'selling_price'] as $priceKey) {
+                                if ($payload[$priceKey] === null) {
+                                    unset($payload[$priceKey]);
+                                }
+                            }
                             $stock->update($payload);
                             $stockUpdated++;
                         } else {

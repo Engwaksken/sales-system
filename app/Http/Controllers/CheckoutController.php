@@ -123,6 +123,10 @@ class CheckoutController extends Controller
                 return $this->fail("Product #{$productId} is not available at this branch.");
             }
 
+            if ($stock->selling_price === null) {
+                return $this->fail("\"{$stock->product->name}\" is not available for online purchase right now.");
+            }
+
             if ($stock->quantity < $qty) {
                 return $this->fail(
                     "Insufficient stock for \"{$stock->product->name}\". Available: {$stock->quantity}, requested: {$qty}. Please update your cart."

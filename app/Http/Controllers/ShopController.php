@@ -43,7 +43,7 @@ class ShopController extends Controller
                 ->join('stock', function ($join) use ($branch) {
                     $join->on('stock.product_id', '=', 'products.id')
                         ->where('stock.branch_id', $branch->id)
-                        ->where('stock.quantity', '>', 0);
+                        ->where('stock.quantity', '>', 0)->whereNotNull('stock.selling_price');
                 })
                 ->orderByDesc('products.id')
                 ->limit(5)
@@ -66,7 +66,7 @@ class ShopController extends Controller
             ->leftJoin('stock', function ($join) use ($branch) {
                 $join->on('stock.product_id', '=', 'products.id')
                     ->where('stock.branch_id', $branch->id)
-                    ->where('stock.quantity', '>', 0);
+                    ->where('stock.quantity', '>', 0)->whereNotNull('stock.selling_price');
             })
             ->groupBy('categories.id', 'categories.category_name')
             ->select('categories.id', 'categories.category_name', DB::raw('COUNT(DISTINCT stock.product_id) as cnt'))
@@ -77,7 +77,7 @@ class ShopController extends Controller
             ->join('stock', 'stock.product_id', '=', 'products.id')
             ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
             ->where('stock.branch_id', $branch->id)
-            ->where('stock.quantity', '>', 0)
+            ->where('stock.quantity', '>', 0)->whereNotNull('stock.selling_price')
             ->select(
                 'products.id', 'products.name', 'products.image_url', 'products.sku',
                 'products.description', 'products.category_id', 'categories.category_name',
@@ -117,7 +117,7 @@ class ShopController extends Controller
             ->join('stock', 'stock.product_id', '=', 'products.id')
             ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
             ->where('stock.branch_id', $branch->id)
-            ->where('stock.quantity', '>', 0)
+            ->where('stock.quantity', '>', 0)->whereNotNull('stock.selling_price')
             ->where(function ($query) {
                 $query->whereNull('products.is_active')
                     ->orWhere('products.is_active', true);
@@ -143,7 +143,7 @@ class ShopController extends Controller
             ->join('stock', function ($join) use ($branch) {
                 $join->on('stock.product_id', '=', 'products.id')
                     ->where('stock.branch_id', $branch->id)
-                    ->where('stock.quantity', '>', 0);
+                    ->where('stock.quantity', '>', 0)->whereNotNull('stock.selling_price');
             })
             ->selectRaw('COALESCE(MIN(stock.selling_price), 0) as mn, COALESCE(MAX(stock.selling_price), 0) as mx')
             ->first();

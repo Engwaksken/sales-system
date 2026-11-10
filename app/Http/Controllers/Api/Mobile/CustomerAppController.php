@@ -61,7 +61,8 @@ class CustomerAppController extends Controller
             ->orderBy('name')
             ->get()
             ->map(function ($product) {
-                $stocks = $product->stock;
+                // Unpriced stock isn't for sale yet.
+                $stocks = $product->stock->whereNotNull('selling_price');
                 $available = (int) $stocks->sum('quantity');
                 $price = (float) ($stocks
                     ->where('quantity', '>', 0)

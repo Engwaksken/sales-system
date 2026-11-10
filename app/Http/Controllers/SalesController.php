@@ -231,7 +231,7 @@ public function index(Request $request)
             'branch_id' => $s->branch_id,
             'name' => $s->product->name ?? 'Unknown',
             'sku' => $s->product->sku ?? '',
-            'price' => (float) $s->selling_price,
+            'price' => $s->selling_price === null ? null : (float) $s->selling_price,
             'available' => (int) $s->quantity,
         ])->values();
 
@@ -474,6 +474,10 @@ public function index(Request $request)
                     if (! $stock || $stock->quantity < $item['quantity']) {
                         throw ValidationException::withMessages(['pos' => 'Insufficient stock for "'.($stock?->product?->name ?? 'product #'.$item['product_id']).'". '
                             .'Available: '.($stock?->quantity ?? 0).', requested: '.$item['quantity'].'.']);
+                    }
+
+                    if ($stock->selling_price === null) {
+                        throw ValidationException::withMessages(['pos' => '"'.($stock->product?->name ?? 'Product #'.$item['product_id']).'" has no selling price yet. Set one on the Stock page before selling it.']);
                     }
 
                     $lineTotal = (float) $stock->selling_price * $item['quantity'];

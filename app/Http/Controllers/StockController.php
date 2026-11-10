@@ -146,9 +146,9 @@ class StockController extends Controller
             'total_stock' => 'required|numeric',
             'quantity' => 'required|numeric',
             'unit_type' => 'nullable',
-            'cost_price' => 'required|numeric',
+            'cost_price' => 'nullable|numeric|min:0',
             'expiry_date' => 'nullable|date',
-            'selling_price' => 'required|numeric',
+            'selling_price' => 'nullable|numeric|min:0',
         ], ['branch_ids.required_without' => 'Select at least one branch.']);
 
         $branchIds = array_map('intval', $validated['branch_ids'] ?? [$validated['branch_id']]);
@@ -168,8 +168,8 @@ class StockController extends Controller
                 if ($stock) {
                     $stock->fill(array_filter([
                         'unit_type' => $validated['unit_type'] ?? null,
-                        'cost_price' => $validated['cost_price'],
-                        'selling_price' => $validated['selling_price'],
+                        'cost_price' => $validated['cost_price'] ?? null,
+                        'selling_price' => $validated['selling_price'] ?? null,
                         'expiry_date' => $validated['expiry_date'] ?? null,
                     ], fn ($value) => $value !== null));
                     $stock->quantity = (float) $stock->quantity + (float) $validated['quantity'];
@@ -204,9 +204,9 @@ class StockController extends Controller
             'total_stock' => 'sometimes|required|numeric',
             'quantity' => 'sometimes|required|numeric',
             'unit_type' => 'nullable',
-            'cost_price' => 'sometimes|required|numeric',
+            'cost_price' => 'nullable|numeric|min:0',
             'expiry_date' => 'nullable|date',
-            'selling_price' => 'sometimes|required|numeric',
+            'selling_price' => 'nullable|numeric|min:0',
         ]);
         $stock->update($validated);
         return redirect()->route('stock.index')->with('status', 'Stock updated successfully.');

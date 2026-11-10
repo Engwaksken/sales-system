@@ -275,17 +275,12 @@ class Importer
         $handler = $this->module['handler'] ?? null;
 
         if ($handler === 'stock') {
-            $missingPrices = $data['cost_price'] === null || $data['selling_price'] === null;
             $new = 0;
             foreach ($data['branch_ids'] as $branchId) {
                 if (! $this->stockRow($data, $branchId)) {
                     $new++;
                 }
             }
-            if ($new > 0 && $missingPrices) {
-                return ['error', ['Cost price and selling price are required for branches that have no stock of this product yet.']];
-            }
-
             return [$new === count($data['branch_ids']) ? 'create' : 'update', []];
         }
 

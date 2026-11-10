@@ -683,7 +683,9 @@ function posAddRow() {
 
     const row = document.createElement('tr');
     const options = ['<option value="">Select product</option>']
-        .concat(products.map(product => `<option value="${product.product_id}" data-price="${product.price}" data-available="${product.available}">${escapeHtml(product.name)} (${product.available} in stock)</option>`))
+        .concat(products.map(product => product.price === null
+            ? `<option value="${product.product_id}" disabled>${escapeHtml(product.name)} (no price set)</option>`
+            : `<option value="${product.product_id}" data-price="${product.price}" data-available="${product.available}">${escapeHtml(product.name)} (${product.available} in stock)</option>`))
         .join('');
 
     row.innerHTML = `
