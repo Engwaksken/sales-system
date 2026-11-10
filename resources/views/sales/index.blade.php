@@ -692,6 +692,35 @@ function posRecalc() {
     document.getElementById('pos-total-display').textContent = `UGX ${total.toLocaleString()}`;
 }
 
+// Rebuild sale item rows after a failed submit (see layout "form:restored").
+document.getElementById('pos-form')?.addEventListener('form:restored', event => {
+    const rows = new Map();
+    event.detail.pairs.forEach(([name, value]) => {
+        const match = name.match(/^items\[(\d+)\]\[(\w+)\]$/);
+        if (!match) return;
+        const index = Number(match[1]);
+        if (!rows.has(index)) rows.set(index, {});
+        rows.get(index)[match[2]] = value;
+    });
+    if (!rows.size) return;
+
+    const tbody = document.getElementById('pos-items-body');
+    tbody.innerHTML = '';
+    const indexes = [...rows.keys()].sort((a, b) => a - b);
+    indexes.forEach(index => {
+        posRowCount = index; // keep the submitted index so error keys still match
+        posAddRow();
+        const row = tbody.lastElementChild;
+        const select = row.querySelector('select');
+        const qty = row.querySelector('input[type="number"]');
+        select.value = rows.get(index).product_id ?? '';
+        if (rows.get(index).quantity !== undefined) qty.value = rows.get(index).quantity;
+        posRowChanged(select);
+    });
+    posRowCount = indexes[indexes.length - 1] + 1;
+    posRecalc();
+});
+
 function posBranchChanged() {
     document.getElementById('pos-items-body').innerHTML = '';
     posRowCount = 0;

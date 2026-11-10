@@ -68,33 +68,27 @@ $isMoney = false;
 @forelse($items as $row)
 <tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->name }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->sku }}</td>
 <td class="px-4 py-2">
-    @php
-        $imagePath = trim((string)($row->image_url ?? ''));
-        $imageSrc = $imagePath === ''
-            ? null
-            : (\Illuminate\Support\Str::startsWith($imagePath, ['http://','https://'])
-                ? $imagePath
-                : asset('storage/'.ltrim($imagePath, '/')));
-    @endphp
-
+    @php($imageSrc = $row->image_preview_url)
     @if($imageSrc)
         <button type="button"
+                title="View image"
                 class="product-image-preview group relative block h-14 w-14 overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
                 data-src="{{ $imageSrc }}"
                 data-name="{{ $row->name }}">
             <img src="{{ $imageSrc }}"
                  alt="{{ $row->name }}"
+                 loading="lazy"
                  class="h-full w-full object-cover transition group-hover:scale-105"
-                 onerror="this.closest('button').style.display='none'">
+                 onerror="this.closest('button').replaceWith(document.getElementById('product-image-missing').content.cloneNode(true))">
         </button>
     @else
-        <div class="grid h-14 w-14 place-items-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-slate-300">
-            <i class="fas fa-image"></i>
+        <div class="grid h-14 w-14 place-items-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-slate-300" title="No image">
+            <i class="fa-solid fa-image"></i>
         </div>
     @endif
 </td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category?->category_name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->is_active ? 'Yes' : 'No' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
-<button type="button" title="View" onclick='openViewModal("products-modal", "products-form", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id')]))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
-<button type="button" title="Edit" onclick='openEditModal("products-modal", "products-form", "{{ route('products.update', $row->id) }}", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id')]))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
+<button type="button" title="View" onclick='openViewModal("products-modal", "products-form", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id'), 'image_preview_url' => $row->image_preview_url]))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
+<button type="button" title="Edit" onclick='openEditModal("products-modal", "products-form", "{{ route('products.update', $row->id) }}", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id'), 'image_preview_url' => $row->image_preview_url]))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
 <form method="POST" action="{{ route('products.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
 @csrf @method('DELETE')
 <button title="Delete" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-trash"></i></button>
@@ -205,7 +199,12 @@ $isMoney = false;
     </form>
   </div>
 </div>
-@endsection
+
+<template id="product-image-missing">
+    <div class="grid h-14 w-14 place-items-center rounded-lg border border-dashed border-amber-300 bg-amber-50 text-amber-400" title="Image file not found">
+        <i class="fa-solid fa-image"></i>
+    </div>
+</template>
 
 <div id="product-image-modal"
      class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/70 p-4">
@@ -213,13 +212,14 @@ $isMoney = false;
         <button type="button"
                 id="productImageClose"
                 class="absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/60 text-white">
-            <i class="fas fa-xmark"></i>
+            <i class="fa-solid fa-xmark"></i>
         </button>
         <img id="productImageLarge" src="" alt=""
              class="max-h-[82vh] max-w-full rounded-xl object-contain">
         <div id="productImageCaption" class="px-2 py-2 text-center text-sm font-bold text-slate-700"></div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
@@ -306,14 +306,15 @@ $isMoney = false;
     const image = document.getElementById('productImageLarge');
     const caption = document.getElementById('productImageCaption');
 
-    document.querySelectorAll('.product-image-preview').forEach(button => {
-        button.addEventListener('click', () => {
-            image.src = button.dataset.src || '';
-            image.alt = button.dataset.name || 'Product image';
-            caption.textContent = button.dataset.name || 'Product Image';
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        });
+    // Delegated so it keeps working for rows whose thumbnail was swapped out.
+    document.addEventListener('click', event => {
+        const button = event.target.closest('.product-image-preview');
+        if (!button || !modal) return;
+        image.src = button.dataset.src || '';
+        image.alt = button.dataset.name || 'Product image';
+        caption.textContent = button.dataset.name || 'Product Image';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     });
 
     function closeImage() {
@@ -326,6 +327,35 @@ $isMoney = false;
     modal?.addEventListener('click', event => {
         if (event.target === modal) closeImage();
     });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) closeImage();
+    });
+
+    // "Current Image Preview" inside the create/edit/view modal.
+    const currentWrap = document.getElementById('product-current-image-wrap');
+    const currentImage = document.getElementById('product-current-image');
+    function setCurrentImage(src) {
+        if (!currentWrap || !currentImage) return;
+        currentImage.onerror = () => currentWrap.classList.add('hidden');
+        currentImage.src = src || '';
+        currentWrap.classList.toggle('hidden', !src);
+    }
+    const isProductForm = formId => formId === 'products-form';
+    const baseEdit = window.openEditModal;
+    const baseView = window.openViewModal;
+    const baseCreate = window.openCreateModal;
+    window.openEditModal = function (modalId, formId, url, data) {
+        baseEdit(modalId, formId, url, data);
+        if (isProductForm(formId)) setCurrentImage(data?.image_preview_url);
+    };
+    window.openViewModal = function (modalId, formId, data) {
+        baseView(modalId, formId, data);
+        if (isProductForm(formId)) setCurrentImage(data?.image_preview_url);
+    };
+    window.openCreateModal = function (modalId, formId, url) {
+        baseCreate(modalId, formId, url);
+        if (isProductForm(formId)) setCurrentImage(null);
+    };
 })();
 </script>
 @endpush

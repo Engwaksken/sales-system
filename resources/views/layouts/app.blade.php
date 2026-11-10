@@ -394,6 +394,8 @@ function setModalTitle(modalId, text) {
 
 function openEditModal(modalId, formId, updateUrl, data) {
     const form = document.getElementById(formId);
+    clearRestoredErrors(form);
+    form._modalData = data;
     form.action = updateUrl;
     form.querySelector('input[name="_method"]').value = 'PUT';
     fillFormFields(form, data);
@@ -405,6 +407,8 @@ function openEditModal(modalId, formId, updateUrl, data) {
 
 function openCreateModal(modalId, formId, storeUrl) {
     const form = document.getElementById(formId);
+    clearRestoredErrors(form);
+    form._modalData = null;
     form.reset();
     form.action = storeUrl;
     form.querySelector('input[name="_method"]').value = 'POST';
@@ -416,12 +420,229 @@ function openCreateModal(modalId, formId, storeUrl) {
 
 function openViewModal(modalId, formId, data) {
     const form = document.getElementById(formId);
+    clearRestoredErrors(form);
+    form._modalData = data;
     fillFormFields(form, data);
     setFormEnabled(form, false);
     setFormMode(form, 'view');
     setModalTitle(modalId, 'View');
     openModal(modalId);
 }
+
+// ---------------------------------------------------------------------------
+// Keep modal form input across a failed submit.
+// When a modal form is submitted, its values (never passwords or files) are
+// saved to sessionStorage. If the next page load carries errors, the same
+// modal is reopened in the same mode, refilled, and the errors are shown
+// inside it. Pages with JS-built rows can listen for the "form:restored"
+// event on the form (detail.pairs) to rebuild them.
+// ---------------------------------------------------------------------------
+const MODAL_RESTORE_KEY = 'nsales:modal-form-restore';
+const MODAL_RESTORE_ERRORS = @json(isset($errors) ? $errors->getMessages() : []);
+const MODAL_SELECTOR = '.fixed.inset-0[id], [role="dialog"][id]';
+const RESTORE_SKIP_TYPES = ['file', 'password', 'submit', 'button', 'reset', 'image'];
+
+function clearRestoredErrors(form) {
+    if (!form) return;
+    form.querySelectorAll('[data-restored-error]').forEach(el => el.remove());
+    form.querySelectorAll('[data-restored-invalid]').forEach(el => {
+        el.removeAttribute('data-restored-invalid');
+        el.removeAttribute('aria-invalid');
+        el.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+    });
+}
+
+document.addEventListener('submit', event => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || (form.getAttribute('method') || 'get').toLowerCase() !== 'post') return;
+    const modal = form.closest(MODAL_SELECTOR);
+    if (!modal) return;
+    const pairs = [];
+    const files = [];
+    for (const el of form.elements) {
+        if (!el.name || el.name === '_token' || el.disabled) continue;
+        if (el.type === 'file') { if (el.files?.length) files.push(el.name); continue; }
+        if (RESTORE_SKIP_TYPES.includes(el.type)) continue;
+        if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) continue;
+        if (el.tagName === 'SELECT' && el.multiple) {
+            [...el.selectedOptions].forEach(option => pairs.push([el.name, option.value]));
+            continue;
+        }
+        pairs.push([el.name, el.value]);
+    }
+    let data = null;
+    try { data = form._modalData ? JSON.parse(JSON.stringify(form._modalData)) : null; } catch (e) { data = null; }
+    const snapshot = {
+        path: location.pathname,
+        at: Date.now(),
+        modalId: modal.id,
+        formId: form.id || null,
+        formIndex: [...document.forms].indexOf(form),
+        action: form.getAttribute('action') ? form.action : '',
+        mode: form.dataset.mode || null,
+        data,
+        pairs,
+        files,
+    };
+    try { sessionStorage.setItem(MODAL_RESTORE_KEY, JSON.stringify(snapshot)); } catch (e) { /* storage unavailable */ }
+});
+
+function restoreFormValues(form, pairs) {
+    const byName = new Map();
+    pairs.forEach(([name, value]) => {
+        if (!byName.has(name)) byName.set(name, []);
+        byName.get(name).push(value);
+    });
+    const cursor = new Map();
+    const done = new WeakSet();
+    // Change handlers may add fields (e.g. rows loaded for a branch), so repeat
+    // until no new matching fields appear.
+    for (let pass = 0; pass < 3; pass++) {
+        const pending = [...form.elements].filter(el =>
+            el.name && el.name !== '_token' && byName.has(el.name) && !done.has(el) && !RESTORE_SKIP_TYPES.includes(el.type));
+        if (!pending.length) break;
+        for (const el of pending) {
+            if (!el.isConnected) continue;
+            done.add(el);
+            const values = byName.get(el.name);
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.checked = values.includes(el.value);
+            } else if (el.tagName === 'SELECT' && el.multiple) {
+                [...el.options].forEach(option => { option.selected = values.includes(option.value); });
+            } else {
+                const index = cursor.get(el.name) || 0;
+                cursor.set(el.name, index + 1);
+                if (index >= values.length) continue;
+                el.value = values[index];
+            }
+            if (el.type !== 'hidden') {
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+    }
+}
+
+function fieldsForErrorKey(form, key) {
+    const parts = key.split('.');
+    const bracketed = parts[0] + parts.slice(1).map(part => `[${part}]`).join('');
+    const candidates = [bracketed, `${bracketed}[]`];
+    if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 1])) {
+        const base = parts.slice(0, -1);
+        candidates.push(base[0] + base.slice(1).map(part => `[${part}]`).join('') + '[]');
+    }
+    for (const name of candidates) {
+        const found = form.querySelectorAll(`[name="${CSS.escape(name)}"]`);
+        if (found.length) return [...found];
+    }
+    return [];
+}
+
+function revealField(field) {
+    for (let node = field.parentElement; node && node !== document.body; node = node.parentElement) {
+        if (node.dataset.tabpanel && node.dataset.tab !== undefined && typeof switchTab === 'function') {
+            switchTab(node.dataset.tabpanel, node.dataset.tab);
+            continue;
+        }
+        // Page-specific tabs: data-<group>-panel="x" paired with data-<group>-tab="x".
+        for (const attr of node.attributes) {
+            const match = attr.name.match(/^data-([a-z0-9-]+)-panel$/);
+            if (match) document.querySelector(`[data-${match[1]}-tab="${CSS.escape(attr.value)}"]`)?.click();
+        }
+    }
+}
+
+function showRestoredErrors(form, errors, files) {
+    clearRestoredErrors(form);
+    const messages = Object.values(errors).flat();
+    if (messages.length) {
+        const box = document.createElement('div');
+        box.dataset.restoredError = '1';
+        box.setAttribute('role', 'alert');
+        box.className = 'rounded-md bg-red-50 px-4 py-2 text-sm text-red-700';
+        const list = document.createElement('ul');
+        list.className = 'list-disc pl-4';
+        messages.forEach(message => {
+            const item = document.createElement('li');
+            item.textContent = message;
+            list.appendChild(item);
+        });
+        box.appendChild(list);
+        form.prepend(box);
+    }
+
+    let firstField = null;
+    Object.entries(errors).forEach(([key, keyMessages]) => {
+        const fields = fieldsForErrorKey(form, key);
+        if (!fields.length) return;
+        fields.forEach(field => {
+            field.dataset.restoredInvalid = '1';
+            field.setAttribute('aria-invalid', 'true');
+            if (field.type !== 'hidden') field.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+        });
+        const field = fields.find(el => el.type !== 'hidden');
+        if (!field) return;
+        firstField = firstField || field;
+        const note = document.createElement('p');
+        note.dataset.restoredError = '1';
+        note.className = 'mt-1 text-xs text-red-600';
+        note.textContent = keyMessages[0];
+        const anchor = ['checkbox', 'radio'].includes(field.type) ? (field.closest('label') || field) : field;
+        anchor.insertAdjacentElement('afterend', note);
+    });
+
+    (files || []).forEach(name => {
+        const input = form.querySelector(`input[type="file"][name="${CSS.escape(name)}"]`);
+        if (!input) return;
+        const note = document.createElement('p');
+        note.dataset.restoredError = '1';
+        note.className = 'mt-1 text-xs text-amber-600';
+        note.textContent = 'Please choose the file again. Files are not kept after an error.';
+        input.insertAdjacentElement('afterend', note);
+    });
+
+    if (firstField) {
+        revealField(firstField);
+        setTimeout(() => firstField.focus({ preventScroll: false }), 50);
+    }
+}
+
+// Clear a field's error mark once the user edits it.
+document.addEventListener('input', event => {
+    const field = event.target;
+    if (!field?.dataset?.restoredInvalid || !event.isTrusted) return;
+    field.removeAttribute('data-restored-invalid');
+    field.removeAttribute('aria-invalid');
+    field.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    let snapshot = null;
+    try {
+        snapshot = JSON.parse(sessionStorage.getItem(MODAL_RESTORE_KEY) || 'null');
+        sessionStorage.removeItem(MODAL_RESTORE_KEY);
+    } catch (e) { snapshot = null; }
+    if (!snapshot || !Object.keys(MODAL_RESTORE_ERRORS).length) return;
+    if (snapshot.path !== location.pathname || Date.now() - snapshot.at > 10 * 60 * 1000) return;
+
+    const form = (snapshot.formId && document.getElementById(snapshot.formId)) || document.forms[snapshot.formIndex];
+    const modal = document.getElementById(snapshot.modalId);
+    if (!form || !modal || !modal.contains(form)) return;
+
+    // Reopen through the page's own helpers so page-specific hooks run too.
+    if (snapshot.mode === 'edit' && snapshot.action && form.id) {
+        window.openEditModal(snapshot.modalId, form.id, snapshot.action, snapshot.data || {});
+    } else if (snapshot.mode === 'create' && snapshot.action && form.id) {
+        window.openCreateModal(snapshot.modalId, form.id, snapshot.action);
+    } else {
+        if (snapshot.action) form.action = snapshot.action;
+        openModal(snapshot.modalId);
+    }
+
+    restoreFormValues(form, snapshot.pairs || []);
+    form.dispatchEvent(new CustomEvent('form:restored', { detail: { pairs: snapshot.pairs || [], errors: MODAL_RESTORE_ERRORS } }));
+    showRestoredErrors(form, MODAL_RESTORE_ERRORS, snapshot.files);
+});
 
 function switchTab(group, tabName) {
     document.querySelectorAll(`[data-tabgroup="${group}"]`).forEach(btn => {

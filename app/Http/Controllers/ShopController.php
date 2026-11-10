@@ -192,9 +192,12 @@ class ShopController extends Controller
 
         $path = ltrim($product->image_url, '/');
 
-        // Normalize legacy values such as storage/products/file.jpg.
-        if (str_starts_with($path, 'storage/')) {
-            $path = substr($path, strlen('storage/'));
+        // Normalize legacy values such as storage/products/file.jpg or public/products/file.jpg.
+        foreach (['storage/', 'public/'] as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                $path = substr($path, strlen($prefix));
+                break;
+            }
         }
 
         $disk = Storage::disk('public');
