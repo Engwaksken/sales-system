@@ -1,13 +1,13 @@
 @extends('layouts.app')
-@section('title', 'DeliveryZones')
+@section('title', 'Delivery Zones')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-slate-400"></i> DeliveryZones</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-map-location-dot text-slate-400"></i> Delivery Zones</h1>
     @include('partials.import-button', ['module' => 'delivery_zones'])
-    <button type="button" onclick="openCreateModal('delivery_zones-modal', 'delivery_zones-form', '{{ route('delivery_zones.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New DeliveryZone</button>
+    <button type="button" onclick="openCreateModal('delivery_zones-modal', 'delivery_zones-form', '{{ route('delivery_zones.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Delivery Zone</button>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-map-location-dot', 'color' => 'indigo', 'label' => 'Total DeliveryZones', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-map-location-dot', 'color' => 'indigo', 'label' => 'Total Delivery Zones', 'value' => $items->total()])
 @include('partials.stat-card', ['icon' => 'fa-circle-check', 'color' => 'emerald', 'label' => 'Active', 'value' => $stat1])
 </div>
 @php($isMoney = false)
@@ -52,7 +52,7 @@
     </div>
     <input type="hidden" name="period" value="{{ request('period', 'all') }}">
     <input type="hidden" name="q" value="{{ request('q', '') }}">
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <button formaction="{{ route('delivery_zones.export.csv') }}" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
       <button formaction="{{ route('delivery_zones.export.pdf') }}" class="bg-slate-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
     </div>
@@ -92,7 +92,7 @@
 <div id="delivery_zones-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="delivery_zones-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-indigo-500"></i> New DeliveryZone</h2>
+      <h2 id="delivery_zones-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-indigo-500"></i> New Delivery Zone</h2>
       <button type="button" onclick="closeModal('delivery_zones-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="delivery_zones-form" method="POST" action="{{ route('delivery_zones.store') }}" class="space-y-4">

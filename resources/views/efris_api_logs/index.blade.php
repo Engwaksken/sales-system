@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'EfrisApiLogs')
+@section('title', 'EFRIS API Logs')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-list-check text-slate-400"></i> EfrisApiLogs</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-list-check text-slate-400"></i> EFRIS API Logs</h1>
     
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-list-check', 'color' => 'indigo', 'label' => 'Total EfrisApiLogs', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-list-check', 'color' => 'indigo', 'label' => 'Total EFRIS API Logs', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -62,7 +62,7 @@
     </div>
     <input type="hidden" name="period" value="{{ request('period', 'all') }}">
     <input type="hidden" name="q" value="{{ request('q', '') }}">
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <button formaction="{{ route('efris_api_logs.export.csv') }}" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
       <button formaction="{{ route('efris_api_logs.export.pdf') }}" class="bg-slate-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
     </div>

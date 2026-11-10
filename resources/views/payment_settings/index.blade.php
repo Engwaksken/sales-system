@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'PaymentSettings')
+@section('title', 'Payment Settings')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-sliders text-slate-400"></i> PaymentSettings</h1>
-    <button type="button" onclick="openCreateModal('payment_settings-modal', 'payment_settings-form', '{{ route('payment_settings.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New PaymentSetting</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-sliders text-slate-400"></i> Payment Settings</h1>
+    <button type="button" onclick="openCreateModal('payment_settings-modal', 'payment_settings-form', '{{ route('payment_settings.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Payment Setting</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-sliders', 'color' => 'indigo', 'label' => 'Total PaymentSettings', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-sliders', 'color' => 'indigo', 'label' => 'Total Payment Settings', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -88,7 +88,7 @@
 <div id="payment_settings-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="payment_settings-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-sliders text-indigo-500"></i> New PaymentSetting</h2>
+      <h2 id="payment_settings-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-sliders text-indigo-500"></i> New Payment Setting</h2>
       <button type="button" onclick="closeModal('payment_settings-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="payment_settings-form" method="POST" action="{{ route('payment_settings.store') }}" class="space-y-4">

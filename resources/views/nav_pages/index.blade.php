@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'NavPages')
+@section('title', 'Nav Pages')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-bars text-slate-400"></i> NavPages</h1>
-    <button type="button" onclick="openCreateModal('nav_pages-modal', 'nav_pages-form', '{{ route('nav_pages.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New NavPage</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-bars text-slate-400"></i> Nav Pages</h1>
+    <button type="button" onclick="openCreateModal('nav_pages-modal', 'nav_pages-form', '{{ route('nav_pages.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Nav Page</button>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-bars', 'color' => 'indigo', 'label' => 'Total NavPages', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-bars', 'color' => 'indigo', 'label' => 'Total Nav Pages', 'value' => $items->total()])
 @include('partials.stat-card', ['icon' => 'fa-circle-check', 'color' => 'emerald', 'label' => 'Active', 'value' => $stat1])
 </div>
 @php($isMoney = false)
@@ -94,7 +94,7 @@
 <div id="nav_pages-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="nav_pages-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-bars text-indigo-500"></i> New NavPage</h2>
+      <h2 id="nav_pages-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-bars text-indigo-500"></i> New Nav Page</h2>
       <button type="button" onclick="closeModal('nav_pages-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="nav_pages-form" method="POST" action="{{ route('nav_pages.store') }}" class="space-y-4">

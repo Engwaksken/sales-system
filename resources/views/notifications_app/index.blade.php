@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'NotificationsApp')
+@section('title', 'Notifications')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-bell text-slate-400"></i> NotificationsApp</h1>
-    <button type="button" onclick="openCreateModal('notifications_app-modal', 'notifications_app-form', '{{ route('notifications_app.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New NotificationsApp</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-bell text-slate-400"></i> Notifications</h1>
+    <button type="button" onclick="openCreateModal('notifications_app-modal', 'notifications_app-form', '{{ route('notifications_app.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Notification</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-bell', 'color' => 'indigo', 'label' => 'Total NotificationsApp', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-bell', 'color' => 'indigo', 'label' => 'Total Notifications', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -92,7 +92,7 @@
 <div id="notifications_app-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="notifications_app-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-bell text-indigo-500"></i> New NotificationsApp</h2>
+      <h2 id="notifications_app-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-bell text-indigo-500"></i> New Notifications</h2>
       <button type="button" onclick="closeModal('notifications_app-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="notifications_app-form" method="POST" action="{{ route('notifications_app.store') }}" class="space-y-4">

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'EFRIS Invoices')
 @section('content')
-<div class="flex items-center justify-between mb-4">
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
     <h1 class="text-xl font-semibold text-slate-800">EFRIS Invoices</h1>
     <span class="text-sm text-slate-400">Submitted from a Sale's detail page &mdash; see "Submit to EFRIS"</span>
 </div>

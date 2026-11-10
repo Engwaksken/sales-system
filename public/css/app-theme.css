@@ -765,6 +765,8 @@ html.a11y-spacing body { letter-spacing: .04em; word-spacing: .08em; line-height
     .filter-toolbar__filters { flex-basis: 100%; }
     .filter-toolbar__filters .filter-search { flex: 1 1 100%; }
     .filter-toolbar__filters select { max-width: none; flex: 1 1 8rem; }
-    .filter-toolbar__actions { margin-left: 0; }
-    .export-menu > form { right: auto; left: 0; }
+    .filter-toolbar__actions { margin-left: 0; width: 100%; flex-wrap: wrap; }
+    /* On phones the export column picker opens in place, full width, instead of floating. */
+    .export-menu { width: 100%; }
+    .export-menu > form { position: static; width: 100%; margin-top: .5rem; box-shadow: none; }
 }

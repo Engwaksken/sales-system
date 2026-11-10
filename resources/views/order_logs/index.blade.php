@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'OrderLogs')
+@section('title', 'Order Logs')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-slate-400"></i> OrderLogs</h1>
-    <button type="button" onclick="openCreateModal('order_logs-modal', 'order_logs-form', '{{ route('order_logs.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New OrderLog</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Order Logs</h1>
+    <button type="button" onclick="openCreateModal('order_logs-modal', 'order_logs-form', '{{ route('order_logs.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Order Log</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-clock-rotate-left', 'color' => 'indigo', 'label' => 'Total OrderLogs', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-clock-rotate-left', 'color' => 'indigo', 'label' => 'Total Order Logs', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -89,7 +89,7 @@
 <div id="order_logs-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="order_logs-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> New OrderLog</h2>
+      <h2 id="order_logs-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> New Order Log</h2>
       <button type="button" onclick="closeModal('order_logs-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="order_logs-form" method="POST" action="{{ route('order_logs.store') }}" class="space-y-4">

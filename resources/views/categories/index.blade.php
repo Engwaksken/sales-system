@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Categories')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-tags text-slate-400"></i> Categories</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-tags text-slate-400"></i> Categories</h1>
     @include('partials.import-button', ['module' => 'categories'])
     <button type="button" onclick="openCreateModal('categories-modal', 'categories-form', '{{ route('categories.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Category</button>
 </div>
@@ -51,7 +51,7 @@
     </div>
     <input type="hidden" name="period" value="{{ request('period', 'all') }}">
     <input type="hidden" name="q" value="{{ request('q', '') }}">
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <button formaction="{{ route('categories.export.csv') }}" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
       <button formaction="{{ route('categories.export.pdf') }}" class="bg-slate-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
     </div>

@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'SaleItems')
+@section('title', 'Sale Items')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-list text-slate-400"></i> SaleItems</h1>
-    <button type="button" onclick="openCreateModal('sale_items-modal', 'sale_items-form', '{{ route('sale_items.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New SaleItem</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-list text-slate-400"></i> Sale Items</h1>
+    <button type="button" onclick="openCreateModal('sale_items-modal', 'sale_items-form', '{{ route('sale_items.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Sale Item</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-list', 'color' => 'indigo', 'label' => 'Total SaleItems', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-list', 'color' => 'indigo', 'label' => 'Total Sale Items', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -85,7 +85,7 @@
 <div id="sale_items-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="sale_items-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-list text-indigo-500"></i> New SaleItem</h2>
+      <h2 id="sale_items-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-list text-indigo-500"></i> New Sale Item</h2>
       <button type="button" onclick="closeModal('sale_items-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="sale_items-form" method="POST" action="{{ route('sale_items.store') }}" class="space-y-4">

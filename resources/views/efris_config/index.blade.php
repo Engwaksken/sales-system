@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'EfrisConfig')
+@section('title', 'EFRIS Config')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-slate-400"></i> EfrisConfig</h1>
-    <button type="button" onclick="openCreateModal('efris_config-modal', 'efris_config-form', '{{ route('efris_config.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New EfrisConfig</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-shield-halved text-slate-400"></i> EFRIS Config</h1>
+    <button type="button" onclick="openCreateModal('efris_config-modal', 'efris_config-form', '{{ route('efris_config.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New EFRIS Config</button>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-shield-halved', 'color' => 'indigo', 'label' => 'Total EfrisConfig', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-shield-halved', 'color' => 'indigo', 'label' => 'Total EFRIS Config', 'value' => $items->total()])
 @include('partials.stat-card', ['icon' => 'fa-circle-check', 'color' => 'emerald', 'label' => 'Active', 'value' => $stat1])
 </div>
 @php($isMoney = false)
@@ -62,7 +62,7 @@
     </div>
     <input type="hidden" name="period" value="{{ request('period', 'all') }}">
     <input type="hidden" name="q" value="{{ request('q', '') }}">
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <button formaction="{{ route('efris_config.export.csv') }}" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
       <button formaction="{{ route('efris_config.export.pdf') }}" class="bg-slate-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
     </div>
@@ -102,7 +102,7 @@
 <div id="efris_config-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="efris_config-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-shield-halved text-indigo-500"></i> New EfrisConfig</h2>
+      <h2 id="efris_config-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-shield-halved text-indigo-500"></i> New EFRIS Config</h2>
       <button type="button" onclick="closeModal('efris_config-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="efris_config-form" method="POST" action="{{ route('efris_config.store') }}" class="space-y-4">

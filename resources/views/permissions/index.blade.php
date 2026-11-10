@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Permissions')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-lock text-slate-400"></i> Permissions</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-lock text-slate-400"></i> Permissions</h1>
     <button type="button" onclick="openCreateModal('permissions-modal', 'permissions-form', '{{ route('permissions.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Permission</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">

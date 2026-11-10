@@ -1,13 +1,13 @@
 @extends('layouts.app')
-@section('title', 'ExpenseCategories')
+@section('title', 'Expense Categories')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-layer-group text-slate-400"></i> ExpenseCategories</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-layer-group text-slate-400"></i> Expense Categories</h1>
     @include('partials.import-button', ['module' => 'expense_categories'])
-    <button type="button" onclick="openCreateModal('expense_categories-modal', 'expense_categories-form', '{{ route('expense_categories.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New ExpenseCategory</button>
+    <button type="button" onclick="openCreateModal('expense_categories-modal', 'expense_categories-form', '{{ route('expense_categories.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Expense Category</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-layer-group', 'color' => 'indigo', 'label' => 'Total ExpenseCategories', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-layer-group', 'color' => 'indigo', 'label' => 'Total Expense Categories', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -89,7 +89,7 @@
 <div id="expense_categories-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="expense_categories-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-layer-group text-indigo-500"></i> New ExpenseCategory</h2>
+      <h2 id="expense_categories-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-layer-group text-indigo-500"></i> New Expense Category</h2>
       <button type="button" onclick="closeModal('expense_categories-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="expense_categories-form" method="POST" action="{{ route('expense_categories.store') }}" class="space-y-4">

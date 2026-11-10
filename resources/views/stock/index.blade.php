@@ -1,9 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Stock')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-warehouse text-slate-400"></i> Stock</h1>
-    <div class="flex items-center gap-2">
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-warehouse text-slate-400"></i> Stock</h1>
+    <div class="flex flex-wrap items-center gap-2">
         <a href="{{ route('stock.report.pdf') }}" class="text-sm text-slate-500 hover:text-slate-700"><i class="fa-solid fa-file-pdf"></i> Detailed Stock Report (PDF)</a>
         @include('partials.import-button', ['module' => 'stock'])
         <button type="button" onclick="openCreateModal('stock-modal', 'stock-form', '{{ route('stock.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Stock</button>

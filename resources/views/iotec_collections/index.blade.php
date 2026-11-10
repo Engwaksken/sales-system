@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'IotecCollections')
+@section('title', 'Iotec Collections')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-mobile-screen-button text-slate-400"></i> IotecCollections</h1>
-    <button type="button" onclick="openCreateModal('iotec_collections-modal', 'iotec_collections-form', '{{ route('iotec_collections.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New IotecCollection</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-mobile-screen-button text-slate-400"></i> Iotec Collections</h1>
+    <button type="button" onclick="openCreateModal('iotec_collections-modal', 'iotec_collections-form', '{{ route('iotec_collections.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Iotec Collection</button>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-mobile-screen-button', 'color' => 'indigo', 'label' => 'Total IotecCollections', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-mobile-screen-button', 'color' => 'indigo', 'label' => 'Total Iotec Collections', 'value' => $items->total()])
 @include('partials.stat-card', ['icon' => 'fa-coins', 'color' => 'indigo', 'label' => 'Total Amount', 'value' => $stat1])
 </div>
 @php($isMoney = true)
@@ -94,7 +94,7 @@
 <div id="iotec_collections-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="iotec_collections-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-mobile-screen-button text-indigo-500"></i> New IotecCollection</h2>
+      <h2 id="iotec_collections-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-mobile-screen-button text-indigo-500"></i> New Iotec Collection</h2>
       <button type="button" onclick="closeModal('iotec_collections-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="iotec_collections-form" method="POST" action="{{ route('iotec_collections.store') }}" class="space-y-4">

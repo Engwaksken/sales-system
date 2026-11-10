@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'EfrisDevices')
+@section('title', 'EFRIS Devices')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-satellite-dish text-slate-400"></i> EfrisDevices</h1>
-    <button type="button" onclick="openCreateModal('efris_devices-modal', 'efris_devices-form', '{{ route('efris_devices.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New EfrisDevice</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-satellite-dish text-slate-400"></i> EFRIS Devices</h1>
+    <button type="button" onclick="openCreateModal('efris_devices-modal', 'efris_devices-form', '{{ route('efris_devices.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New EFRIS Device</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-satellite-dish', 'color' => 'indigo', 'label' => 'Total EfrisDevices', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-satellite-dish', 'color' => 'indigo', 'label' => 'Total EFRIS Devices', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -56,7 +56,7 @@
     </div>
     <input type="hidden" name="period" value="{{ request('period', 'all') }}">
     <input type="hidden" name="q" value="{{ request('q', '') }}">
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <button formaction="{{ route('efris_devices.export.csv') }}" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
       <button formaction="{{ route('efris_devices.export.pdf') }}" class="bg-slate-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
     </div>
@@ -96,7 +96,7 @@
 <div id="efris_devices-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="efris_devices-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-satellite-dish text-indigo-500"></i> New EfrisDevice</h2>
+      <h2 id="efris_devices-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-satellite-dish text-indigo-500"></i> New EFRIS Device</h2>
       <button type="button" onclick="closeModal('efris_devices-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="efris_devices-form" method="POST" action="{{ route('efris_devices.store') }}" class="space-y-4">

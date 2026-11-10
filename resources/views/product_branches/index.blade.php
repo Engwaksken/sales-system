@@ -1,13 +1,13 @@
 @extends('layouts.app')
-@section('title', 'ProductBranches')
+@section('title', 'Product Branches')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-code-branch text-slate-400"></i> ProductBranches</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-code-branch text-slate-400"></i> Product Branches</h1>
     @include('partials.import-button', ['module' => 'product_branches'])
-    <button type="button" onclick="openCreateModal('product_branches-modal', 'product_branches-form', '{{ route('product_branches.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New ProductBranch</button>
+    <button type="button" onclick="openCreateModal('product_branches-modal', 'product_branches-form', '{{ route('product_branches.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Product Branch</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-code-branch', 'color' => 'indigo', 'label' => 'Total ProductBranches', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-code-branch', 'color' => 'indigo', 'label' => 'Total Product Branches', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -82,7 +82,7 @@
 <div id="product_branches-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="product_branches-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-code-branch text-indigo-500"></i> New ProductBranch</h2>
+      <h2 id="product_branches-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-code-branch text-indigo-500"></i> New Product Branch</h2>
       <button type="button" onclick="closeModal('product_branches-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="product_branches-form" method="POST" action="{{ route('product_branches.store') }}" class="space-y-4">

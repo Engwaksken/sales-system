@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'OrderPaymentReceipts')
+@section('title', 'Order Payment Receipts')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-receipt text-slate-400"></i> OrderPaymentReceipts</h1>
-    <button type="button" onclick="openCreateModal('order_payment_receipts-modal', 'order_payment_receipts-form', '{{ route('order_payment_receipts.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New OrderPaymentReceipt</button>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-receipt text-slate-400"></i> Order Payment Receipts</h1>
+    <button type="button" onclick="openCreateModal('order_payment_receipts-modal', 'order_payment_receipts-form', '{{ route('order_payment_receipts.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Order Receipt</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
-@include('partials.stat-card', ['icon' => 'fa-receipt', 'color' => 'indigo', 'label' => 'Total OrderPaymentReceipts', 'value' => $items->total()])
+@include('partials.stat-card', ['icon' => 'fa-receipt', 'color' => 'indigo', 'label' => 'Total Order Payment Receipts', 'value' => $items->total()])
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
@@ -100,7 +100,7 @@
 <div id="order_payment_receipts-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 id="order_payment_receipts-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-receipt text-indigo-500"></i> New OrderPaymentReceipt</h2>
+      <h2 id="order_payment_receipts-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-receipt text-indigo-500"></i> New Order Receipt</h2>
       <button type="button" onclick="closeModal('order_payment_receipts-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
     <form id="order_payment_receipts-form" method="POST" action="{{ route('order_payment_receipts.store') }}" class="space-y-4">

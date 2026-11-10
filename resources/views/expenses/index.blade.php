@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Expenses')
 @section('content')
-<div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-semibold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-slate-400"></i> Expenses</h1>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-slate-400"></i> Expenses</h1>
     @include('partials.import-button', ['module' => 'expenses'])
     <button type="button" onclick="openCreateModal('expenses-modal', 'expenses-form', '{{ route('expenses.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Expense</button>
 </div>
