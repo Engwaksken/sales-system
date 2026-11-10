@@ -1029,6 +1029,8 @@ document.querySelectorAll('form').forEach(form => {
 
     document.querySelectorAll('form input[name], form select[name], form textarea[name]').forEach(field => {
         if (field.type === 'hidden' || field.type === 'submit' || field.dataset.hintReady === '1') return;
+        // List-page filter toolbars stay a single compact row: no hints or generated placeholders.
+        if (field.closest('.filter-toolbar')) return;
 
         field.dataset.hintReady = '1';
 

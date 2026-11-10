@@ -81,18 +81,17 @@
     </div>
 @endif
 
-<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
-    <form method="GET" action="{{ route('sales.index') }}" class="flex flex-col sm:flex-row sm:flex-wrap gap-2 text-sm">
-        <div class="relative">
-            <i class="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-300"></i>
-            <input type="search"
-                   name="q"
-                   value="{{ request('q') }}"
-                   placeholder="Search invoice or payment method..."
-                   class="w-full sm:w-72 rounded-lg border-slate-300 pl-9">
+<div class="filter-toolbar">
+    <form method="GET" action="{{ route('sales.index') }}" class="filter-toolbar__filters">
+        <div class="filter-search">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="search" name="q" value="{{ request('q') }}" aria-label="Search sales"
+                   placeholder="Search invoice or method…" class="rounded-lg border-slate-300">
         </div>
+        <button type="submit" class="filter-btn" title="Search" aria-label="Search"><i class="fas fa-magnifying-glass"></i></button>
+        <span class="filter-toolbar__divider" aria-hidden="true"></span>
 
-        <select name="period" class="rounded-lg border-slate-300" onchange="this.form.submit()">
+        <select name="period" aria-label="Period" class="rounded-lg border-slate-300" onchange="this.form.submit()">
             <option value="all" @selected(request('period', 'all') === 'all')>All Time</option>
             <option value="today" @selected(request('period') === 'today')>Today</option>
             <option value="week" @selected(request('period') === 'week')>This Week</option>
@@ -100,53 +99,45 @@
             <option value="year" @selected(request('period') === 'year')>This Year</option>
         </select>
 
-        <select name="payment_status" class="rounded-lg border-slate-300" onchange="this.form.submit()">
-            <option value="">Any Payment Status</option>
+        <select name="payment_status" aria-label="Payment status" class="rounded-lg border-slate-300" onchange="this.form.submit()">
+            <option value="">All Statuses</option>
             <option value="paid" @selected(request('payment_status') === 'paid')>Paid</option>
             <option value="partial" @selected(request('payment_status') === 'partial')>Part Paid</option>
             <option value="pending" @selected(request('payment_status') === 'pending')>Unpaid / Credit</option>
             <option value="outstanding" @selected(request('payment_status') === 'outstanding')>Any Balance Due</option>
         </select>
 
-        <select name="product_id" class="rounded-lg border-slate-300 sm:max-w-[200px]" onchange="this.form.submit()">
+        <select name="payment_method" aria-label="Payment method" class="rounded-lg border-slate-300" onchange="this.form.submit()">
+            <option value="">All Methods</option>
+            @foreach(array_merge($paymentMethods, ['Credit']) as $method)
+                <option value="{{ $method }}" @selected(request('payment_method') === $method)>{{ $method === 'Credit' ? 'On Credit' : $method }}</option>
+            @endforeach
+        </select>
+
+        <select name="product_id" aria-label="Product" class="rounded-lg border-slate-300" onchange="this.form.submit()">
             <option value="">All Products</option>
             @foreach($product_options as $product)
                 <option value="{{ $product->id }}" @selected((string) request('product_id') === (string) $product->id)>{{ $product->name }}</option>
             @endforeach
         </select>
 
-        <select name="payment_method" class="rounded-lg border-slate-300" onchange="this.form.submit()">
-            <option value="">All Payment Methods</option>
-            @foreach(array_merge($paymentMethods, ['Credit']) as $method)
-                <option value="{{ $method }}" @selected(request('payment_method') === $method)>{{ $method === 'Credit' ? 'On Credit (balance due)' : $method }}</option>
-            @endforeach
-        </select>
-
-        <select name="customer_id" class="rounded-lg border-slate-300 sm:max-w-[200px]" onchange="this.form.submit()">
+        <select name="customer_id" aria-label="Customer" class="rounded-lg border-slate-300" onchange="this.form.submit()">
             <option value="">All Customers</option>
             @foreach($customer_options as $customer)
                 <option value="{{ $customer->id }}" @selected((string) request('customer_id') === (string) $customer->id)>{{ $customer->name }}</option>
             @endforeach
         </select>
 
-        <button class="rounded-lg bg-slate-800 px-3 py-2 font-bold text-white">
-            <i class="fas fa-filter"></i> Apply
-        </button>
-
         @if(request('q') || request('period', 'all') !== 'all' || request('payment_status') || request('customer_id') || request('product_id') || request('payment_method'))
-            <a href="{{ route('sales.index') }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 font-bold text-slate-500 hover:bg-slate-50">
-                <i class="fas fa-rotate-left mr-1"></i> Reset
-            </a>
+            <a href="{{ route('sales.index') }}" class="filter-clear"><i class="fas fa-xmark"></i> Clear</a>
         @endif
     </form>
 
-    <div class="flex items-center gap-2">
-        <a href="{{ route('sales.export.csv', request()->query()) }}"
-           class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+    <div class="filter-toolbar__actions">
+        <a href="{{ route('sales.export.csv', request()->query()) }}" class="filter-btn--ghost">
             <i class="fas fa-file-csv text-emerald-600"></i> CSV
         </a>
-        <a href="{{ route('sales.export.pdf', request()->query()) }}"
-           class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+        <a href="{{ route('sales.export.pdf', request()->query()) }}" class="filter-btn--ghost">
             <i class="fas fa-file-pdf text-red-500"></i> PDF
         </a>
     </div>

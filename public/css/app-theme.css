@@ -671,3 +671,100 @@ html.a11y-spacing body { letter-spacing: .04em; word-spacing: .08em; line-height
     .accessibility-card { grid-template-columns: 1fr; }
     .accessibility-card > .switch { grid-column: 1; }
 }
+
+/* ---------------------------------------------------------------------------
+ * Filter toolbar: every list page's filters and its Export menu share one row
+ * (wrapping only on narrow screens). Controls get one height and radius.
+ * ------------------------------------------------------------------------- */
+.filter-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem .75rem;
+    margin-bottom: 1rem;
+    padding: .625rem .75rem;
+    background: var(--theme-surface, #fff);
+    border: 1px solid #e2e8f0;
+    border-radius: .75rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+}
+.filter-toolbar__filters {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+    margin: 0 !important;
+    font-size: .875rem;
+}
+.filter-toolbar__filters input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.filter-toolbar__filters select {
+    width: auto;
+    height: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0 .75rem;
+    border-radius: .5rem;
+    font-size: .875rem;
+}
+.filter-toolbar__filters select { padding-right: 2rem; }
+.filter-toolbar__filters select { width: auto; max-width: 12rem; }
+.filter-toolbar__filters input[type="date"] { width: 9.75rem; }
+.filter-toolbar__filters label { margin: 0; white-space: nowrap; color: #64748b; font-size: .8125rem; }
+.filter-toolbar__filters .filter-search { position: relative; flex: 0 1 16rem; min-width: 11rem; }
+.filter-toolbar__filters .filter-search input { width: 100% !important; padding-left: 2rem !important; }
+.filter-toolbar__filters .filter-search + .filter-btn { width: 2.25rem; padding: 0; }
+.filter-toolbar__filters .filter-search > i {
+    position: absolute; left: .75rem; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: .75rem; pointer-events: none;
+}
+.filter-toolbar__divider { width: 1px; height: 1.5rem; background: #e2e8f0; }
+.filter-btn,
+.filter-toolbar__filters button[type="submit"],
+.filter-toolbar__filters > button:not([type]) {
+    display: inline-flex; align-items: center; justify-content: center; gap: .375rem;
+    height: 2.25rem; padding: 0 .875rem; border-radius: .5rem;
+    font-size: .875rem; font-weight: 600; white-space: nowrap;
+    background: var(--theme-primary, #4f46e5); color: #fff; border: 1px solid transparent;
+}
+.filter-btn:hover,
+.filter-toolbar__filters button[type="submit"]:hover,
+.filter-toolbar__filters > button:not([type]):hover { filter: brightness(.93); }
+.filter-btn--ghost,
+.filter-toolbar__filters a.filter-clear {
+    display: inline-flex; align-items: center; gap: .375rem;
+    height: 2.25rem; padding: 0 .75rem; border-radius: .5rem;
+    font-size: .8125rem; font-weight: 600; white-space: nowrap;
+    background: #fff; color: #64748b; border: 1px solid #e2e8f0;
+}
+.filter-btn--ghost:hover,
+.filter-toolbar__filters a.filter-clear:hover { background: #f8fafc; color: #334155; }
+.filter-toolbar__actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
+
+/* Export: a compact dropdown at the right end of the toolbar. */
+.export-menu { position: relative; margin: 0 !important; background: none !important; box-shadow: none !important; }
+.export-menu > summary {
+    list-style: none;
+    display: inline-flex !important; align-items: center; gap: .5rem;
+    height: 2.25rem; padding: 0 .875rem !important; border-radius: .5rem;
+    border: 1px solid #cbd5e1; background: #fff;
+    font-size: .875rem; font-weight: 600; color: #475569; cursor: pointer; white-space: nowrap;
+}
+.export-menu > summary::-webkit-details-marker { display: none; }
+.export-menu > summary:hover { background: #f8fafc; }
+.export-menu[open] > summary { border-color: var(--theme-primary, #4f46e5); color: var(--theme-primary, #4f46e5); }
+.export-menu > form {
+    position: absolute; right: 0; top: calc(100% + .5rem); z-index: 40;
+    width: min(36rem, calc(100vw - 2rem));
+    padding: 1rem !important;
+    background: #fff; border: 1px solid #e2e8f0 !important; border-radius: .75rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .16);
+}
+
+@media (max-width: 640px) {
+    .filter-toolbar__filters { flex-basis: 100%; }
+    .filter-toolbar__filters .filter-search { flex: 1 1 100%; }
+    .filter-toolbar__filters select { max-width: none; flex: 1 1 8rem; }
+    .filter-toolbar__actions { margin-left: 0; }
+    .export-menu > form { right: auto; left: 0; }
+}

@@ -14,7 +14,7 @@ use Throwable;
 
 class EfrisInvoiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $items = EfrisInvoice::with(['sale', 'device'])->latest()->paginate($this->perPage($request));
 

@@ -17,12 +17,15 @@
 $isMoney = false;
 @endphp
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
+@include('partials.branch-supplier-stat-cards')
+<div class="filter-toolbar">
 @include('partials.business-filter-bar', [
     'searchPlaceholder' => 'Search products…',
     'clearRoute' => route('products.index'),
+    'inToolbar' => true,
 ])
-@include('partials.branch-supplier-stat-cards')
-<details class="mb-4 bg-white rounded-lg shadow">
+<div class="filter-toolbar__actions">
+<details class="export-menu">
   <summary class="cursor-pointer px-4 py-2 text-sm text-slate-600 flex items-center gap-2 list-none">
     <i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
   </summary>
@@ -53,6 +56,8 @@ $isMoney = false;
     </div>
   </form>
 </details>
+</div>
+</div>
 @if(session('status'))
 <div data-flash class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
 @endif

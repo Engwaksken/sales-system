@@ -12,7 +12,7 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 @include('partials.stat-card', ['icon' => 'fa-warehouse', 'color' => 'indigo', 'label' => 'Stock Records', 'value' => $items->total()])
 @include('partials.stat-card', ['icon' => 'fa-cubes', 'color' => 'emerald', 'label' => 'Units In Stock', 'value' => number_format((float) $totals->quantity, 0).' of '.number_format((float) $totals->total_stock, 0)])
-@include('partials.stat-card', ['icon' => 'fa-triangle-exclamation', 'color' => 'amber', 'label' => 'Low Stock (&le;5)', 'value' => $stat1])
+@include('partials.stat-card', ['icon' => 'fa-triangle-exclamation', 'color' => 'amber', 'label' => 'Low Stock (≤ 5)', 'value' => $stat1])
 @include('partials.stat-card', ['icon' => 'fa-coins', 'color' => 'indigo', 'label' => 'Total Stock Value', 'value' => $stat2])
 </div>
 <section class="mb-6 rounded-lg bg-white p-4 shadow" aria-labelledby="barcode-lookup-heading" data-barcode-lookup data-endpoint="{{ route('stock.lookup-barcode') }}">
@@ -47,8 +47,8 @@
 </section>
 @php($isMoney = true)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
-<form method="GET" class="flex flex-wrap items-center gap-2 text-sm mb-4">
-    
+<div class="filter-toolbar">
+<form method="GET" class="filter-toolbar__filters">
     <label class="text-slate-500"><i class="fa-solid fa-filter"></i> Product:</label>
     <select name="product_id" onchange="this.form.submit()" class="rounded-md border-slate-300 text-sm max-w-[220px]">
         <option value="">All Products</option>
@@ -72,10 +72,11 @@
         <option value="year" {{ request('period')=='year'?'selected':'' }}>This Year</option>
     </select>
     @if(request('q') || request('product_id') || request('branch_id') || (request('period') && request('period') !== 'all'))
-    <a href="{{ route('stock.index') }}" class="text-slate-400 hover:text-slate-600 text-xs">Clear <i class="fa-solid fa-xmark"></i></a>
+    <a href="{{ route('stock.index') }}" class="filter-clear"><i class="fa-solid fa-xmark"></i> Clear</a>
     @endif
 </form>
-<details class="mb-4 bg-white rounded-lg shadow">
+<div class="filter-toolbar__actions">
+<details class="export-menu">
   <summary class="cursor-pointer px-4 py-2 text-sm text-slate-600 flex items-center gap-2 list-none">
     <i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
   </summary>
@@ -106,6 +107,8 @@
     </div>
   </form>
 </details>
+</div>
+</div>
 @if(session('status'))
 <div data-flash class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
 @endif

@@ -14,14 +14,16 @@
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
-<form method="GET" class="flex items-center gap-2 text-sm mb-4">
-    <div class="relative">
+<div class="filter-toolbar">
+<form method="GET" class="filter-toolbar__filters">
+    <div class="filter-search">
         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
         <input type="text" name="q" value="{{ request('q') }}" placeholder="Search customers…"
                class="rounded-md border-slate-300 text-sm pl-8 pr-3 py-1.5 w-56">
     </div>
-    <button class="text-sm text-slate-400 hover:text-slate-600"><i class="fa-solid fa-arrow-right"></i></button>
-    <label class="text-slate-500 ml-2"><i class="fa-solid fa-filter"></i> Period:</label>
+    <button type="submit" class="filter-btn" title="Search" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+    <span class="filter-toolbar__divider" aria-hidden="true"></span>
+    <label class="text-slate-500"><i class="fa-solid fa-filter mr-1"></i> Period:</label>
     <select name="period" onchange="this.form.submit()" class="rounded-md border-slate-300 text-sm">
         <option value="all" {{ request('period','all')=='all'?'selected':'' }}>All Time</option>
         <option value="today" {{ request('period')=='today'?'selected':'' }}>Today</option>
@@ -30,10 +32,11 @@
         <option value="year" {{ request('period')=='year'?'selected':'' }}>This Year</option>
     </select>
     @if(request('q') || (request('period') && request('period') !== 'all'))
-    <a href="{{ route('customers.index') }}" class="text-slate-400 hover:text-slate-600 text-xs">Clear <i class="fa-solid fa-xmark"></i></a>
+    <a href="{{ route('customers.index') }}" class="filter-clear"><i class="fa-solid fa-xmark"></i> Clear</a>
     @endif
 </form>
-<details class="mb-4 bg-white rounded-lg shadow">
+<div class="filter-toolbar__actions">
+<details class="export-menu">
   <summary class="cursor-pointer px-4 py-2 text-sm text-slate-600 flex items-center gap-2 list-none">
     <i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
   </summary>
@@ -58,6 +61,8 @@
     </div>
   </form>
 </details>
+</div>
+</div>
 @if(session('status'))
 <div data-flash class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
 @endif

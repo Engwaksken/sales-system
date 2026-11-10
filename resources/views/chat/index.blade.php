@@ -3,7 +3,7 @@
 @section('title', 'Chat Support')
 
 @section('content')
-<div class="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+<div class="mb-4">
     <div>
         <h1 class="text-xl font-black text-slate-800">
             <i class="fas fa-headset mr-2 text-indigo-600"></i>
@@ -14,29 +14,24 @@
         </p>
     </div>
 
-    <form method="GET" action="{{ route('chat.index') }}"
-          class="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">Search</label>
-            <input type="search"
-                   name="q"
-                   value="{{ request('q') }}"
-                   placeholder="Customer, email, phone..."
-                   class="rounded-lg border-slate-300 text-sm">
-        </div>
+</div>
 
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">Status</label>
-            <select name="status" class="rounded-lg border-slate-300 text-sm">
-                <option value="">All</option>
-                <option value="open" @selected(request('status') === 'open')>Open</option>
-                <option value="closed" @selected(request('status') === 'closed')>Closed</option>
-            </select>
+<div class="filter-toolbar">
+    <form method="GET" action="{{ route('chat.index') }}" class="filter-toolbar__filters">
+        <div class="filter-search">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="search" name="q" value="{{ request('q') }}" aria-label="Search conversations"
+                   placeholder="Customer, email, phone…" class="rounded-lg border-slate-300">
         </div>
-
-        <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">
-            <i class="fas fa-filter mr-1"></i> Filter
-        </button>
+        <select name="status" aria-label="Status" class="rounded-lg border-slate-300" onchange="this.form.submit()">
+            <option value="">All Conversations</option>
+            <option value="open" @selected(request('status') === 'open')>Open</option>
+            <option value="closed" @selected(request('status') === 'closed')>Closed</option>
+        </select>
+        <button type="submit" class="filter-btn"><i class="fas fa-filter"></i> Filter</button>
+        @if(request('q') || request('status'))
+            <a href="{{ route('chat.index') }}" class="filter-clear"><i class="fas fa-xmark"></i> Clear</a>
+        @endif
     </form>
 </div>
 

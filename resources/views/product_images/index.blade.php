@@ -10,9 +10,9 @@
 </div>
 @php($isMoney = false)
 @include('partials.period-stats', ['periodStats' => $periodStats, 'isMoney' => $isMoney])
-<form method="GET" class="flex items-center gap-2 text-sm mb-4">
-    
-    <label class="text-slate-500 ml-2"><i class="fa-solid fa-filter"></i> Period:</label>
+<div class="filter-toolbar">
+<form method="GET" class="filter-toolbar__filters">
+    <label class="text-slate-500"><i class="fa-solid fa-filter mr-1"></i> Period:</label>
     <select name="period" onchange="this.form.submit()" class="rounded-md border-slate-300 text-sm">
         <option value="all" {{ request('period','all')=='all'?'selected':'' }}>All Time</option>
         <option value="today" {{ request('period')=='today'?'selected':'' }}>Today</option>
@@ -21,10 +21,11 @@
         <option value="year" {{ request('period')=='year'?'selected':'' }}>This Year</option>
     </select>
     @if(request('q') || (request('period') && request('period') !== 'all'))
-    <a href="{{ route('product_images.index') }}" class="text-slate-400 hover:text-slate-600 text-xs">Clear <i class="fa-solid fa-xmark"></i></a>
+    <a href="{{ route('product_images.index') }}" class="filter-clear"><i class="fa-solid fa-xmark"></i> Clear</a>
     @endif
 </form>
-<details class="mb-4 bg-white rounded-lg shadow">
+<div class="filter-toolbar__actions">
+<details class="export-menu">
   <summary class="cursor-pointer px-4 py-2 text-sm text-slate-600 flex items-center gap-2 list-none">
     <i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
   </summary>
@@ -48,6 +49,8 @@
     </div>
   </form>
 </details>
+</div>
+</div>
 @if(session('status'))
 <div data-flash class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
 @endif

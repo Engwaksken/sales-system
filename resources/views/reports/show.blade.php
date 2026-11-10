@@ -3,7 +3,7 @@
 @section('title', 'Report: '.str($type)->replace('_', ' ')->title())
 
 @section('content')
-<div class="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+<div class="mb-4">
     <div>
         <h1 class="text-xl font-black text-slate-800">
             <i class="fas fa-chart-column mr-2 text-indigo-600"></i>
@@ -15,47 +15,29 @@
         </p>
     </div>
 
-    <form method="GET" action="{{ route('reports.show', $type) }}"
-          class="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-2 xl:grid-cols-4">
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">From</label>
-            <input type="date" name="from" value="{{ $from->format('Y-m-d') }}"
-                   class="w-full rounded-lg border-slate-300 text-sm">
-        </div>
+</div>
 
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">To</label>
-            <input type="date" name="to" value="{{ $to->format('Y-m-d') }}"
-                   class="w-full rounded-lg border-slate-300 text-sm">
-        </div>
+<div class="filter-toolbar">
+    <form method="GET" action="{{ route('reports.show', $type) }}" class="filter-toolbar__filters">
+        <label for="report-from"><i class="fas fa-calendar-days mr-1"></i> From</label>
+        <input id="report-from" type="date" name="from" value="{{ $from->format('Y-m-d') }}" class="rounded-lg border-slate-300">
+        <label for="report-to">To</label>
+        <input id="report-to" type="date" name="to" value="{{ $to->format('Y-m-d') }}" class="rounded-lg border-slate-300">
+        <span class="filter-toolbar__divider" aria-hidden="true"></span>
 
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">
-                <i class="fas fa-building mr-1"></i> Branch Name
-            </label>
-            <select name="branch_id" class="w-full rounded-lg border-slate-300 text-sm">
-                <option value="">All Branches</option>
-                @foreach($branch_options as $branch)
-                    <option value="{{ $branch->id }}" @selected((string)request('branch_id') === (string)$branch->id)>
-                        {{ $branch->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+        <select name="branch_id" aria-label="Branch" class="rounded-lg border-slate-300">
+            <option value="">All Branches</option>
+            @foreach($branch_options as $branch)
+                <option value="{{ $branch->id }}" @selected((string)request('branch_id') === (string)$branch->id)>{{ $branch->name }}</option>
+            @endforeach
+        </select>
 
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">
-                <i class="fas fa-truck mr-1"></i> Supplier Name
-            </label>
-            <select name="supplier_id" class="w-full rounded-lg border-slate-300 text-sm">
-                <option value="">All Suppliers</option>
-                @foreach($supplier_options as $supplier)
-                    <option value="{{ $supplier->id }}" @selected((string)request('supplier_id') === (string)$supplier->id)>
-                        {{ $supplier->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+        <select name="supplier_id" aria-label="Supplier" class="rounded-lg border-slate-300">
+            <option value="">All Suppliers</option>
+            @foreach($supplier_options as $supplier)
+                <option value="{{ $supplier->id }}" @selected((string)request('supplier_id') === (string)$supplier->id)>{{ $supplier->name }}</option>
+            @endforeach
+        </select>
 
         @if($type === 'general_ledger')
             <input type="hidden" name="account_code" value="{{ $selectedAccountCode ?? '' }}">
@@ -63,15 +45,8 @@
             <input type="hidden" name="q" value="{{ $ledgerSearch ?? '' }}">
         @endif
 
-        <div class="sm:col-span-2 xl:col-span-4 flex justify-end gap-2">
-            <a href="{{ route('reports.show', $type) }}"
-               class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-600">
-                <i class="fas fa-rotate-left mr-1"></i> Clear
-            </a>
-            <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">
-                <i class="fas fa-filter mr-1"></i> Apply
-            </button>
-        </div>
+        <button type="submit" class="filter-btn"><i class="fas fa-filter"></i> Apply</button>
+        <a href="{{ route('reports.show', $type) }}" class="filter-clear"><i class="fas fa-rotate-left"></i> Clear</a>
     </form>
 </div>
 
@@ -113,58 +88,36 @@
         @endforeach
     </div>
 
-    <form method="GET" action="{{ route('reports.show', 'general_ledger') }}"
-          class="mb-5 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-3">
+    <div class="filter-toolbar">
+    <form method="GET" action="{{ route('reports.show', 'general_ledger') }}" class="filter-toolbar__filters">
         <input type="hidden" name="from" value="{{ $from->format('Y-m-d') }}">
         <input type="hidden" name="to" value="{{ $to->format('Y-m-d') }}">
         <input type="hidden" name="branch_id" value="{{ request('branch_id') }}">
         <input type="hidden" name="supplier_id" value="{{ request('supplier_id') }}">
 
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">
-                Search Ledger
-            </label>
-            <input type="search" name="q" value="{{ $ledgerSearch ?? '' }}"
-                   placeholder="Journal, reference, account..."
-                   class="w-full rounded-lg border-slate-300 text-sm">
+        <div class="filter-search">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="search" name="q" value="{{ $ledgerSearch ?? '' }}" aria-label="Search ledger"
+                   placeholder="Journal, reference, account…" class="rounded-lg border-slate-300">
         </div>
 
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">
-                Account Name
-            </label>
-            <select name="account_code" class="w-full rounded-lg border-slate-300 text-sm">
-                <option value="">All Accounts</option>
-                @foreach($accountOptions as $account)
-                    <option value="{{ $account->account_code }}"
-                            @selected(($selectedAccountCode ?? '') === $account->account_code)>
-                        {{ $account->account_code }} — {{ $account->account_name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+        <select name="account_code" aria-label="Account" class="rounded-lg border-slate-300">
+            <option value="">All Accounts</option>
+            @foreach($accountOptions as $account)
+                <option value="{{ $account->account_code }}" @selected(($selectedAccountCode ?? '') === $account->account_code)>{{ $account->account_code }} — {{ $account->account_name }}</option>
+            @endforeach
+        </select>
 
-        <div>
-            <label class="mb-1 block text-xs font-bold text-slate-500">
-                Journal Type
-            </label>
-            <select name="journal_type" class="w-full rounded-lg border-slate-300 text-sm">
-                <option value="">All Journal Types</option>
-                @foreach($journalTypeOptions as $journalType)
-                    <option value="{{ $journalType }}"
-                            @selected(($selectedJournalType ?? '') === $journalType)>
-                        {{ str($journalType)->replace('_', ' ')->title() }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+        <select name="journal_type" aria-label="Journal type" class="rounded-lg border-slate-300">
+            <option value="">All Journal Types</option>
+            @foreach($journalTypeOptions as $journalType)
+                <option value="{{ $journalType }}" @selected(($selectedJournalType ?? '') === $journalType)>{{ str($journalType)->replace('_', ' ')->title() }}</option>
+            @endforeach
+        </select>
 
-        <div class="md:col-span-3 flex justify-end">
-            <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">
-                <i class="fas fa-filter mr-1"></i> Filter Ledger
-            </button>
-        </div>
+        <button type="submit" class="filter-btn"><i class="fas fa-filter"></i> Filter Ledger</button>
     </form>
+    </div>
 @endif
 
 <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
