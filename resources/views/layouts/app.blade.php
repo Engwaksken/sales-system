@@ -607,6 +607,160 @@ function showRestoredErrors(form, errors, files) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Multi-select delete for tables.
+// Any table whose rows carry a DELETE form for a module registered in
+// BulkDeleteController gets a checkbox column, a select-all box (shift-click
+// selects a range) and a "Delete selected" bar that posts the ids to
+// /{module}/bulk-delete.
+// ---------------------------------------------------------------------------
+const BULK_DELETE_URLS = @json(collect(\App\Http\Controllers\BulkDeleteController::RESOURCES)->keys()->filter(fn ($r) => \Illuminate\Support\Facades\Route::has("{$r}.bulk-destroy"))->map(fn ($r) => route("{$r}.bulk-destroy"))->values());
+
+function initBulkDeleteTables(root = document) {
+    const byBase = new Map(BULK_DELETE_URLS.map(url => [new URL(url, location.href).pathname.replace(/\/bulk-delete$/, ''), url]));
+    const checkboxClass = 'h-4 w-4 cursor-pointer rounded border-slate-300 text-indigo-600 focus:ring-indigo-500';
+
+    function deleteTarget(row) {
+        const form = [...row.querySelectorAll('form')].find(f =>
+            (f.querySelector('input[name="_method"]')?.value || '').toUpperCase() === 'DELETE');
+        if (!form) return null;
+        const match = new URL(form.action, location.href).pathname.match(/^(.*)\/(\d+)\/?$/);
+        const bulkUrl = match && byBase.get(match[1]);
+        return bulkUrl ? { bulkUrl, id: match[2] } : null;
+    }
+
+    root.querySelectorAll('table:not([data-bulk-ready])').forEach(table => {
+        const tbody = table.tBodies[0];
+        if (!tbody) return;
+        const rows = [...tbody.rows];
+        let bulkUrl = null;
+        const rowIds = new Map();
+        rows.forEach(row => {
+            const target = deleteTarget(row);
+            if (!target || (bulkUrl && bulkUrl !== target.bulkUrl)) return;
+            bulkUrl = target.bulkUrl;
+            rowIds.set(row, target.id);
+        });
+        if (!bulkUrl) return;
+        table.dataset.bulkReady = '1';
+
+        // Checkbox column.
+        let selectAll = null;
+        [...(table.tHead?.rows || [])].forEach((headRow, index) => {
+            const th = document.createElement('th');
+            th.className = 'w-10 px-4 py-2 text-left';
+            if (index === 0) {
+                selectAll = document.createElement('input');
+                selectAll.type = 'checkbox';
+                selectAll.className = checkboxClass;
+                selectAll.setAttribute('aria-label', 'Select all rows');
+                th.appendChild(selectAll);
+            }
+            headRow.insertBefore(th, headRow.firstElementChild);
+        });
+        rows.forEach(row => {
+            if (!rowIds.has(row) && row.cells.length === 1 && row.cells[0].colSpan > 1) {
+                row.cells[0].colSpan += 1; // "No records yet" style row
+                return;
+            }
+            const td = document.createElement('td');
+            td.className = 'w-10 px-4 py-2 align-middle';
+            if (rowIds.has(row)) {
+                const box = document.createElement('input');
+                box.type = 'checkbox';
+                box.className = checkboxClass;
+                box.value = rowIds.get(row);
+                box.dataset.bulkRow = '1';
+                box.setAttribute('aria-label', 'Select row');
+                td.appendChild(box);
+            }
+            row.insertBefore(td, row.firstElementChild);
+        });
+        [...(table.tFoot?.rows || [])].forEach(row => row.insertBefore(document.createElement('td'), row.firstElementChild));
+
+        // Selection bar above the table.
+        const bar = document.createElement('div');
+        bar.className = 'mb-2 hidden flex-wrap items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800';
+        bar.setAttribute('role', 'region');
+        bar.setAttribute('aria-label', 'Selected rows');
+        bar.innerHTML = `
+            <span class="font-semibold" data-bulk-count aria-live="polite"></span>
+            <button type="button" data-bulk-delete class="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700 disabled:opacity-60">
+                <i class="fa-solid fa-trash"></i> Delete selected
+            </button>
+            <button type="button" data-bulk-clear class="text-red-700 underline-offset-2 hover:underline">Clear selection</button>`;
+        const anchor = table.closest('.overflow-x-auto, .overflow-auto') || table;
+        anchor.parentNode.insertBefore(bar, anchor);
+
+        const boxes = () => [...tbody.querySelectorAll('input[data-bulk-row]')];
+        const selected = () => boxes().filter(box => box.checked);
+
+        function update() {
+            const all = boxes();
+            const chosen = selected();
+            all.forEach(box => box.closest('tr')?.classList.toggle('bg-indigo-50', box.checked));
+            if (selectAll) {
+                selectAll.checked = all.length > 0 && chosen.length === all.length;
+                selectAll.indeterminate = chosen.length > 0 && chosen.length < all.length;
+            }
+            bar.querySelector('[data-bulk-count]').textContent =
+                `${chosen.length} ${chosen.length === 1 ? 'record' : 'records'} selected`;
+            bar.classList.toggle('hidden', chosen.length === 0);
+            bar.classList.toggle('flex', chosen.length > 0);
+        }
+
+        selectAll?.addEventListener('change', () => {
+            boxes().forEach(box => { box.checked = selectAll.checked; });
+            update();
+        });
+
+        let lastClicked = null;
+        tbody.addEventListener('click', event => {
+            const box = event.target.closest('input[data-bulk-row]');
+            if (!box) return;
+            const all = boxes();
+            if (event.shiftKey && lastClicked && lastClicked !== box && all.includes(lastClicked)) {
+                const [from, to] = [all.indexOf(lastClicked), all.indexOf(box)].sort((a, b) => a - b);
+                all.slice(from, to + 1).forEach(item => { item.checked = box.checked; });
+            }
+            lastClicked = box;
+            update();
+        });
+
+        bar.querySelector('[data-bulk-clear]').addEventListener('click', () => {
+            boxes().forEach(box => { box.checked = false; });
+            update();
+        });
+
+        const deleteButton = bar.querySelector('[data-bulk-delete]');
+        deleteButton.addEventListener('click', async () => {
+            const ids = selected().map(box => box.value);
+            if (!ids.length) return;
+            const label = ids.length === 1 ? 'this record' : `these ${ids.length} records`;
+            if (!(await appConfirm(`Delete ${label}? This cannot be undone.`))) return;
+            deleteButton.disabled = true;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = bulkUrl;
+            form.hidden = true;
+            const add = (name, value) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+            };
+            add('_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
+            ids.forEach(id => add('ids[]', id));
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+        update();
+    });
+}
+document.addEventListener('DOMContentLoaded', () => initBulkDeleteTables());
+
 // Clear a field's error mark once the user edits it.
 document.addEventListener('input', event => {
     const field = event.target;

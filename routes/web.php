@@ -9,6 +9,7 @@ use App\Http\Controllers\IotecPaymentController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\BulkUploadController;
+use App\Http\Controllers\BulkDeleteController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\StockController;
@@ -239,4 +240,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications_app/export/csv', [NotificationsAppController::class, 'exportCsv'])->name('notifications_app.export.csv')->middleware('permission:manage_notifications');
     Route::get('/notifications_app/export/pdf', [NotificationsAppController::class, 'exportPdf'])->name('notifications_app.export.pdf')->middleware('permission:manage_notifications');
     Route::resource('notifications_app', NotificationsAppController::class)->except(['create', 'edit'])->middleware('permission:manage_notifications');
+
+    // Delete several selected table rows at once: POST /{resource}/bulk-delete,
+    // guarded by the same permission as that module's resource routes.
+    foreach (BulkDeleteController::RESOURCES as $resource => [, $permission]) {
+        Route::post("/{$resource}/bulk-delete", [BulkDeleteController::class, 'destroy'])
+            ->defaults('resource', $resource)
+            ->name("{$resource}.bulk-destroy")
+            ->middleware("permission:{$permission}");
+    }
 });
