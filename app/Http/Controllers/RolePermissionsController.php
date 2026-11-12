@@ -16,21 +16,31 @@ use Illuminate\Support\Facades\DB;
  */
 class RolePermissionsController extends Controller
 {
+    public function storeRole(Request $request)
+    {
+        abort_unless($request->user()?->role === 'admin', 403);
+        $data = $request->validate(['label' => 'required|string|max:100']);
+        $name = \Illuminate\Support\Str::slug($data['label'], '_');
+        abort_if(in_array($name, ['admin', 'customer'], true), 422, 'This role name is reserved.');
+        \App\Models\Role::firstOrCreate(['name' => $name], ['label' => $data['label']]);
+        \Illuminate\Support\Facades\Cache::flush();
+        return redirect()->route('role_permissions.index')->with('status', 'Role created. Set its permissions below.');
+    }
+
     /** Every role except 'admin', which always passes every permission check (see
      *  CheckPermission middleware); showing it would imply it can be restricted. */
-    protected array $roles = [...User::STAFF_ROLES, 'customer'];
-
     public function index(\Illuminate\Http\Request $request)
     {
         $permissions = Permission::orderBy('category')->orderBy('label')->get()->groupBy('category');
 
+        $roles = array_values(array_filter(array_keys(User::roleOptions()), fn ($role) => $role !== 'admin'));
         $assigned = RolePermission::all()
             ->groupBy('role')
             ->map(fn ($rows) => $rows->pluck('permission_key')->all());
 
         return view('role_permissions.index', [
             'permissionGroups' => $permissions,
-            'roles' => $this->roles,
+            'roles' => $roles,
             'assigned' => $assigned,
         ]);
     }
@@ -45,8 +55,9 @@ class RolePermissionsController extends Controller
 
         $selected = $data['permissions'] ?? [];
 
-        DB::transaction(function () use ($selected) {
-            foreach ($this->roles as $role) {
+        $roles = array_values(array_filter(array_keys(User::roleOptions()), fn ($role) => $role !== 'admin'));
+        DB::transaction(function () use ($selected, $roles) {
+            foreach ($roles as $role) {
                 RolePermission::where('role', $role)->delete();
 
                 foreach ($selected[$role] ?? [] as $permissionKey) {
@@ -54,6 +65,7 @@ class RolePermissionsController extends Controller
                 }
             }
         });
+        \Illuminate\Support\Facades\Cache::flush();
 
         return redirect()->route('role_permissions.index')->with('status', 'Role permissions updated successfully.');
     }

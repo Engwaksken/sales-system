@@ -130,6 +130,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update')->middleware('permission:manage_settings');
 
     Route::get('/role-permissions', [RolePermissionsController::class, 'index'])->name('role_permissions.index')->middleware('permission:manage_users');
+    Route::post('/roles', [RolePermissionsController::class, 'storeRole'])->name('roles.store')->middleware('permission:manage_users');
     Route::put('/role-permissions', [RolePermissionsController::class, 'update'])->name('role_permissions.update')->middleware('permission:manage_users');
 
     Route::get('/chat-support', [ChatController::class, 'index'])->name('chat.index')->middleware('permission:manage_chats');

@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\Stock;
 use App\Models\Supplier;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ class ReportController extends Controller
 
         $data = match ($type) {
             'sales' => $this->sales($from, $to, $branchId, $supplierId),
+            'salesperson_performance' => $this->salespersonPerformance($from, $to, $branchId),
             'purchases' => $this->purchases($from, $to, $branchId, $supplierId),
             'expenses' => $this->expenses($from, $to, $branchId, $supplierId),
             'stock' => $this->stock($branchId, $supplierId),
@@ -64,6 +66,7 @@ class ReportController extends Controller
             'reportTypes' => [
                 'overview',
                 'sales',
+                'salesperson_performance',
                 'purchases',
                 'expenses',
                 'stock',
@@ -194,6 +197,38 @@ class ReportController extends Controller
                 'Total Amount', 'Paid', 'Balance',
             ],
             'moneyColumns' => ['total_amount', 'paid', 'balance'],
+        ];
+    }
+
+    private function salespersonPerformance(Carbon $from, Carbon $to, ?int $branchId): array
+    {
+        $rows = User::query()
+            ->leftJoin('sales', function ($join) use ($from, $to, $branchId) {
+                $join->on('sales.user_id', '=', 'users.id')
+                    ->where('sales.transaction_type', '=', 'sale')
+                    ->whereBetween('sales.sale_date', [$from, $to])
+                    ->when($branchId, fn ($q) => $q->where('sales.branch_id', $branchId));
+            })
+            ->where('users.role', '!=', 'customer')
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->select('users.name', 'users.email')
+            ->selectRaw('COUNT(sales.id) as sales_count')
+            ->selectRaw('COALESCE(SUM(sales.total_amount), 0) as total_amount')
+            ->selectRaw('COALESCE(SUM(sales.partial_amount), 0) as amount_paid')
+            ->orderByDesc('total_amount')
+            ->get()
+            ->map(fn ($row) => [
+                'salesperson' => $row->name,
+                'email' => $row->email,
+                'sales_count' => (int) $row->sales_count,
+                'total_amount' => (float) $row->total_amount,
+                'amount_paid' => (float) $row->amount_paid,
+            ]);
+
+        return [
+            'rows' => $rows,
+            'headers' => ['Salesperson', 'Email', 'Sales Count', 'Total Sales', 'Amount Paid'],
+            'moneyColumns' => ['total_amount', 'amount_paid'],
         ];
     }
 

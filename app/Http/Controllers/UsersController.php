@@ -85,7 +85,7 @@ class UsersController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'role' => ['required', \Illuminate\Validation\Rule::in(array_keys(User::ROLES))],
+            'role' => ['required', \Illuminate\Validation\Rule::in(array_keys(User::roleOptions()))],
             'branch_id' => 'nullable|exists:branches,id',
             'avatar' => 'nullable|image|max:4096',
         ]);
@@ -117,7 +117,7 @@ class UsersController extends Controller
             'name' => 'sometimes|required|string',
             'email' => 'sometimes|required|email|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8',
-            'role' => ['sometimes', 'required', \Illuminate\Validation\Rule::in(array_keys(User::ROLES))],
+            'role' => ['sometimes', 'required', \Illuminate\Validation\Rule::in(array_keys(User::roleOptions()))],
             'branch_id' => 'nullable|exists:branches,id',
             'avatar' => 'nullable|image|max:4096',
         ]);

@@ -13,6 +13,12 @@
 <div data-flash class="mb-4 rounded-md bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{{ session('status') }}</div>
 @endif
 
+<form method="POST" action="{{ route('roles.store') }}" class="mb-4 flex items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+    @csrf
+    <div><label class="mb-1 block text-sm font-medium text-slate-700">Create role</label><input name="label" maxlength="100" required placeholder="e.g. Sales Representative" class="rounded-md border-slate-300"></div>
+    <button class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white">Add Role</button>
+</form>
+
 <form method="POST" action="{{ route('role_permissions.update') }}">
     @csrf
     @method('PUT')

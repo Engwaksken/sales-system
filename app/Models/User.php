@@ -32,7 +32,12 @@ class User extends Authenticatable
 
     public static function roleLabel(?string $role): string
     {
-        return self::ROLES[$role] ?? ucwords(str_replace('_', ' ', (string) $role));
+        return Role::query()->where('name', $role)->value('label') ?? ucwords(str_replace('_', ' ', (string) $role));
+    }
+
+    public static function roleOptions(): array
+    {
+        try { return Role::options() ?: self::ROLES; } catch (\Throwable) { return self::ROLES; }
     }
 
     protected $fillable = [
