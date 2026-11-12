@@ -32,7 +32,13 @@ class User extends Authenticatable
 
     public static function roleLabel(?string $role): string
     {
-        return Role::query()->where('name', $role)->value('label') ?? ucwords(str_replace('_', ' ', (string) $role));
+        try {
+            return Role::query()->where('name', $role)->value('label')
+                ?? self::ROLES[$role] ?? ucwords(str_replace('_', ' ', (string) $role));
+        } catch (\Throwable) {
+            // Let existing user pages remain usable until the roles migration is applied.
+            return self::ROLES[$role] ?? ucwords(str_replace('_', ' ', (string) $role));
+        }
     }
 
     public static function roleOptions(): array
