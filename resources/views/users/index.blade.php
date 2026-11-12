@@ -110,7 +110,7 @@
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
-  <select name="role" class="w-full rounded-md border-slate-300 shadow-sm" required>@foreach(\App\Models\User::ROLES as $roleKey => $roleName)<option value="{{ $roleKey }}" @selected(old('role', 'cashier') === $roleKey)>{{ $roleName }}</option>@endforeach</select>
+  <select name="role" class="w-full rounded-md border-slate-300 shadow-sm" required>@foreach(\App\Models\User::roleOptions() as $roleKey => $roleName)<option value="{{ $roleKey }}" @selected(old('role', 'cashier') === $roleKey)>{{ $roleName }}</option>@endforeach</select>
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Branch Id</label>
