@@ -475,7 +475,7 @@
                     <select id="pos-branch" name="branch_id" class="w-full rounded-lg border-slate-300" onchange="posBranchChanged()" required>
                         <option value="">Select Branch</option>
                         @foreach($branch_options as $branch)
-                            <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                            <option value="{{ $branch->id }}" {{ (string) old('branch_id', $defaultPosBranchId) === (string) $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                         @endforeach
                     </select>
                 </div>

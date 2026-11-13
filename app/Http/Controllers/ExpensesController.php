@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Expense;
 use App\Models\Branch;
+use App\Models\ExpenseCategory;
+use App\Models\Stock;
 use App\Support\ExportsCsv;
 use Illuminate\Http\Request;
 
@@ -38,7 +40,10 @@ class ExpensesController extends Controller
         $stat2 = 'UGX '.number_format(Expense::whereMonth('expense_date', now()->month)->whereYear('expense_date', now()->year)->sum('amount'), 0);
         $periodStats = $this->periodStats(Expense::class, 'expense_date', 'amount');
         $branch_options = Branch::orderBy('id')->get();
-        return view('expenses.index', ['items' => $expenses, 'branch_options' => $branch_options, 'paymentMethods' => self::PAYMENT_METHODS, 'stat1' => $stat1, 'stat2' => $stat2, 'periodStats' => $periodStats]);
+        $defaultBranchId = $branch_options->first(fn ($branch) => strtolower(trim($branch->name)) === 'main branch')?->id;
+        $expenseCategories = ExpenseCategory::where('status', true)->orderBy('name')->get();
+        $availableStock = Stock::with('product')->where('quantity', '>', 0)->orderBy('branch_id')->get();
+        return view('expenses.index', ['items' => $expenses, 'branch_options' => $branch_options, 'paymentMethods' => self::PAYMENT_METHODS, 'stat1' => $stat1, 'stat2' => $stat2, 'periodStats' => $periodStats, 'defaultBranchId' => $defaultBranchId, 'expenseCategories' => $expenseCategories, 'availableStock' => $availableStock]);
     }
 
     public function exportCsv(Request $request)

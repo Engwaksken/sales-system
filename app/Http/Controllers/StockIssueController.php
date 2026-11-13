@@ -46,6 +46,6 @@ class StockIssueController extends Controller
             StockIssue::create($data + ['user_id' => $request->user()->id]);
         });
 
-        return redirect()->route('stock-issues.index')->with('status', 'Stock issue recorded; no sale or cash entry was created.');
+        return redirect()->back()->with('status', 'Stock issue recorded; no sale or cash entry was created.');
     }
 }

@@ -243,6 +243,7 @@ public function index(Request $request)
     $supplier_options = Supplier::orderBy('name')->get();
     $user_options = User::orderBy('name')->get();
     $branch_options = Branch::orderBy('name')->get();
+    $defaultPosBranchId = $branch_options->first(fn ($branch) => strtolower(trim($branch->name)) === 'main branch')?->id;
     $receivables = (float) Sale::where('transaction_type', 'sale')->sum('balance_amount');
     $collected = (float) Payment::where('transaction_type', 'sale')->where('status', 'successful')->sum('amount');
     $product_options = \App\Models\Product::orderBy('name')->get(['id', 'name']);
@@ -253,6 +254,7 @@ public function index(Request $request)
         'supplier_options' => $supplier_options,
         'user_options' => $user_options,
         'branch_options' => $branch_options,
+        'defaultPosBranchId' => $defaultPosBranchId,
         'stat1' => $stat1,
         'periodStats' => $periodStats,
         'stockData' => $stockData,

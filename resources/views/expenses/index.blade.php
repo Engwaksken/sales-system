@@ -113,7 +113,8 @@
       <h2 id="expenses-modal-title" class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-indigo-500"></i> New Expense</h2>
       <button type="button" onclick="closeModal('expenses-modal')" class="text-slate-400 text-xl leading-none">&times;</button>
     </div>
-    <form id="expenses-form" method="POST" action="{{ route('expenses.store') }}" class="space-y-4">
+    <div class="mb-4 flex gap-2 border-b pb-3" role="tablist"><button type="button" class="expense-tab rounded bg-indigo-600 px-3 py-2 text-sm text-white" data-panel="cash-expense-panel">Cash expense</button><button type="button" class="expense-tab rounded border px-3 py-2 text-sm" data-panel="stock-issue-panel">Stock for staff / guest</button></div>
+    <form id="expenses-form" method="POST" action="{{ route('expenses.store') }}" class="space-y-4" data-expense-panel="cash-expense-panel">
       @csrf
       <input type="hidden" name="_method" value="POST">
       <div>
@@ -139,7 +140,7 @@
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
-  <input type="text" name="category" class="w-full rounded-md border-slate-300 shadow-sm" required>
+  <select name="category" class="w-full rounded-md border-slate-300 shadow-sm" required><option value="">-- Select Category --</option>@foreach($expenseCategories as $category)<option value="{{ $category->name }}">{{ $category->name }}</option>@endforeach</select>
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
@@ -150,7 +151,7 @@
   <select name="branch_id" class="w-full rounded-md border-slate-300 shadow-sm" required>
     <option value="">-- Select Branch Id --</option>
     @foreach($branch_options as $opt)
-    <option value="{{ $opt->id }}">{{ $opt->name }}</option>
+    <option value="{{ $opt->id }}" @selected((string) $defaultBranchId === (string) $opt->id)>{{ $opt->name }}</option>
     @endforeach
   </select>
 </div>
@@ -159,6 +160,24 @@
         <button type="button" onclick="closeModal('expenses-modal')" class="text-sm text-slate-500">Cancel</button>
       </div>
     </form>
+    <form id="stock-issue-panel" data-expense-panel="stock-issue-panel" class="hidden space-y-4" method="POST" action="{{ route('stock-issues.store') }}">
+      @csrf
+      <p class="text-sm text-slate-500">Record stock given away or consumed without creating a cash expense or sale.</p>
+      <label class="block text-sm font-medium text-slate-700">Product and branch<select name="stock_selection" required class="mt-1 w-full rounded-md border-slate-300" onchange="document.getElementById('issue-product-id').value=this.selectedOptions[0].dataset.product;document.getElementById('issue-branch-id').value=this.selectedOptions[0].dataset.branch;document.getElementById('issue-available').textContent=this.selectedOptions[0].dataset.available || '—';"><option value="">-- Select stock --</option>@foreach($availableStock as $stock)<option value="{{ $stock->id }}" data-product="{{ $stock->product_id }}" data-branch="{{ $stock->branch_id }}" data-available="{{ $stock->quantity }}">{{ $stock->product?->name }} — {{ $stock->branch?->name }} ({{ $stock->quantity }} available)</option>@endforeach</select></label>
+      <input id="issue-product-id" type="hidden" name="product_id"><input id="issue-branch-id" type="hidden" name="branch_id">
+      <label class="block text-sm font-medium text-slate-700">Issue type<select name="type" required class="mt-1 w-full rounded-md border-slate-300"><option value="staff_consumption">Staff consumption</option><option value="gratis">Guest / gratis</option></select></label>
+      <p class="text-sm text-slate-500">Available: <span id="issue-available">—</span></p>
+      <label class="block text-sm font-medium text-slate-700">Quantity<input type="number" name="quantity" min="1" step="1" required class="mt-1 w-full rounded-md border-slate-300"></label>
+      <label class="block text-sm font-medium text-slate-700">Staff / guest name and notes<textarea name="reason" rows="2" maxlength="1000" class="mt-1 w-full rounded-md border-slate-300"></textarea></label>
+      <div class="pt-2"><button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white">Record stock issue</button></div>
+    </form>
   </div>
 </div>
+<script>
+document.querySelectorAll('.expense-tab').forEach(tab => tab.addEventListener('click', () => {
+  document.querySelectorAll('.expense-tab').forEach(button => { button.classList.remove('bg-indigo-600','text-white'); button.classList.add('border'); });
+  tab.classList.add('bg-indigo-600','text-white'); tab.classList.remove('border');
+  document.querySelectorAll('[data-expense-panel]').forEach(panel => panel.classList.toggle('hidden', panel.id !== tab.dataset.panel));
+}));
+</script>
 @endsection
