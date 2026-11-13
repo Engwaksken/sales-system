@@ -5,6 +5,7 @@
     <h1 class="text-xl font-semibold text-slate-800 flex min-w-0 items-center gap-2"><i class="fa-solid fa-warehouse text-slate-400"></i> Stock</h1>
     <div class="flex flex-wrap items-center gap-2">
         <a href="{{ route('stock.report.pdf') }}" class="text-sm text-slate-500 hover:text-slate-700"><i class="fa-solid fa-file-pdf"></i> Detailed Stock Report (PDF)</a>
+        <a href="{{ route('stock-issues.index') }}" class="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"><i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Stock issues</a>
         @include('partials.import-button', ['module' => 'stock'])
         <button type="button" onclick="openCreateModal('stock-modal', 'stock-form', '{{ route('stock.store') }}')" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> New Stock</button>
     </div>

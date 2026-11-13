@@ -13,6 +13,7 @@ use App\Http\Controllers\BulkDeleteController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\StockIssueController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\RolePermissionsController;
@@ -98,6 +99,8 @@ Route::middleware('auth')->group(function () {
     // 'export' isn't swallowed by Route::resource's {product} etc. wildcard.
     // PDF exports have no generic equivalent — kept as specials.
     Route::get('/stock/report/pdf', [StockController::class, 'reportPdf'])->name('stock.report.pdf')->middleware('permission:manage_stock');
+    Route::get('/stock-issues', [StockIssueController::class, 'index'])->name('stock-issues.index')->middleware('permission:manage_stock');
+    Route::post('/stock-issues', [StockIssueController::class, 'store'])->name('stock-issues.store')->middleware('permission:manage_stock');
     Route::get('/sales/{sale}/invoice.pdf', [SalesController::class, 'invoicePdf'])->name('sales.invoice-pdf')->middleware('permission:manage_sales');
     Route::get('/sales/{sale}/invoice/preview', [SalesController::class, 'invoicePreview'])->name('sales.invoice-preview')->middleware('permission:manage_sales');
     Route::get('/sales/{sale}/invoice/download', [SalesController::class, 'invoiceDownload'])->name('sales.invoice-download')->middleware('permission:manage_sales');
