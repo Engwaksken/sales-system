@@ -2,28 +2,103 @@
 @section('title', 'Dashboard')
 
 @section('content')
-@php $isCustomer = auth()->user()?->role === 'customer'; @endphp
+@php
+    $isCustomer = auth()->user()?->role === 'customer';
+    $ugx = fn ($v) => 'UGX '.number_format((float) $v, 0);
+    $pct = fn ($v) => $v === null ? '—' : number_format((float) $v, 1).'%';
 
-<div class="mb-5">
-    <h1 class="text-xl font-black text-slate-800">
-        <i class="fas fa-gauge-high mr-2 text-indigo-600"></i> Dashboard
-    </h1>
-    <p class="mt-1 text-sm text-slate-500">
-        {{ $isCustomer ? 'Your purchases, orders and account activity.' : 'Business overview and performance.' }}
-    </p>
+    // Percentage change, or null when there is nothing to compare against.
+    $change = fn ($now, $before) => (float) $before != 0.0 ? (($now - $before) / abs($before)) * 100 : null;
+@endphp
+
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <h1 class="text-xl font-black text-slate-800">
+            <i class="fas fa-gauge-high mr-2 text-indigo-600"></i> Dashboard
+        </h1>
+        <p class="mt-1 text-sm text-slate-500">
+            {{ $isCustomer ? 'Your purchases, orders and account activity.' : 'Live sales, margin and inventory across every branch — '.now()->format('F Y').' to date.' }}
+        </p>
+    </div>
+    @unless($isCustomer)
+        <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Live — updated {{ now()->format('H:i') }}
+        </span>
+    @endunless
 </div>
 
+@unless($isCustomer)
+    {{-- ── Headline: sales, margin, profit ─────────────────────────────── --}}
+    @php
+        $salesChange = $change($monthSales, $prevMonthSales);
+        $profitChange = $change($margin['gross_profit'], $prevMargin['gross_profit']);
+        $marginPts = ($margin['margin'] !== null && $prevMargin['margin'] !== null) ? $margin['margin'] - $prevMargin['margin'] : null;
+        $heroes = [
+            ['Month Sales', $ugx($monthSales), $salesChange, '%', 'fas fa-chart-line', 'text-indigo-600 bg-indigo-50'],
+            ['Gross Profit', $ugx($margin['gross_profit']), $profitChange, '%', 'fas fa-sack-dollar', 'text-emerald-600 bg-emerald-50'],
+            ['Gross Margin', $pct($margin['margin']), $marginPts, ' pts', 'fas fa-percent', 'text-sky-600 bg-sky-50'],
+            ['Net Profit', $ugx($netProfit), null, '', 'fas fa-scale-balanced', $netProfit < 0 ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50'],
+        ];
+    @endphp
+    <div class="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach($heroes as [$label, $value, $delta, $unit, $icon, $tone])
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="text-[11px] font-black uppercase tracking-wide text-slate-400">{{ $label }}</div>
+                        <div class="mt-2 truncate text-2xl font-black text-slate-800">{{ $value }}</div>
+                    </div>
+                    <div class="grid h-11 w-11 shrink-0 place-items-center rounded-xl {{ $tone }}"><i class="{{ $icon }}"></i></div>
+                </div>
+                <div class="mt-2 text-xs font-semibold">
+                    @if($label === 'Net Profit')
+                        <span class="text-slate-500">Gross profit − {{ $ugx($monthExpenses) }} expenses</span>
+                    @elseif($delta === null)
+                        <span class="text-slate-400">No comparison for last month yet</span>
+                    @else
+                        <span class="{{ $delta >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
+                            <i class="fas {{ $delta >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down' }}"></i>
+                            {{ ($delta >= 0 ? '+' : '').number_format($delta, 1).$unit }}
+                        </span>
+                        <span class="text-slate-400">vs same days last month</span>
+                    @endif
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    @if($margin['coverage'] !== null && $margin['coverage'] < 99)
+        <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+            <i class="fas fa-circle-info mr-1"></i>
+            Margin is measured on the {{ number_format($margin['coverage'], 0) }}% of this month's sales whose products have a cost price.
+            Add cost prices on <a href="{{ route('stock.index') }}" class="font-bold underline">Stock</a> to cover the rest.
+        </div>
+    @endif
+@endunless
+
 <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-    @foreach([
-        [$isCustomer ? 'My Purchases Today' : "Today's Sales", 'UGX '.number_format((float)$todaySales,0), 'fas fa-cash-register'],
-        [$isCustomer ? 'My Purchases This Month' : 'Month Sales', 'UGX '.number_format((float)$monthSales,0), 'fas fa-chart-line'],
-        [$isCustomer ? 'Paid This Month' : 'Collected This Month', 'UGX '.number_format((float)$monthCollected,0), 'fas fa-hand-holding-dollar'],
-        [$isCustomer ? 'My Balance Due' : 'Outstanding Credit', 'UGX '.number_format((float)$outstandingCredit,0), 'fas fa-file-invoice-dollar'],
-        [$isCustomer ? 'Pending Orders' : 'Month Expenses', $isCustomer ? number_format((int)$pendingOrders) : 'UGX '.number_format((float)$monthExpenses,0), $isCustomer ? 'fas fa-cart-shopping' : 'fas fa-receipt'],
-        [$isCustomer ? 'Products Available' : 'Pending Orders', $isCustomer ? number_format((int)$totalProducts) : number_format((int)$pendingOrders), $isCustomer ? 'fas fa-box-open' : 'fas fa-clock'],
-        [$isCustomer ? 'Account' : 'Low Stock', $isCustomer ? 'Active' : number_format((int)$lowStock), $isCustomer ? 'fas fa-user-check' : 'fas fa-triangle-exclamation'],
-        [$isCustomer ? 'Support' : 'Open Chats', number_format((int)$openChatsCount), 'fas fa-comments'],
-    ] as [$label,$value,$icon])
+    @php
+        $cards = $isCustomer ? [
+            ['My Purchases Today', $ugx($todaySales), 'fas fa-cash-register'],
+            ['My Purchases This Month', $ugx($monthSales), 'fas fa-chart-line'],
+            ['Paid This Month', $ugx($monthCollected), 'fas fa-hand-holding-dollar'],
+            ['My Balance Due', $ugx($outstandingCredit), 'fas fa-file-invoice-dollar'],
+            ['Pending Orders', number_format((int) $pendingOrders), 'fas fa-cart-shopping'],
+            ['Products Available', number_format((int) $totalProducts), 'fas fa-box-open'],
+            ['Account', 'Active', 'fas fa-user-check'],
+            ['Support', number_format((int) $openChatsCount), 'fas fa-comments'],
+        ] : [
+            ["Today's Sales", $ugx($todaySales), 'fas fa-cash-register'],
+            ['Collected This Month', $ugx($monthCollected), 'fas fa-hand-holding-dollar'],
+            ['Outstanding Credit', $ugx($outstandingCredit), 'fas fa-file-invoice-dollar'],
+            ['Month Expenses', $ugx($monthExpenses), 'fas fa-receipt'],
+            ['Stock Value (Cost)', $ugx($stockCostValue), 'fas fa-warehouse'],
+            ['Low Stock', number_format((int) $lowStock), 'fas fa-triangle-exclamation'],
+            ['Pending Orders', number_format((int) $pendingOrders), 'fas fa-clock'],
+            ['Open Chats', number_format((int) $openChatsCount), 'fas fa-comments'],
+        ];
+    @endphp
+    @foreach($cards as [$label, $value, $icon])
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
@@ -38,43 +113,222 @@
     @endforeach
 </div>
 
-<div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex flex-wrap gap-1 border-b border-slate-200 p-2">
-        <button type="button" class="dashboard-tab active rounded-xl px-4 py-2 text-sm font-bold" data-tab="overview">
-            <i class="fas fa-chart-pie mr-1"></i> Overview
-        </button>
-        <button type="button" class="dashboard-tab rounded-xl px-4 py-2 text-sm font-bold" data-tab="activity">
-            <i class="fas fa-clock-rotate-left mr-1"></i> Recent Activity
-        </button>
-        @unless($isCustomer)
-            <button type="button" class="dashboard-tab rounded-xl px-4 py-2 text-sm font-bold" data-tab="operations">
-                <i class="fas fa-building-columns mr-1"></i> Operations
-            </button>
-        @endunless
-    </div>
-
-    <section class="dashboard-panel p-4" data-panel="overview">
-        <div class="grid gap-5 lg:grid-cols-2">
-            <div class="rounded-xl border border-slate-200 p-4">
-                <h3 class="font-black text-slate-800">
-                    <i class="fas fa-chart-line mr-1 text-indigo-600"></i>
-                    {{ $isCustomer ? 'My Purchase Trend' : 'Sales Trend' }}
-                </h3>
-                <p class="mb-3 text-xs text-slate-400">Last 7 months</p>
-                <div class="h-72"><canvas id="salesTrendChart"></canvas></div>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 p-4">
-                <h3 class="font-black text-slate-800">
-                    <i class="fas fa-chart-column mr-1 text-emerald-600"></i>
-                    {{ $isCustomer ? 'My Orders Trend' : 'Orders Trend' }}
-                </h3>
-                <p class="mb-3 text-xs text-slate-400">Last 7 months</p>
-                <div class="h-72"><canvas id="ordersTrendChart"></canvas></div>
+@unless($isCustomer)
+    {{-- ── Champions of the month ──────────────────────────────────────── --}}
+    <div class="mb-5 grid gap-3 lg:grid-cols-2">
+        <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-600"><i class="fas fa-trophy text-2xl"></i></div>
+            <div class="min-w-0 flex-1">
+                <div class="text-[11px] font-black uppercase tracking-wide text-slate-400">Top Branch This Month</div>
+                <div class="truncate text-lg font-black text-slate-800">{{ $monthlyBestBranch?->name ?? 'No sales yet' }}</div>
+                @if($monthlyBestBranch)
+                    <div class="text-xs text-slate-500">
+                        {{ $ugx($monthlyBestBranch->total_amount) }} · {{ number_format($monthlyBestBranch->sales_count) }} sales · {{ $pct($monthlyBestBranch->margin) }} margin
+                    </div>
+                @endif
             </div>
         </div>
+        <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-600"><i class="fas fa-medal text-2xl"></i></div>
+            <div class="min-w-0 flex-1">
+                <div class="text-[11px] font-black uppercase tracking-wide text-slate-400">Top Salesperson This Month</div>
+                <div class="truncate text-lg font-black text-slate-800">{{ $topStaffMember?->name ?? 'No sales yet' }}</div>
+                @if($topStaffMember)
+                    <div class="text-xs text-slate-500">
+                        {{ $ugx($topStaffMember->total_amount) }} · {{ number_format($topStaffMember->sales_count) }} sales · {{ $ugx($topStaffMember->gross_profit) }} gross profit
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+@endunless
+
+<div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-wrap gap-1 border-b border-slate-200 p-2">
+        @php
+            $tabs = $isCustomer
+                ? ['overview' => ['fa-chart-pie', 'Overview'], 'activity' => ['fa-clock-rotate-left', 'Recent Activity']]
+                : [
+                    'overview' => ['fa-chart-pie', 'Overview'],
+                    'leaders' => ['fa-ranking-star', 'Branches & Staff'],
+                    'inventory' => ['fa-boxes-stacked', 'Inventory'],
+                    'activity' => ['fa-clock-rotate-left', 'Recent Activity'],
+                    'operations' => ['fa-truck-field', 'Suppliers'],
+                    'why' => ['fa-rocket', 'Why Switch'],
+                ];
+        @endphp
+        @foreach($tabs as $key => [$icon, $label])
+            <button type="button" class="dashboard-tab rounded-xl px-4 py-2 text-sm font-bold text-slate-600" data-tab="{{ $key }}">
+                <i class="fas {{ $icon }} mr-1"></i> {{ $label }}
+            </button>
+        @endforeach
+    </div>
+
+    {{-- ── Overview ─────────────────────────────────────────────────────── --}}
+    <section class="dashboard-panel p-4" data-panel="overview">
+        @if($isCustomer)
+            <div class="grid gap-5 lg:grid-cols-2">
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <h3 class="font-black text-slate-800"><i class="fas fa-chart-line mr-1 text-indigo-600"></i> My Purchase Trend</h3>
+                    <p class="mb-3 text-xs text-slate-400">Last 7 months · UGX</p>
+                    <div class="h-72"><canvas id="salesTrendChart"></canvas></div>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <h3 class="font-black text-slate-800"><i class="fas fa-chart-column mr-1 text-emerald-600"></i> My Orders Trend</h3>
+                    <p class="mb-3 text-xs text-slate-400">Last 7 months</p>
+                    <div class="h-72"><canvas id="ordersTrendChart"></canvas></div>
+                </div>
+            </div>
+        @else
+            <div class="grid gap-5 lg:grid-cols-3">
+                <div class="rounded-xl border border-slate-200 p-4 lg:col-span-2">
+                    <h3 class="font-black text-slate-800"><i class="fas fa-chart-column mr-1 text-indigo-600"></i> Sales vs Gross Profit</h3>
+                    <p class="mb-3 text-xs text-slate-400">Last 7 months · UGX</p>
+                    <div class="h-72"><canvas id="salesProfitChart"></canvas></div>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <h3 class="font-black text-slate-800"><i class="fas fa-percent mr-1 text-sky-600"></i> Gross Margin</h3>
+                    <p class="mb-3 text-xs text-slate-400">Last 7 months · % of costed sales</p>
+                    <div class="h-72"><canvas id="marginChart"></canvas></div>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <h3 class="font-black text-slate-800"><i class="fas fa-store mr-1 text-indigo-600"></i> Sales by Branch</h3>
+                    <p class="mb-3 text-xs text-slate-400">This month · UGX</p>
+                    <div class="h-72"><canvas id="branchChart"></canvas></div>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <h3 class="font-black text-slate-800"><i class="fas fa-box mr-1 text-emerald-600"></i> Most Profitable Products</h3>
+                    <p class="mb-3 text-xs text-slate-400">This month · gross profit, UGX</p>
+                    <div class="h-72"><canvas id="productChart"></canvas></div>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <h3 class="font-black text-slate-800"><i class="fas fa-cart-shopping mr-1 text-amber-600"></i> Online Orders</h3>
+                    <p class="mb-3 text-xs text-slate-400">Last 7 months</p>
+                    <div class="h-72"><canvas id="ordersTrendChart"></canvas></div>
+                </div>
+            </div>
+        @endif
     </section>
 
+    @unless($isCustomer)
+        {{-- ── Branches & Staff ─────────────────────────────────────────── --}}
+        <section class="dashboard-panel hidden p-4" data-panel="leaders">
+            <div class="grid gap-5 xl:grid-cols-2">
+                @foreach([
+                    ['Branch Leaderboard', 'fa-store', $topBranches, 'branch'],
+                    ['Staff Leaderboard', 'fa-user-tie', $topStaff, 'staff'],
+                ] as [$title, $icon, $rows, $kind])
+                    <div class="overflow-hidden rounded-xl border border-slate-200">
+                        <div class="flex items-center justify-between border-b bg-slate-50 px-4 py-3">
+                            <span class="font-black text-slate-700"><i class="fas {{ $icon }} mr-1 text-indigo-500"></i> {{ $title }}</span>
+                            <span class="text-xs text-slate-400">{{ now()->format('F') }}</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="text-left text-[10px] font-black uppercase tracking-wide text-slate-400">
+                                    <tr>
+                                        <th class="px-4 py-2">#</th>
+                                        <th class="px-4 py-2">{{ $kind === 'branch' ? 'Branch' : 'Staff' }}</th>
+                                        <th class="px-4 py-2 text-right">Sales</th>
+                                        <th class="px-4 py-2 text-right">Revenue</th>
+                                        <th class="px-4 py-2 text-right">Gross Profit</th>
+                                        <th class="px-4 py-2 text-right">Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($rows as $i => $row)
+                                        <tr class="border-t border-slate-100">
+                                            <td class="px-4 py-3">
+                                                @if($i < 3)
+                                                    <i class="fas fa-medal {{ ['text-amber-500', 'text-slate-400', 'text-orange-700'][$i] }}" title="Rank {{ $i + 1 }}"></i>
+                                                @else
+                                                    <span class="text-xs font-bold text-slate-400">{{ $i + 1 }}</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div class="font-semibold text-slate-800">{{ $row->name }}</div>
+                                                @if($kind === 'staff')
+                                                    <div class="text-xs text-slate-400">{{ ucfirst((string) $row->role) }} · avg {{ $ugx($row->average_sale) }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-3 text-right">{{ number_format($row->sales_count) }}</td>
+                                            <td class="px-4 py-3 text-right font-bold">{{ number_format($row->total_amount, 0) }}</td>
+                                            <td class="px-4 py-3 text-right">{{ number_format($row->gross_profit, 0) }}</td>
+                                            <td class="px-4 py-3 text-right font-semibold">{{ $pct($row->margin) }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-slate-400">No sales recorded this month.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
+        {{-- ── Inventory ────────────────────────────────────────────────── --}}
+        <section class="dashboard-panel hidden p-4" data-panel="inventory">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach([
+                    ['Stock at Cost', $ugx($stockCostValue), number_format($stockedProducts).' products on hand', 'fa-warehouse', 'text-indigo-600 bg-indigo-50'],
+                    ['Stock at Selling Price', $ugx($stockRetailValue), $ugx(max($stockRetailValue - $stockCostValue, 0)).' profit waiting on shelves', 'fa-tags', 'text-emerald-600 bg-emerald-50'],
+                    ['Dead Stock', $ugx($deadStockValue), number_format($deadStockCount).' products unsold in 60 days', 'fa-box-archive', 'text-rose-600 bg-rose-50'],
+                    ['Expiry Watch', number_format($expiredCount).' expired', number_format($expiringSoonCount).' batches expire within 30 days', 'fa-hourglass-half', 'text-amber-600 bg-amber-50'],
+                ] as [$label, $value, $sub, $icon, $tone])
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <div class="text-[10px] font-black uppercase tracking-wide text-slate-400">{{ $label }}</div>
+                                <div class="mt-2 truncate text-lg font-black text-slate-800">{{ $value }}</div>
+                                <div class="mt-1 text-xs text-slate-500">{{ $sub }}</div>
+                            </div>
+                            <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl {{ $tone }}"><i class="fas {{ $icon }}"></i></div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-5 grid gap-5 lg:grid-cols-2">
+                <div class="overflow-hidden rounded-xl border border-slate-200">
+                    <div class="border-b bg-slate-50 px-4 py-3 font-black text-slate-700">
+                        <i class="fas fa-arrow-trend-down mr-1 text-rose-500"></i> Thinnest Margins This Month
+                    </div>
+                    @forelse($weakProducts as $product)
+                        <div class="grid grid-cols-3 gap-2 border-b border-slate-100 px-4 py-3 text-sm">
+                            <div class="truncate font-semibold">{{ $product->name }}</div>
+                            <div class="text-right">{{ number_format($product->costed_revenue, 0) }}</div>
+                            <div class="text-right font-bold {{ $product->margin < 0 ? 'text-rose-700' : 'text-slate-700' }}">
+                                @if($product->margin < 0)<i class="fas fa-circle-exclamation mr-1" title="Selling below cost"></i>@endif
+                                {{ $pct($product->margin) }}
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-4 py-8 text-center text-sm text-slate-400">No costed sales this month.</div>
+                    @endforelse
+                </div>
+
+                <div class="overflow-hidden rounded-xl border border-slate-200">
+                    <div class="border-b bg-slate-50 px-4 py-3 font-black text-slate-700">
+                        <i class="fas fa-hourglass-half mr-1 text-amber-500"></i> Expiring or Expired Batches
+                    </div>
+                    @forelse($expiringProducts as $batch)
+                        <div class="grid grid-cols-3 gap-2 border-b border-slate-100 px-4 py-3 text-sm">
+                            <div class="truncate font-semibold">{{ $batch->product?->name ?? 'Product #'.$batch->product_id }}</div>
+                            <div class="truncate text-slate-500">{{ $batch->branch?->name ?? '—' }} · {{ number_format((float) $batch->quantity) }}</div>
+                            <div class="text-right text-xs font-bold {{ $batch->expiry_date->isPast() ? 'text-rose-700' : 'text-amber-700' }}">
+                                {{ $batch->expiry_date->isPast() ? 'Expired' : 'Expires' }} {{ $batch->expiry_date->format('d M Y') }}
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-4 py-8 text-center text-sm text-slate-400">Nothing expiring in the next 30 days.</div>
+                    @endforelse
+                </div>
+            </div>
+        </section>
+    @endunless
+
+    {{-- ── Recent Activity ──────────────────────────────────────────────── --}}
     <section class="dashboard-panel hidden p-4" data-panel="activity">
         <div class="grid gap-5 lg:grid-cols-2">
             <div class="overflow-hidden rounded-xl border border-slate-200">
@@ -85,7 +339,7 @@
                 @forelse($recentSales as $sale)
                     <div class="grid grid-cols-3 gap-2 border-b border-slate-100 px-4 py-3 text-sm">
                         <div class="truncate font-semibold">{{ $sale->invoice_no ?? ('Sale #'.$sale->id) }}</div>
-                        <div class="text-right font-bold">{{ number_format((float)$sale->total_amount,0) }}</div>
+                        <div class="text-right font-bold">{{ number_format((float) $sale->total_amount, 0) }}</div>
                         <div class="text-right text-xs text-slate-400">{{ optional($sale->sale_date)->format('d M Y') ?? $sale->sale_date }}</div>
                     </div>
                 @empty
@@ -102,7 +356,7 @@
                     <div class="grid grid-cols-3 gap-2 border-b border-slate-100 px-4 py-3 text-sm">
                         <div class="truncate font-semibold">{{ $order->order_number ?? $order->order_id ?? ('Order #'.$order->id) }}</div>
                         <div class="truncate">{{ $order->customer_name ?? 'Customer' }}</div>
-                        <div class="text-right text-xs font-semibold text-slate-500">{{ str_replace('_',' ', $order->status ?? 'pending') }}</div>
+                        <div class="text-right text-xs font-semibold text-slate-500">{{ str_replace('_', ' ', $order->status ?? 'pending') }}</div>
                     </div>
                 @empty
                     <div class="px-4 py-8 text-center text-sm text-slate-400">No recent orders.</div>
@@ -112,28 +366,16 @@
     </section>
 
     @unless($isCustomer)
+        {{-- ── Suppliers ────────────────────────────────────────────────── --}}
         <section class="dashboard-panel hidden p-4" data-panel="operations">
-            <div class="grid gap-4 lg:grid-cols-2">
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <div class="text-xs font-black uppercase text-slate-400">Monthly Best Branch</div>
-                            <div class="mt-2 text-xl font-black text-slate-800">{{ $monthlyBestBranch?->name ?? 'No Sales Yet' }}</div>
-                            <div class="mt-1 text-sm font-bold text-sky-700">UGX {{ number_format((float)($monthlyBestBranch?->total_amount ?? 0),0) }}</div>
-                        </div>
-                        <div class="grid h-12 w-12 place-items-center rounded-xl bg-sky-50 text-sky-600"><i class="fas fa-trophy text-xl"></i></div>
+            <div class="rounded-xl border border-slate-200 p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-black uppercase text-slate-400">Stock Received This Month</div>
+                        <div class="mt-2 text-xl font-black text-slate-800">{{ $ugx($monthlySupplierTotalAmount) }}</div>
+                        <div class="mt-1 text-sm text-slate-500">{{ number_format($monthlySuppliers->count()) }} supplier(s) · {{ number_format($monthlySupplierProductCount) }} product line(s)</div>
                     </div>
-                </div>
-
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <div class="text-xs font-black uppercase text-slate-400">Monthly Suppliers</div>
-                            <div class="mt-2 text-xl font-black text-slate-800">{{ number_format($monthlySuppliers->count()) }}</div>
-                            <div class="mt-1 text-sm font-bold text-amber-700">UGX {{ number_format($monthlySupplierTotalAmount,0) }}</div>
-                        </div>
-                        <div class="grid h-12 w-12 place-items-center rounded-xl bg-amber-50 text-amber-600"><i class="fas fa-truck-field text-xl"></i></div>
-                    </div>
+                    <div class="grid h-12 w-12 place-items-center rounded-xl bg-amber-50 text-amber-600"><i class="fas fa-truck-field text-xl"></i></div>
                 </div>
             </div>
 
@@ -143,15 +385,75 @@
                         <div class="flex items-start justify-between gap-2">
                             <div>
                                 <div class="font-black text-slate-800">{{ $supplier->name }}</div>
-                                <div class="mt-1 text-xs text-slate-400">{{ number_format((int)$supplier->product_count) }} distinct product(s)</div>
+                                <div class="mt-1 text-xs text-slate-400">{{ number_format((int) $supplier->product_count) }} distinct product(s)</div>
                             </div>
                             <i class="fas fa-truck text-amber-500"></i>
                         </div>
-                        <div class="mt-3 text-lg font-black text-slate-800">UGX {{ number_format((float)$supplier->total_amount,0) }}</div>
+                        <div class="mt-3 text-lg font-black text-slate-800">{{ $ugx($supplier->total_amount) }}</div>
                     </div>
                 @empty
                     <div class="col-span-full rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No supplier activity this month.</div>
                 @endforelse
+            </div>
+        </section>
+
+        {{-- ── Why Switch ───────────────────────────────────────────────── --}}
+        <section class="dashboard-panel hidden p-4" data-panel="why">
+            <div class="rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 text-white">
+                <div class="text-xs font-black uppercase tracking-widest text-indigo-200">Built for stock-driven businesses</div>
+                <h2 class="mt-2 text-2xl font-black">Everything above is live. In QuickBooks, most of it is a month-end export.</h2>
+                <p class="mt-2 max-w-3xl text-sm text-indigo-100">
+                    QuickBooks is accounting software with inventory added on. This system starts from the shelf: every sale, batch,
+                    branch and cashier feeds the same numbers your accountant needs — so you see margin and stock problems the day they happen, not after the books close.
+                </p>
+            </div>
+
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach([
+                    ['fa-percent', 'Margin on every sale', 'Gross margin is '.$pct($margin['margin']).' this month — broken down by product, branch and cashier, recalculated with every sale.'],
+                    ['fa-store', 'Every branch, one view', number_format($stockedProducts).' products in stock across '.number_format($branchCount).' branch(es), worth '.$ugx($stockCostValue).' at cost.'],
+                    ['fa-hourglass-half', 'Batches & expiry', number_format($expiringSoonCount).' batch(es) expire within 30 days. Catch them now instead of writing them off later.'],
+                    ['fa-ranking-star', 'Staff accountability', ($topStaffMember ? $topStaffMember->name.' leads with '.$ugx($topStaffMember->total_amount).'.' : 'Rank staff by sales and profit.').' Every sale is tied to the person who made it.'],
+                ] as [$icon, $title, $body])
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><i class="fas {{ $icon }}"></i></div>
+                        <div class="mt-3 font-black text-slate-800">{{ $title }}</div>
+                        <p class="mt-1 text-sm text-slate-500">{{ $body }}</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-5 overflow-hidden rounded-xl border border-slate-200">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
+                            <tr>
+                                <th class="px-4 py-3">What you need</th>
+                                <th class="px-4 py-3 text-indigo-700">This system</th>
+                                <th class="px-4 py-3">QuickBooks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach([
+                                ['Point of sale', 'Built-in POS with receipts, credit sales and split payments', 'Separate POS product or third-party app'],
+                                ['Stock per branch', 'Every branch tracked natively, including non-sale stock issues', 'Multi-location stock needs top tiers or add-ons'],
+                                ['Batch & expiry tracking', 'Expiry dates on every batch, with alerts', 'Not in QuickBooks Online; needs Enterprise or an add-on'],
+                                ['Live margin', 'Per product, branch and staff member, as sales happen', 'Run and filter reports after transactions are posted'],
+                                ['Staff performance', 'Leaderboards by sales and profit', 'Not tracked per cashier'],
+                                ['URA EFRIS', 'Fiscal invoices issued from the sale', 'Requires a third-party connector'],
+                                ['Mobile money', 'Collections recorded against the sale', 'Manual entry or bank feed matching'],
+                                ['Online shop & orders', 'Customer shop, orders and chat in the same system', 'Separate e-commerce platform'],
+                                ['Accounting', 'Chart of accounts, journals, trial balance and income statement', 'Full accounting — its core strength'],
+                            ] as [$need, $ours, $theirs])
+                                <tr class="border-t border-slate-100">
+                                    <td class="px-4 py-3 font-semibold text-slate-800">{{ $need }}</td>
+                                    <td class="px-4 py-3 text-slate-700"><i class="fas fa-circle-check mr-1 text-emerald-600"></i> {{ $ours }}</td>
+                                    <td class="px-4 py-3 text-slate-500">{{ $theirs }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
     @endunless
@@ -166,9 +468,9 @@
     const panels = document.querySelectorAll('.dashboard-panel');
 
     function activate(tab) {
-        tabs.forEach(item => item.classList.remove('bg-indigo-600','text-white'));
+        tabs.forEach(item => item.classList.remove('bg-indigo-600', 'text-white'));
         panels.forEach(panel => panel.classList.add('hidden'));
-        tab.classList.add('bg-indigo-600','text-white');
+        tab.classList.add('bg-indigo-600', 'text-white');
         document.querySelector(`[data-panel="${tab.dataset.tab}"]`)?.classList.remove('hidden');
     }
 
@@ -177,20 +479,69 @@
 
     if (!window.Chart) return;
 
+    // Validated categorical palette (fixed order) and recessive chart chrome.
+    const BLUE = '#2a78d6', ORANGE = '#eb6834', AQUA = '#1baf7a';
+    Chart.defaults.color = '#52514e';
+    Chart.defaults.font.family = 'inherit';
+    Chart.defaults.borderColor = '#e7e5e4';
+    Chart.defaults.plugins.tooltip.mode = 'index';
+    Chart.defaults.plugins.tooltip.intersect = false;
+
+    const money = v => 'UGX ' + Math.round(v).toLocaleString();
+    const compact = v => Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+    const moneyTooltip = { callbacks: { label: ctx => `${ctx.dataset.label ? ctx.dataset.label + ': ' : ''}${money(ctx.parsed[ctx.chart.options.indexAxis === 'y' ? 'x' : 'y'])}` } };
+    const bar = { borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 };
+    const base = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false } };
+
     const labels = @json($chartLabels ?? []);
     const sales = @json($chartSales ?? []);
     const orders = @json($chartOrders ?? []);
 
-    new Chart(document.getElementById('salesTrendChart'), {
-        type: 'line',
-        data: { labels, datasets: [{ data: sales, tension:.35, fill:true, borderWidth:2, pointRadius:3 }] },
-        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
-    });
+    const el = id => document.getElementById(id);
 
-    new Chart(document.getElementById('ordersTrendChart'), {
+    @if($isCustomer)
+        new Chart(el('salesTrendChart'), {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Purchases', data: sales, borderColor: BLUE, backgroundColor: BLUE + '22', fill: true, tension: .35, borderWidth: 2, pointRadius: 4 }] },
+            options: { ...base, plugins: { legend: { display: false }, tooltip: moneyTooltip }, scales: { y: { beginAtZero: true, ticks: { callback: compact } }, x: { grid: { display: false } } } }
+        });
+    @else
+        const profit = @json($chartProfit);
+        const margin = @json($chartMargin);
+        const branches = @json($topBranches->map(fn ($b) => ['name' => $b->name, 'total' => $b->total_amount])->values());
+        const products = @json($topProducts->map(fn ($p) => ['name' => $p->name, 'profit' => round($p->gross_profit, 2)])->values());
+
+        new Chart(el('salesProfitChart'), {
+            type: 'bar',
+            data: { labels, datasets: [
+                { label: 'Sales', data: sales, backgroundColor: BLUE, ...bar },
+                { label: 'Gross profit', data: profit, backgroundColor: ORANGE, ...bar },
+            ] },
+            options: { ...base, plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: moneyTooltip },
+                scales: { y: { beginAtZero: true, ticks: { callback: compact } }, x: { grid: { display: false } } } }
+        });
+
+        new Chart(el('marginChart'), {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Gross margin', data: margin, borderColor: BLUE, backgroundColor: BLUE, borderWidth: 2, pointRadius: 4, tension: .3, spanGaps: true }] },
+            options: { ...base, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `Gross margin: ${ctx.parsed.y.toFixed(1)}%` } } },
+                scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } }
+        });
+
+        const horizontal = (id, rows, key, color, label) => new Chart(el(id), {
+            type: 'bar',
+            data: { labels: rows.map(r => r.name), datasets: [{ label, data: rows.map(r => r[key]), backgroundColor: color, ...bar }] },
+            options: { ...base, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: moneyTooltip },
+                scales: { x: { beginAtZero: true, ticks: { callback: compact } }, y: { grid: { display: false } } } }
+        });
+        horizontal('branchChart', branches, 'total', BLUE, 'Sales');
+        horizontal('productChart', products, 'profit', AQUA, 'Gross profit');
+    @endif
+
+    new Chart(el('ordersTrendChart'), {
         type: 'bar',
-        data: { labels, datasets: [{ data: orders, borderWidth:1, borderRadius:8 }] },
-        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{precision:0}}} }
+        data: { labels, datasets: [{ label: 'Orders', data: orders, backgroundColor: @json($isCustomer ? '#1baf7a' : '#2a78d6'), borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28 }] },
+        options: { ...base, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } }
     });
 })();
 </script>
