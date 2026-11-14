@@ -3,7 +3,8 @@
 @section('title', 'Report: '.str($type)->replace('_', ' ')->title())
 
 @section('content')
-<div class="mb-4">
+@php $exportQuery = request()->except(['page', 'per_page']); @endphp
+<div class="mb-4 flex flex-wrap items-end justify-between gap-3">
     <div>
         <h1 class="text-xl font-black text-slate-800">
             <i class="fas fa-chart-column mr-2 text-indigo-600"></i>
@@ -11,10 +12,24 @@
         </h1>
         <p class="mt-1 text-sm text-slate-500">
             Reporting period:
-            {{ $from->format('d M Y') }} – {{ $to->format('d M Y') }}
+            {{ $from->format('d M Y') }} to {{ $to->format('d M Y') }}
         </p>
     </div>
 
+    <div class="flex flex-wrap gap-2">
+        <a href="{{ route('reports.export', [$type, 'csv']).($exportQuery ? '?'.http_build_query($exportQuery) : '') }}"
+           class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-emerald-300 hover:text-emerald-700">
+            <i class="fas fa-file-csv text-emerald-600"></i> Export CSV
+        </a>
+        <a href="{{ route('reports.export', [$type, 'pdf']).($exportQuery ? '?'.http_build_query($exportQuery) : '') }}"
+           class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-rose-300 hover:text-rose-700">
+            <i class="fas fa-file-pdf text-rose-600"></i> Export PDF
+        </a>
+        <a href="{{ route('reports.export', [$type, 'print']).($exportQuery ? '?'.http_build_query($exportQuery) : '') }}" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700">
+            <i class="fas fa-print text-indigo-600"></i> Print
+        </a>
+    </div>
 </div>
 
 <div class="filter-toolbar">
@@ -98,13 +113,13 @@
         <div class="filter-search">
             <i class="fas fa-magnifying-glass"></i>
             <input type="search" name="q" value="{{ $ledgerSearch ?? '' }}" aria-label="Search ledger"
-                   placeholder="Journal, reference, account…" class="rounded-lg border-slate-300">
+                   placeholder="Journal, reference, account" class="rounded-lg border-slate-300">
         </div>
 
         <select name="account_code" aria-label="Account" class="rounded-lg border-slate-300">
             <option value="">All Accounts</option>
             @foreach($accountOptions as $account)
-                <option value="{{ $account->account_code }}" @selected(($selectedAccountCode ?? '') === $account->account_code)>{{ $account->account_code }} — {{ $account->account_name }}</option>
+                <option value="{{ $account->account_code }}" @selected(($selectedAccountCode ?? '') === $account->account_code)>{{ $account->account_code }} - {{ $account->account_name }}</option>
             @endforeach
         </select>
 
@@ -145,7 +160,7 @@
                                 @elseif(is_bool($value))
                                     {{ $value ? 'Yes' : 'No' }}
                                 @elseif(is_scalar($value) || $value === null)
-                                    {{ $value ?? '—' }}
+                                    {{ $value ?? '' }}
                                 @else
                                     {{-- Absolute safety net: never print arrays/objects directly. --}}
                                     {{ json_encode($value, JSON_UNESCAPED_UNICODE) }}
@@ -174,7 +189,7 @@
             <span>
                 Showing
                 <strong class="text-slate-700">{{ number_format($rows->firstItem() ?? 0) }}</strong>
-                –
+                to
                 <strong class="text-slate-700">{{ number_format($rows->lastItem() ?? 0) }}</strong>
                 of
                 <strong class="text-slate-700">{{ number_format($rows->total()) }}</strong>

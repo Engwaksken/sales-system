@@ -93,6 +93,7 @@ Route::match(['get', 'post'], '/payments/check-status', [IotecPaymentController:
 
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/reports/{type}/export/{format}', [ReportController::class, 'export'])->name('reports.export')->whereIn('format', ['csv', 'pdf', 'print']);
     Route::get('/reports/{type?}', [ReportController::class, 'show'])->name('reports.show');
 
     // Exports (CSV/PDF) — must be registered before the resource routes below so

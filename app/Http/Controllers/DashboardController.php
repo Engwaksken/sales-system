@@ -32,7 +32,7 @@ class DashboardController extends Controller
      */
     private const LINE_NET = '(COALESCE(si.total, si.price * si.quantity, 0) * CASE WHEN it.items_total > 0 THEN (COALESCE(s.total_amount, 0) - COALESCE(s.vat, 0)) * 1.0 / it.items_total ELSE 1 END)';
 
-    /** A sale line's cost: quantity sold × the product's weighted average purchase cost. */
+    /** A sale line's cost: quantity sold times the product's weighted average purchase cost. */
     private const LINE_COST = '(COALESCE(si.quantity, 0) * pc.unit_cost)';
 
     public function index()
@@ -86,12 +86,12 @@ class DashboardController extends Controller
         $monthCollected = (float) Payment::where('transaction_type', 'sale')->where('status', 'successful')
             ->whereBetween('created_at', [$monthStart, $today])->sum('amount');
 
-        // ── Margin ────────────────────────────────────────────────────────
+        // Margin
         $margin = $this->marginSummary($this->saleLines($monthStart, $today));
         $prevMargin = $this->marginSummary($this->saleLines($prevStart, $prevEnd));
         $netProfit = $margin['gross_profit'] - $monthExpenses;
 
-        // ── Leaderboards (this month) ────────────────────────────────────
+        // Leaderboards (this month)
         $topBranches = $this->branchLeaderboard($monthStart, $today);
         $topStaff = $this->staffLeaderboard($monthStart, $today);
         $monthlyBestBranch = $topBranches->first();
@@ -99,7 +99,7 @@ class DashboardController extends Controller
 
         [$topProducts, $weakProducts] = $this->productMargins($monthStart, $today);
 
-        // ── Inventory ─────────────────────────────────────────────────────
+        // Inventory
         $stockValue = DB::table('stock')
             ->where('quantity', '>', 0)
             ->selectRaw('COALESCE(SUM(quantity * cost_price), 0) as cost_value')
@@ -126,7 +126,7 @@ class DashboardController extends Controller
 
         $branchCount = Branch::count();
 
-        // ── Suppliers (this month) ───────────────────────────────────────
+        // Suppliers (this month)
         $monthlySuppliers = Stock::query()
             ->join('suppliers', 'suppliers.id', '=', 'stock.supplier_id')
             ->whereNotNull('stock.supplier_id')
@@ -140,7 +140,7 @@ class DashboardController extends Controller
         $monthlySupplierTotalAmount = (float) $monthlySuppliers->sum('total_amount');
         $monthlySupplierProductCount = (int) $monthlySuppliers->sum('product_count');
 
-        // ── Trends ────────────────────────────────────────────────────────
+        // Trends
         $months = $this->trendMonths();
         $chartLabels = $months->map(fn (Carbon $m) => $m->format('M'))->values();
         $chartSales = collect();

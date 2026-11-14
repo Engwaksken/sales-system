@@ -68,8 +68,10 @@ class DashboardMarginTest extends TestCase
 
         $response->assertSee('Gross Margin')
             ->assertSee('Top Salesperson This Month')
-            ->assertSee('Why Switch')
-            ->assertSee('measured on the 90%', false);
+            ->assertSee('Collapse all')
+            ->assertDontSee('Why Switch')
+            ->assertDontSee('QuickBooks')
+            ->assertDontSee('Margin is measured on');
     }
 
     public function test_customer_dashboard_renders_trend_charts(): void
@@ -82,6 +84,6 @@ class DashboardMarginTest extends TestCase
         $this->actingAs($customer)->get(route('dashboard'))
             ->assertOk()
             ->assertSee('My Purchase Trend')
-            ->assertDontSee('Why Switch');
+            ->assertDontSee('Branches &amp; Staff', false);
     }
 }

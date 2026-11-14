@@ -5,7 +5,7 @@
 @php
     $isCustomer = auth()->user()?->role === 'customer';
     $ugx = fn ($v) => 'UGX '.number_format((float) $v, 0);
-    $pct = fn ($v) => $v === null ? '—' : number_format((float) $v, 1).'%';
+    $pct = fn ($v) => $v === null ? 'N/A' : number_format((float) $v, 1).'%';
 
     // Percentage change, or null when there is nothing to compare against.
     $change = fn ($now, $before) => (float) $before != 0.0 ? (($now - $before) / abs($before)) * 100 : null;
@@ -17,18 +17,18 @@
             <i class="fas fa-gauge-high mr-2 text-indigo-600"></i> Dashboard
         </h1>
         <p class="mt-1 text-sm text-slate-500">
-            {{ $isCustomer ? 'Your purchases, orders and account activity.' : 'Live sales, margin and inventory across every branch — '.now()->format('F Y').' to date.' }}
+            {{ $isCustomer ? 'Your purchases, orders and account activity.' : 'Live sales, margin and inventory across every branch, '.now()->format('F Y').' to date.' }}
         </p>
     </div>
     @unless($isCustomer)
         <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-            <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Live — updated {{ now()->format('H:i') }}
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Updated {{ now()->format('H:i') }}
         </span>
     @endunless
 </div>
 
 @unless($isCustomer)
-    {{-- ── Headline: sales, margin, profit ─────────────────────────────── --}}
+    {{-- Headline: sales, margin, profit --}}
     @php
         $salesChange = $change($monthSales, $prevMonthSales);
         $profitChange = $change($margin['gross_profit'], $prevMargin['gross_profit']);
@@ -66,14 +66,6 @@
             </div>
         @endforeach
     </div>
-
-    @if($margin['coverage'] !== null && $margin['coverage'] < 99)
-        <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
-            <i class="fas fa-circle-info mr-1"></i>
-            Margin is measured on the {{ number_format($margin['coverage'], 0) }}% of this month's sales whose products have a cost price.
-            Add cost prices on <a href="{{ route('stock.index') }}" class="font-bold underline">Stock</a> to cover the rest.
-        </div>
-    @endif
 @endunless
 
 <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -114,7 +106,7 @@
 </div>
 
 @unless($isCustomer)
-    {{-- ── Champions of the month ──────────────────────────────────────── --}}
+    {{-- Champions of the month --}}
     <div class="mb-5 grid gap-3 lg:grid-cols-2">
         <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-600"><i class="fas fa-trophy text-2xl"></i></div>
@@ -123,7 +115,7 @@
                 <div class="truncate text-lg font-black text-slate-800">{{ $monthlyBestBranch?->name ?? 'No sales yet' }}</div>
                 @if($monthlyBestBranch)
                     <div class="text-xs text-slate-500">
-                        {{ $ugx($monthlyBestBranch->total_amount) }} · {{ number_format($monthlyBestBranch->sales_count) }} sales · {{ $pct($monthlyBestBranch->margin) }} margin
+                        {{ $ugx($monthlyBestBranch->total_amount) }}, {{ number_format($monthlyBestBranch->sales_count) }} sales, {{ $pct($monthlyBestBranch->margin) }} margin
                     </div>
                 @endif
             </div>
@@ -135,7 +127,7 @@
                 <div class="truncate text-lg font-black text-slate-800">{{ $topStaffMember?->name ?? 'No sales yet' }}</div>
                 @if($topStaffMember)
                     <div class="text-xs text-slate-500">
-                        {{ $ugx($topStaffMember->total_amount) }} · {{ number_format($topStaffMember->sales_count) }} sales · {{ $ugx($topStaffMember->gross_profit) }} gross profit
+                        {{ $ugx($topStaffMember->total_amount) }}, {{ number_format($topStaffMember->sales_count) }} sales, {{ $ugx($topStaffMember->gross_profit) }} gross profit
                     </div>
                 @endif
             </div>
@@ -154,7 +146,6 @@
                     'inventory' => ['fa-boxes-stacked', 'Inventory'],
                     'activity' => ['fa-clock-rotate-left', 'Recent Activity'],
                     'operations' => ['fa-truck-field', 'Suppliers'],
-                    'why' => ['fa-rocket', 'Why Switch'],
                 ];
         @endphp
         @foreach($tabs as $key => [$icon, $label])
@@ -164,54 +155,49 @@
         @endforeach
     </div>
 
-    {{-- ── Overview ─────────────────────────────────────────────────────── --}}
+    {{-- Overview --}}
     <section class="dashboard-panel p-4" data-panel="overview">
-        @if($isCustomer)
-            <div class="grid gap-5 lg:grid-cols-2">
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <h3 class="font-black text-slate-800"><i class="fas fa-chart-line mr-1 text-indigo-600"></i> My Purchase Trend</h3>
-                    <p class="mb-3 text-xs text-slate-400">Last 7 months · UGX</p>
-                    <div class="h-72"><canvas id="salesTrendChart"></canvas></div>
+        @php
+            // [canvas id, title, subtitle, icon, extra grid classes]
+            $charts = $isCustomer ? [
+                ['salesTrendChart', 'My Purchase Trend', 'Last 7 months, UGX', 'fa-chart-line text-indigo-600', ''],
+                ['ordersTrendChart', 'My Orders Trend', 'Last 7 months', 'fa-chart-column text-emerald-600', ''],
+            ] : [
+                ['salesProfitChart', 'Sales vs Gross Profit', 'Last 7 months, UGX', 'fa-chart-column text-indigo-600', 'lg:col-span-2'],
+                ['marginChart', 'Gross Margin', 'Last 7 months, % of costed sales', 'fa-percent text-sky-600', ''],
+                ['branchChart', 'Sales by Branch', 'This month, UGX', 'fa-store text-indigo-600', ''],
+                ['productChart', 'Most Profitable Products', 'This month, gross profit, UGX', 'fa-box text-emerald-600', ''],
+                ['ordersTrendChart', 'Online Orders', 'Last 7 months', 'fa-cart-shopping text-amber-600', ''],
+            ];
+        @endphp
+        <div class="mb-3 flex justify-end gap-2">
+            <button type="button" class="chart-toggle-all rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-indigo-300" data-expand="1">
+                <i class="fas fa-up-right-and-down-left-from-center mr-1"></i> Expand all
+            </button>
+            <button type="button" class="chart-toggle-all rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-indigo-300" data-expand="0">
+                <i class="fas fa-down-left-and-up-right-to-center mr-1"></i> Collapse all
+            </button>
+        </div>
+        <div class="grid items-start gap-5 {{ $isCustomer ? 'lg:grid-cols-2' : 'lg:grid-cols-3' }}">
+            @foreach($charts as [$id, $title, $subtitle, $icon, $span])
+                <div class="chart-card rounded-xl border border-slate-200 {{ $span }}" data-chart="{{ $id }}">
+                    <button type="button" class="chart-toggle flex w-full items-center justify-between gap-3 p-4 text-left" aria-expanded="true" aria-controls="{{ $id }}-body">
+                        <span>
+                            <span class="block font-black text-slate-800"><i class="fas {{ $icon }} mr-1"></i> {{ $title }}</span>
+                            <span class="block text-xs text-slate-400">{{ $subtitle }}</span>
+                        </span>
+                        <i class="chart-chevron fas fa-chevron-up text-slate-400 transition-transform"></i>
+                    </button>
+                    <div id="{{ $id }}-body" class="chart-body px-4 pb-4">
+                        <div class="h-72"><canvas id="{{ $id }}"></canvas></div>
+                    </div>
                 </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <h3 class="font-black text-slate-800"><i class="fas fa-chart-column mr-1 text-emerald-600"></i> My Orders Trend</h3>
-                    <p class="mb-3 text-xs text-slate-400">Last 7 months</p>
-                    <div class="h-72"><canvas id="ordersTrendChart"></canvas></div>
-                </div>
-            </div>
-        @else
-            <div class="grid gap-5 lg:grid-cols-3">
-                <div class="rounded-xl border border-slate-200 p-4 lg:col-span-2">
-                    <h3 class="font-black text-slate-800"><i class="fas fa-chart-column mr-1 text-indigo-600"></i> Sales vs Gross Profit</h3>
-                    <p class="mb-3 text-xs text-slate-400">Last 7 months · UGX</p>
-                    <div class="h-72"><canvas id="salesProfitChart"></canvas></div>
-                </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <h3 class="font-black text-slate-800"><i class="fas fa-percent mr-1 text-sky-600"></i> Gross Margin</h3>
-                    <p class="mb-3 text-xs text-slate-400">Last 7 months · % of costed sales</p>
-                    <div class="h-72"><canvas id="marginChart"></canvas></div>
-                </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <h3 class="font-black text-slate-800"><i class="fas fa-store mr-1 text-indigo-600"></i> Sales by Branch</h3>
-                    <p class="mb-3 text-xs text-slate-400">This month · UGX</p>
-                    <div class="h-72"><canvas id="branchChart"></canvas></div>
-                </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <h3 class="font-black text-slate-800"><i class="fas fa-box mr-1 text-emerald-600"></i> Most Profitable Products</h3>
-                    <p class="mb-3 text-xs text-slate-400">This month · gross profit, UGX</p>
-                    <div class="h-72"><canvas id="productChart"></canvas></div>
-                </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <h3 class="font-black text-slate-800"><i class="fas fa-cart-shopping mr-1 text-amber-600"></i> Online Orders</h3>
-                    <p class="mb-3 text-xs text-slate-400">Last 7 months</p>
-                    <div class="h-72"><canvas id="ordersTrendChart"></canvas></div>
-                </div>
-            </div>
-        @endif
+            @endforeach
+        </div>
     </section>
 
     @unless($isCustomer)
-        {{-- ── Branches & Staff ─────────────────────────────────────────── --}}
+        {{-- Branches & Staff --}}
         <section class="dashboard-panel hidden p-4" data-panel="leaders">
             <div class="grid gap-5 xl:grid-cols-2">
                 @foreach([
@@ -248,7 +234,7 @@
                                             <td class="px-4 py-3">
                                                 <div class="font-semibold text-slate-800">{{ $row->name }}</div>
                                                 @if($kind === 'staff')
-                                                    <div class="text-xs text-slate-400">{{ ucfirst((string) $row->role) }} · avg {{ $ugx($row->average_sale) }}</div>
+                                                    <div class="text-xs text-slate-400">{{ ucfirst((string) $row->role) }}, avg {{ $ugx($row->average_sale) }}</div>
                                                 @endif
                                             </td>
                                             <td class="px-4 py-3 text-right">{{ number_format($row->sales_count) }}</td>
@@ -267,7 +253,7 @@
             </div>
         </section>
 
-        {{-- ── Inventory ────────────────────────────────────────────────── --}}
+        {{-- Inventory --}}
         <section class="dashboard-panel hidden p-4" data-panel="inventory">
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach([
@@ -315,7 +301,7 @@
                     @forelse($expiringProducts as $batch)
                         <div class="grid grid-cols-3 gap-2 border-b border-slate-100 px-4 py-3 text-sm">
                             <div class="truncate font-semibold">{{ $batch->product?->name ?? 'Product #'.$batch->product_id }}</div>
-                            <div class="truncate text-slate-500">{{ $batch->branch?->name ?? '—' }} · {{ number_format((float) $batch->quantity) }}</div>
+                            <div class="truncate text-slate-500">{{ $batch->branch?->name ?? '-' }}, {{ number_format((float) $batch->quantity) }}</div>
                             <div class="text-right text-xs font-bold {{ $batch->expiry_date->isPast() ? 'text-rose-700' : 'text-amber-700' }}">
                                 {{ $batch->expiry_date->isPast() ? 'Expired' : 'Expires' }} {{ $batch->expiry_date->format('d M Y') }}
                             </div>
@@ -328,7 +314,7 @@
         </section>
     @endunless
 
-    {{-- ── Recent Activity ──────────────────────────────────────────────── --}}
+    {{-- Recent Activity --}}
     <section class="dashboard-panel hidden p-4" data-panel="activity">
         <div class="grid gap-5 lg:grid-cols-2">
             <div class="overflow-hidden rounded-xl border border-slate-200">
@@ -366,14 +352,14 @@
     </section>
 
     @unless($isCustomer)
-        {{-- ── Suppliers ────────────────────────────────────────────────── --}}
+        {{-- Suppliers --}}
         <section class="dashboard-panel hidden p-4" data-panel="operations">
             <div class="rounded-xl border border-slate-200 p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <div class="text-xs font-black uppercase text-slate-400">Stock Received This Month</div>
                         <div class="mt-2 text-xl font-black text-slate-800">{{ $ugx($monthlySupplierTotalAmount) }}</div>
-                        <div class="mt-1 text-sm text-slate-500">{{ number_format($monthlySuppliers->count()) }} supplier(s) · {{ number_format($monthlySupplierProductCount) }} product line(s)</div>
+                        <div class="mt-1 text-sm text-slate-500">{{ number_format($monthlySuppliers->count()) }} supplier(s), {{ number_format($monthlySupplierProductCount) }} product line(s)</div>
                     </div>
                     <div class="grid h-12 w-12 place-items-center rounded-xl bg-amber-50 text-amber-600"><i class="fas fa-truck-field text-xl"></i></div>
                 </div>
@@ -396,66 +382,6 @@
                 @endforelse
             </div>
         </section>
-
-        {{-- ── Why Switch ───────────────────────────────────────────────── --}}
-        <section class="dashboard-panel hidden p-4" data-panel="why">
-            <div class="rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 text-white">
-                <div class="text-xs font-black uppercase tracking-widest text-indigo-200">Built for stock-driven businesses</div>
-                <h2 class="mt-2 text-2xl font-black">Everything above is live. In QuickBooks, most of it is a month-end export.</h2>
-                <p class="mt-2 max-w-3xl text-sm text-indigo-100">
-                    QuickBooks is accounting software with inventory added on. This system starts from the shelf: every sale, batch,
-                    branch and cashier feeds the same numbers your accountant needs — so you see margin and stock problems the day they happen, not after the books close.
-                </p>
-            </div>
-
-            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach([
-                    ['fa-percent', 'Margin on every sale', 'Gross margin is '.$pct($margin['margin']).' this month — broken down by product, branch and cashier, recalculated with every sale.'],
-                    ['fa-store', 'Every branch, one view', number_format($stockedProducts).' products in stock across '.number_format($branchCount).' branch(es), worth '.$ugx($stockCostValue).' at cost.'],
-                    ['fa-hourglass-half', 'Batches & expiry', number_format($expiringSoonCount).' batch(es) expire within 30 days. Catch them now instead of writing them off later.'],
-                    ['fa-ranking-star', 'Staff accountability', ($topStaffMember ? $topStaffMember->name.' leads with '.$ugx($topStaffMember->total_amount).'.' : 'Rank staff by sales and profit.').' Every sale is tied to the person who made it.'],
-                ] as [$icon, $title, $body])
-                    <div class="rounded-xl border border-slate-200 p-4">
-                        <div class="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600"><i class="fas {{ $icon }}"></i></div>
-                        <div class="mt-3 font-black text-slate-800">{{ $title }}</div>
-                        <p class="mt-1 text-sm text-slate-500">{{ $body }}</p>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="mt-5 overflow-hidden rounded-xl border border-slate-200">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-slate-50 text-left text-[11px] font-black uppercase tracking-wide text-slate-500">
-                            <tr>
-                                <th class="px-4 py-3">What you need</th>
-                                <th class="px-4 py-3 text-indigo-700">This system</th>
-                                <th class="px-4 py-3">QuickBooks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach([
-                                ['Point of sale', 'Built-in POS with receipts, credit sales and split payments', 'Separate POS product or third-party app'],
-                                ['Stock per branch', 'Every branch tracked natively, including non-sale stock issues', 'Multi-location stock needs top tiers or add-ons'],
-                                ['Batch & expiry tracking', 'Expiry dates on every batch, with alerts', 'Not in QuickBooks Online; needs Enterprise or an add-on'],
-                                ['Live margin', 'Per product, branch and staff member, as sales happen', 'Run and filter reports after transactions are posted'],
-                                ['Staff performance', 'Leaderboards by sales and profit', 'Not tracked per cashier'],
-                                ['URA EFRIS', 'Fiscal invoices issued from the sale', 'Requires a third-party connector'],
-                                ['Mobile money', 'Collections recorded against the sale', 'Manual entry or bank feed matching'],
-                                ['Online shop & orders', 'Customer shop, orders and chat in the same system', 'Separate e-commerce platform'],
-                                ['Accounting', 'Chart of accounts, journals, trial balance and income statement', 'Full accounting — its core strength'],
-                            ] as [$need, $ours, $theirs])
-                                <tr class="border-t border-slate-100">
-                                    <td class="px-4 py-3 font-semibold text-slate-800">{{ $need }}</td>
-                                    <td class="px-4 py-3 text-slate-700"><i class="fas fa-circle-check mr-1 text-emerald-600"></i> {{ $ours }}</td>
-                                    <td class="px-4 py-3 text-slate-500">{{ $theirs }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
     @endunless
 </div>
 @endsection
@@ -476,6 +402,32 @@
 
     tabs.forEach(tab => tab.addEventListener('click', () => activate(tab)));
     if (tabs[0]) activate(tabs[0]);
+
+    // Collapsible chart cards; each card remembers its state in this browser.
+    const STORE_KEY = 'dashboard.collapsedCharts';
+    let collapsed = [];
+    try { collapsed = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch (e) { collapsed = []; }
+
+    function setCard(card, open) {
+        card.querySelector('.chart-body').classList.toggle('hidden', !open);
+        card.querySelector('.chart-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+        card.querySelector('.chart-chevron').classList.toggle('rotate-180', !open);
+        const id = card.dataset.chart;
+        collapsed = collapsed.filter(c => c !== id);
+        if (!open) collapsed.push(id);
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(collapsed)); } catch (e) { /* storage unavailable */ }
+    }
+
+    const cards = document.querySelectorAll('.chart-card');
+    cards.forEach(card => {
+        if (collapsed.includes(card.dataset.chart)) setCard(card, false);
+        card.querySelector('.chart-toggle').addEventListener('click', () => {
+            setCard(card, card.querySelector('.chart-body').classList.contains('hidden'));
+        });
+    });
+    document.querySelectorAll('.chart-toggle-all').forEach(btn => btn.addEventListener('click', () => {
+        cards.forEach(card => setCard(card, btn.dataset.expand === '1'));
+    }));
 
     if (!window.Chart) return;
 

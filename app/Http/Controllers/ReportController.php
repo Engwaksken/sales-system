@@ -22,6 +22,125 @@ class ReportController extends Controller
 {
     public function show(Request $request, string $type = 'overview')
     {
+        [$from, $to, $data] = $this->build($request, $type);
+
+        if (isset($data['rows']) && $data['rows'] instanceof \Illuminate\Support\Collection) {
+            $data['rows'] = $this->paginateRows(
+                $data['rows'],
+                $request,
+                $this->perPage($request)
+            );
+        }
+
+        return view('reports.show', [
+            'type' => $type,
+            'from' => $from,
+            'to' => $to,
+            'branch_options' => Branch::query()->orderBy('name')->get(),
+            'supplier_options' => Supplier::query()->orderBy('name')->get(),
+            'reportTypes' => self::TYPES,
+            'currency' => 'UGX',
+        ] + $data);
+    }
+
+    /** CSV download, PDF download or printable page of the filtered report, with every row. */
+    public function export(Request $request, string $type, string $format)
+    {
+        abort_unless(in_array($type, self::TYPES, true), 404);
+        abort_unless(in_array($format, ['csv', 'pdf', 'print'], true), 404);
+
+        [$from, $to, $data] = $this->build($request, $type);
+
+        $title = str($type)->replace('_', ' ')->title().' Report';
+        $headers = $data['headers'] ?? [];
+        $moneyColumns = $data['moneyColumns'] ?? [];
+        $rows = collect($data['rows'] ?? [])->map(fn ($row) => (array) $row)->values();
+        $filename = str($type)->replace('_', '-').'-report-'.$from->format('Ymd').'-'.$to->format('Ymd');
+
+        if ($format === 'csv') {
+            return response()->streamDownload(function () use ($headers, $rows) {
+                $out = fopen('php://output', 'w');
+                fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel reads names correctly
+                fputcsv($out, $headers);
+                foreach ($rows as $row) {
+                    fputcsv($out, array_map(
+                        fn ($v) => is_scalar($v) || $v === null ? $v : json_encode($v, JSON_UNESCAPED_UNICODE),
+                        array_values($row)
+                    ));
+                }
+                fclose($out);
+            }, $filename.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }
+
+        $view = view('reports.export', [
+            'title' => $title,
+            'headers' => $headers,
+            'rows' => $rows,
+            'moneyColumns' => $moneyColumns,
+            'filters' => $this->filterSummary($request, $type, $from, $to),
+            'generatedBy' => $request->user()?->name ?? 'System',
+            'forPrint' => $format === 'print',
+        ]);
+
+        if ($format === 'print') {
+            return $view;
+        }
+
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($view->render());
+        $dompdf->setPaper('A4', count($headers) > 5 ? 'landscape' : 'portrait');
+        $dompdf->render();
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'.pdf"',
+        ]);
+    }
+
+    private const TYPES = [
+        'overview',
+        'sales',
+        'salesperson_performance',
+        'purchases',
+        'expenses',
+        'stock',
+        'expiry',
+        'products',
+        'customers',
+        'suppliers',
+        'profit',
+        'trial_balance',
+        'income_statement',
+        'general_ledger',
+    ];
+
+    /** The filters applied to a report, as label => value, for export headers. */
+    private function filterSummary(Request $request, string $type, Carbon $from, Carbon $to): array
+    {
+        $filters = ['Period' => $from->format('d M Y').' to '.$to->format('d M Y')];
+
+        if ($request->filled('branch_id')) {
+            $filters['Branch'] = Branch::find($request->integer('branch_id'))?->name ?? 'Unknown';
+        }
+        if ($request->filled('supplier_id')) {
+            $filters['Supplier'] = Supplier::find($request->integer('supplier_id'))?->name ?? 'Unknown';
+        }
+        if ($type === 'general_ledger') {
+            foreach (['account_code' => 'Account', 'journal_type' => 'Journal Type', 'q' => 'Search'] as $key => $label) {
+                if ($request->filled($key)) {
+                    $filters[$label] = (string) $request->query($key);
+                }
+            }
+        }
+
+        return $filters;
+    }
+
+    /** @return array{0: Carbon, 1: Carbon, 2: array} */
+    private function build(Request $request, string $type): array
+    {
         [$from, $to] = $this->resolveDates($request);
 
         $branchId = $request->filled('branch_id')
@@ -49,38 +168,7 @@ class ReportController extends Controller
             default => $this->overview($from, $to, $branchId, $supplierId),
         };
 
-        if (isset($data['rows']) && $data['rows'] instanceof \Illuminate\Support\Collection) {
-            $data['rows'] = $this->paginateRows(
-                $data['rows'],
-                $request,
-                $this->perPage($request)
-            );
-        }
-
-        return view('reports.show', [
-            'type' => $type,
-            'from' => $from,
-            'to' => $to,
-            'branch_options' => Branch::query()->orderBy('name')->get(),
-            'supplier_options' => Supplier::query()->orderBy('name')->get(),
-            'reportTypes' => [
-                'overview',
-                'sales',
-                'salesperson_performance',
-                'purchases',
-                'expenses',
-                'stock',
-                'expiry',
-                'products',
-                'customers',
-                'suppliers',
-                'profit',
-                'trial_balance',
-                'income_statement',
-                'general_ledger',
-            ],
-            'currency' => 'UGX',
-        ] + $data);
+        return [$from, $to, $data];
     }
 
 
@@ -175,14 +263,14 @@ class ReportController extends Controller
             'invoice' => $sale->invoice_no ?: ('Sale #'.$sale->id),
             'date' => optional($sale->sale_date)->format('d M Y'),
             'customer' => $sale->customer?->name ?? 'Walk-in Customer',
-            'supplier' => $sale->supplier?->name ?? '—',
-            'branch' => $sale->branch?->name ?? '—',
+            'supplier' => $sale->supplier?->name ?? '',
+            'branch' => $sale->branch?->name ?? '',
             'products' => $sale->sale_items
                 ->map(fn ($item) => $item->product?->name)
                 ->filter()
                 ->unique()
-                ->join(', ') ?: '—',
-            'payment_method' => $sale->payment_method ?: '—',
+                ->join(', ') ?: '',
+            'payment_method' => $sale->payment_method ?: '',
             'payment_status' => ucfirst((string) $sale->payment_status),
             'total_amount' => (float) $sale->total_amount,
             'paid' => (float) ($sale->partial_amount ?? 0),
@@ -246,9 +334,9 @@ class ReportController extends Controller
             ->map(fn ($sale) => [
                 'reference' => $sale->invoice_no ?: ('Purchase #'.$sale->id),
                 'date' => optional($sale->sale_date)->format('d M Y'),
-                'supplier' => $sale->supplier?->name ?? '—',
-                'branch' => $sale->branch?->name ?? '—',
-                'payment_method' => $sale->payment_method ?: '—',
+                'supplier' => $sale->supplier?->name ?? '',
+                'branch' => $sale->branch?->name ?? '',
+                'payment_method' => $sale->payment_method ?: '',
                 'total_amount' => (float) $sale->total_amount,
             ]);
 
@@ -272,11 +360,11 @@ class ReportController extends Controller
             ->map(fn ($expense) => [
                 'title' => $expense->title,
                 'date' => optional($expense->expense_date)->format('d M Y'),
-                'category' => $expense->category ?: '—',
-                'branch' => $expense->branch?->name ?? '—',
-                'supplier' => $expense->supplier?->name ?? '—',
+                'category' => $expense->category ?: '',
+                'branch' => $expense->branch?->name ?? '',
+                'supplier' => $expense->supplier?->name ?? '',
                 'amount' => (float) $expense->amount,
-                'description' => $expense->description ?: '—',
+                'description' => $expense->description ?: '',
             ]);
 
         return [
@@ -293,15 +381,15 @@ class ReportController extends Controller
             ->orderBy('product_id')
             ->get()
             ->map(fn ($stock) => [
-                'product' => $stock->product?->name ?? '—',
-                'sku' => $stock->product?->sku ?? '—',
-                'supplier' => $stock->supplier?->name ?? '—',
-                'branch' => $stock->branch?->name ?? '—',
+                'product' => $stock->product?->name ?? '',
+                'sku' => $stock->product?->sku ?? '',
+                'supplier' => $stock->supplier?->name ?? '',
+                'branch' => $stock->branch?->name ?? '',
                 'quantity' => (int) $stock->quantity,
-                'unit' => $stock->unit_type ?: '—',
+                'unit' => $stock->unit_type ?: '',
                 'cost_price' => (float) $stock->cost_price,
                 'selling_price' => (float) $stock->selling_price,
-                'expiry_date' => optional($stock->expiry_date)->format('d M Y') ?: '—',
+                'expiry_date' => optional($stock->expiry_date)->format('d M Y') ?: '',
             ]);
 
         return [
@@ -325,11 +413,11 @@ class ReportController extends Controller
                 $daysLeft = now()->startOfDay()->diffInDays($stock->expiry_date, false);
 
                 return [
-                    'product' => $stock->product?->name ?? '—',
-                    'supplier' => $stock->supplier?->name ?? '—',
-                    'branch' => $stock->branch?->name ?? '—',
+                    'product' => $stock->product?->name ?? '',
+                    'supplier' => $stock->supplier?->name ?? '',
+                    'branch' => $stock->branch?->name ?? '',
                     'quantity' => (int) $stock->quantity,
-                    'expiry_date' => optional($stock->expiry_date)->format('d M Y') ?: '—',
+                    'expiry_date' => optional($stock->expiry_date)->format('d M Y') ?: '',
                     'status' => $daysLeft < 0
                         ? 'Expired'
                         : ($daysLeft <= 30 ? 'Expiring Soon' : 'OK'),
@@ -359,9 +447,9 @@ class ReportController extends Controller
             ->get()
             ->map(fn ($product) => [
                 'product' => $product->name,
-                'sku' => $product->sku ?: '—',
-                'category' => $product->category?->category_name ?? '—',
-                'branch' => $product->branch?->name ?? '—',
+                'sku' => $product->sku ?: '',
+                'category' => $product->category?->category_name ?? '',
+                'branch' => $product->branch?->name ?? '',
                 'sales_items' => (int) $product->sale_items_count,
                 'active' => $product->is_active ? 'Yes' : 'No',
             ]);
@@ -382,9 +470,9 @@ class ReportController extends Controller
             ->get()
             ->map(fn ($customer) => [
                 'customer' => $customer->name,
-                'phone' => $customer->phone ?: '—',
-                'email' => $customer->email ?: '—',
-                'branch' => $customer->branch?->name ?? '—',
+                'phone' => $customer->phone ?: '',
+                'email' => $customer->email ?: '',
+                'branch' => $customer->branch?->name ?? '',
                 'sales' => (int) $customer->sales_count,
             ]);
 
@@ -405,9 +493,9 @@ class ReportController extends Controller
             ->get()
             ->map(fn ($supplier) => [
                 'supplier' => $supplier->name,
-                'phone' => $supplier->phone ?: '—',
-                'email' => $supplier->email ?: '—',
-                'branch' => $supplier->branch?->name ?? '—',
+                'phone' => $supplier->phone ?: '',
+                'email' => $supplier->email ?: '',
+                'branch' => $supplier->branch?->name ?? '',
                 'stock_records' => (int) $supplier->stock_count,
             ]);
 
@@ -610,13 +698,13 @@ class ReportController extends Controller
 
             return [
                 'date' => Carbon::parse($row->journal_date)->format('d M Y'),
-                'journal' => $row->journal_no ?: '—',
+                'journal' => $row->journal_no ?: '',
                 'journal_type' => str_replace('_', ' ', ucfirst((string) $row->journal_type)),
-                'reference' => $row->reference_no ?: '—',
+                'reference' => $row->reference_no ?: '',
                 'account_code' => $row->account_code,
-                'account_name' => $row->account_name ?: '—',
-                'branch' => $row->branch_name ?: '—',
-                'description' => $row->description ?: '—',
+                'account_name' => $row->account_name ?: '',
+                'branch' => $row->branch_name ?: '',
+                'description' => $row->description ?: '',
                 'debit' => $debit,
                 'credit' => $credit,
                 'balance' => $running,
