@@ -7,6 +7,8 @@ use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Models\Branch;
+use App\Models\Product;
 use App\Services\ReceiptPdfService;
 use App\Services\SalePaymentService;
 use App\Support\DocumentBranding;
@@ -98,14 +100,16 @@ class PaymentsController extends Controller
             $query = $this->applyPeriod($query, $request->period, 'created_at');
         }
         $query = $this->applySearch($query, (string) $request->query('q', ''), ['invoice_no', 'receipt_no', 'method']);
+        $query = $this->applyPaymentFilters($query, $request);
+        $filteredAmount = (clone $query)->sum('amount');
         $payments = $query->latest()->paginate(20);
-        $stat1 = 'UGX '.number_format(Payment::sum('amount'), 0);
+        $stat1 = 'UGX '.number_format($filteredAmount, 0);
         $periodStats = $this->periodStats(Payment::class, 'created_at', 'amount');
         $customer_options = Customer::orderBy('name')->get();
         $supplier_options = Supplier::orderBy('name')->get();
         $sale_options = Sale::orderByDesc('sale_date')->orderByDesc('id')->get();
         $received_by_options = User::orderBy('name')->get();
-        return view('payments.index', ['items' => $payments, 'customer_options' => $customer_options, 'supplier_options' => $supplier_options, 'sale_options' => $sale_options, 'received_by_options' => $received_by_options, 'stat1' => $stat1, 'periodStats' => $periodStats]);
+        return view('payments.index', ['items' => $payments, 'customer_options' => $customer_options, 'supplier_options' => $supplier_options, 'sale_options' => $sale_options, 'received_by_options' => $received_by_options, 'branch_options' => Branch::orderBy('name')->get(), 'product_options' => Product::orderBy('name')->get(['id', 'name']), 'payment_methods' => SalePaymentService::METHODS, 'stat1' => $stat1, 'periodStats' => $periodStats]);
     }
 
     public function exportCsv(Request $request)
@@ -119,6 +123,7 @@ class PaymentsController extends Controller
             $query = $this->applyPeriod($query, $request->period, 'created_at');
         }
         $query = $this->applySearch($query, (string) $request->query('q', ''), ['invoice_no', 'receipt_no', 'method']);
+        $query = $this->applyPaymentFilters($query, $request);
         $rows = $query->with(['customer', 'supplier', 'sale', 'receivedBy'])->get();
         $data = $rows->map(function ($row) use ($columns) {
             $out = [];
@@ -146,6 +151,7 @@ class PaymentsController extends Controller
             $query = $this->applyPeriod($query, $request->period, 'created_at');
         }
         $query = $this->applySearch($query, (string) $request->query('q', ''), ['invoice_no', 'receipt_no', 'method']);
+        $query = $this->applyPaymentFilters($query, $request);
         $rows = $query->with(['customer', 'supplier', 'sale', 'receivedBy'])->get();
         $data = $rows->map(function ($row) use ($columns) {
             $out = [];
@@ -166,6 +172,21 @@ class PaymentsController extends Controller
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
         return $dompdf->stream('payments-'.now()->format('Ymd').'.pdf');
+    }
+
+    private function applyPaymentFilters($query, Request $request)
+    {
+        if ($request->filled('branch_id')) {
+            $query->whereHas('sale', fn ($sale) => $sale->where('branch_id', $request->integer('branch_id')));
+        }
+        if ($request->filled('payment_method')) {
+            $query->where('method', $request->query('payment_method'));
+        }
+        if ($request->filled('product_id')) {
+            $query->whereHas('sale.sale_items', fn ($items) => $items->where('product_id', $request->integer('product_id')));
+        }
+
+        return $query;
     }
 
     public function store(Request $request)

@@ -7,6 +7,7 @@ use App\Models\ChartOfAccount;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Product;
+use App\Services\SalePaymentService;
 use App\Models\Sale;
 use App\Models\Stock;
 use App\Models\Supplier;
@@ -38,6 +39,8 @@ class ReportController extends Controller
             'to' => $to,
             'branch_options' => Branch::query()->orderBy('name')->get(),
             'supplier_options' => Supplier::query()->orderBy('name')->get(),
+            'product_options' => Product::query()->orderBy('name')->get(['id', 'name']),
+            'payment_methods' => SalePaymentService::METHODS,
             'reportTypes' => self::TYPES,
             'currency' => 'UGX',
         ] + $data);
@@ -127,6 +130,12 @@ class ReportController extends Controller
         if ($request->filled('supplier_id')) {
             $filters['Supplier'] = Supplier::find($request->integer('supplier_id'))?->name ?? 'Unknown';
         }
+        if ($request->filled('payment_method')) {
+            $filters['Payment Method'] = (string) $request->query('payment_method');
+        }
+        if ($request->filled('product_id')) {
+            $filters['Product'] = Product::find($request->integer('product_id'))?->name ?? 'Unknown';
+        }
         if ($type === 'general_ledger') {
             foreach (['account_code' => 'Account', 'journal_type' => 'Journal Type', 'q' => 'Search'] as $key => $label) {
                 if ($request->filled($key)) {
@@ -151,22 +160,24 @@ class ReportController extends Controller
         $supplierId = $request->filled('supplier_id')
             ? $request->integer('supplier_id')
             : null;
+        $paymentMethod = $request->filled('payment_method') ? (string) $request->query('payment_method') : null;
+        $productId = $request->filled('product_id') ? $request->integer('product_id') : null;
 
         $data = match ($type) {
-            'sales' => $this->sales($from, $to, $branchId, $supplierId),
-            'salesperson_performance' => $this->salespersonPerformance($from, $to, $branchId),
-            'purchases' => $this->purchases($from, $to, $branchId, $supplierId),
-            'expenses' => $this->expenses($from, $to, $branchId, $supplierId),
+            'sales' => $this->sales($from, $to, $branchId, $supplierId, $paymentMethod, $productId),
+            'salesperson_performance' => $this->salespersonPerformance($from, $to, $branchId, $paymentMethod, $productId),
+            'purchases' => $this->purchases($from, $to, $branchId, $supplierId, $paymentMethod, $productId),
+            'expenses' => $this->expenses($from, $to, $branchId, $supplierId, $paymentMethod),
             'stock' => $this->stock($branchId, $supplierId),
             'expiry' => $this->expiry($branchId, $supplierId),
-            'products' => $this->products($branchId, $supplierId),
+            'products' => $this->products($branchId, $supplierId, $productId),
             'customers' => $this->customers($branchId),
             'suppliers' => $this->suppliers($branchId, $supplierId),
-            'profit' => $this->profit($from, $to, $branchId, $supplierId),
+            'profit' => $this->profit($from, $to, $branchId, $supplierId, $paymentMethod, $productId),
             'trial_balance' => $this->trialBalance(),
             'income_statement' => $this->incomeStatement($from, $to),
             'general_ledger' => $this->generalLedger($from, $to, $branchId, $request),
-            default => $this->overview($from, $to, $branchId, $supplierId),
+            default => $this->overview($from, $to, $branchId, $supplierId, $paymentMethod, $productId),
         };
 
         return [$from, $to, $data];
@@ -252,10 +263,14 @@ class ReportController extends Controller
         Carbon $from,
         Carbon $to,
         ?int $branchId,
-        ?int $supplierId
+        ?int $supplierId,
+        ?string $paymentMethod,
+        ?int $productId
     ): array {
         $sales = $this->salesQuery($from, $to, $branchId, $supplierId)
             ->where('transaction_type', 'sale')
+            ->when($paymentMethod, fn ($q) => $q->where('payment_method', $paymentMethod))
+            ->when($productId, fn ($q) => $q->whereHas('sale_items', fn ($items) => $items->where('product_id', $productId)))
             ->with(['customer', 'supplier', 'branch', 'user', 'sale_items.product'])
             ->latest('sale_date')
             ->get();
@@ -289,14 +304,16 @@ class ReportController extends Controller
         ];
     }
 
-    private function salespersonPerformance(Carbon $from, Carbon $to, ?int $branchId): array
+    private function salespersonPerformance(Carbon $from, Carbon $to, ?int $branchId, ?string $paymentMethod, ?int $productId): array
     {
         $rows = User::query()
-            ->leftJoin('sales', function ($join) use ($from, $to, $branchId) {
+            ->leftJoin('sales', function ($join) use ($from, $to, $branchId, $paymentMethod, $productId) {
                 $join->on('sales.user_id', '=', 'users.id')
                     ->where('sales.transaction_type', '=', 'sale')
                     ->whereBetween('sales.sale_date', [$from, $to])
-                    ->when($branchId, fn ($q) => $q->where('sales.branch_id', $branchId));
+                    ->when($branchId, fn ($q) => $q->where('sales.branch_id', $branchId))
+                    ->when($paymentMethod, fn ($q) => $q->where('sales.payment_method', $paymentMethod))
+                    ->when($productId, fn ($q) => $q->whereExists(fn ($sq) => $sq->selectRaw('1')->from('sale_items')->whereColumn('sale_items.sale_id', 'sales.id')->where('sale_items.product_id', $productId)));
             })
             ->where('users.role', '!=', 'customer')
             ->groupBy('users.id', 'users.name', 'users.email')
@@ -325,10 +342,14 @@ class ReportController extends Controller
         Carbon $from,
         Carbon $to,
         ?int $branchId,
-        ?int $supplierId
+        ?int $supplierId,
+        ?string $paymentMethod,
+        ?int $productId
     ): array {
         $rows = $this->salesQuery($from, $to, $branchId, $supplierId)
             ->where('transaction_type', 'purchase')
+            ->when($paymentMethod, fn ($q) => $q->where('payment_method', $paymentMethod))
+            ->when($productId, fn ($q) => $q->whereHas('sale_items', fn ($items) => $items->where('product_id', $productId)))
             ->with(['supplier', 'branch', 'user'])
             ->latest('sale_date')
             ->get()
@@ -352,9 +373,11 @@ class ReportController extends Controller
         Carbon $from,
         Carbon $to,
         ?int $branchId,
-        ?int $supplierId
+        ?int $supplierId,
+        ?string $paymentMethod
     ): array {
         $rows = $this->expenseQuery($from, $to, $branchId, $supplierId)
+            ->when($paymentMethod, fn ($q) => $q->where('payment_method', $paymentMethod))
             ->with(['branch', 'supplier'])
             ->latest('expense_date')
             ->get()
@@ -431,12 +454,13 @@ class ReportController extends Controller
         ];
     }
 
-    private function products(?int $branchId, ?int $supplierId): array
+    private function products(?int $branchId, ?int $supplierId, ?int $productId): array
     {
         $rows = Product::query()
             ->with(['branch', 'category'])
             ->withCount('sale_items')
             ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($productId, fn ($q) => $q->whereKey($productId))
             ->when(
                 $supplierId,
                 fn ($q) => $q->whereHas(
@@ -510,12 +534,17 @@ class ReportController extends Controller
         Carbon $from,
         Carbon $to,
         ?int $branchId,
-        ?int $supplierId
+        ?int $supplierId,
+        ?string $paymentMethod,
+        ?int $productId
     ): array {
         $sales = $this->salesQuery($from, $to, $branchId, $supplierId)
-            ->where('transaction_type', 'sale');
+            ->where('transaction_type', 'sale')
+            ->when($paymentMethod, fn ($q) => $q->where('payment_method', $paymentMethod))
+            ->when($productId, fn ($q) => $q->whereHas('sale_items', fn ($items) => $items->where('product_id', $productId)));
 
-        $expenses = $this->expenseQuery($from, $to, $branchId, $supplierId);
+        $expenses = $this->expenseQuery($from, $to, $branchId, $supplierId)
+            ->when($paymentMethod, fn ($q) => $q->where('payment_method', $paymentMethod));
 
         return [
             'rows' => collect([
@@ -533,13 +562,18 @@ class ReportController extends Controller
         Carbon $from,
         Carbon $to,
         ?int $branchId,
-        ?int $supplierId
+        ?int $supplierId,
+        ?string $paymentMethod,
+        ?int $productId
     ): array {
         $revenue = (float) $this->salesQuery($from, $to, $branchId, $supplierId)
             ->where('transaction_type', 'sale')
+            ->when($paymentMethod, fn ($q) => $q->where('payment_method', $paymentMethod))
+            ->when($productId, fn ($q) => $q->whereHas('sale_items', fn ($items) => $items->where('product_id', $productId)))
             ->sum('total_amount');
 
         $expenses = (float) $this->expenseQuery($from, $to, $branchId, $supplierId)
+            ->when($paymentMethod, fn ($q) => $q->where('payment_method', $paymentMethod))
             ->sum('amount');
 
         return [

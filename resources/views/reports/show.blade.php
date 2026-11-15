@@ -54,6 +54,24 @@
             @endforeach
         </select>
 
+        @if(in_array($type, ['overview', 'sales', 'salesperson_performance', 'purchases', 'profit', 'expenses']))
+            <select name="payment_method" aria-label="Payment method" class="rounded-lg border-slate-300">
+                <option value="">All Payment Methods</option>
+                @foreach($payment_methods as $method)
+                    <option value="{{ $method }}" @selected(request('payment_method') === $method)>{{ $method }}</option>
+                @endforeach
+            </select>
+        @endif
+
+        @if(in_array($type, ['overview', 'sales', 'salesperson_performance', 'purchases', 'profit', 'products']))
+            <select name="product_id" aria-label="Product" class="rounded-lg border-slate-300">
+                <option value="">All Products</option>
+                @foreach($product_options as $product)
+                    <option value="{{ $product->id }}" @selected((string)request('product_id') === (string)$product->id)>{{ $product->name }}</option>
+                @endforeach
+            </select>
+        @endif
+
         @if($type === 'general_ledger')
             <input type="hidden" name="account_code" value="{{ $selectedAccountCode ?? '' }}">
             <input type="hidden" name="journal_type" value="{{ $selectedJournalType ?? '' }}">
@@ -67,7 +85,7 @@
 
 <div class="mb-5 flex flex-wrap gap-2">
     @foreach($reportTypes as $reportType)
-        <a href="{{ route('reports.show', $reportType).'?'.http_build_query(request()->only(['from','to','branch_id','supplier_id','per_page'])) }}"
+        <a href="{{ route('reports.show', $reportType).'?'.http_build_query(request()->only(['from','to','branch_id','supplier_id','payment_method','product_id','per_page'])) }}"
            class="rounded-full px-3 py-1.5 text-xs font-bold
                 {{ $type === $reportType
                     ? 'bg-indigo-600 text-white'

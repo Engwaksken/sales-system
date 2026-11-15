@@ -28,7 +28,19 @@
         <option value="month" {{ request('period')=='month'?'selected':'' }}>This Month</option>
         <option value="year" {{ request('period')=='year'?'selected':'' }}>This Year</option>
     </select>
-    @if(request('q') || (request('period') && request('period') !== 'all'))
+    <select name="branch_id" aria-label="Branch" class="rounded-md border-slate-300 text-sm" onchange="this.form.submit()">
+        <option value="">All branches</option>
+        @foreach($branch_options as $branch)<option value="{{ $branch->id }}" @selected((string)request('branch_id') === (string)$branch->id)>{{ $branch->name }}</option>@endforeach
+    </select>
+    <select name="payment_method" aria-label="Payment method" class="rounded-md border-slate-300 text-sm" onchange="this.form.submit()">
+        <option value="">All methods</option>
+        @foreach($payment_methods as $method)<option value="{{ $method }}" @selected(request('payment_method') === $method)>{{ $method }}</option>@endforeach
+    </select>
+    <select name="product_id" aria-label="Product" class="rounded-md border-slate-300 text-sm" onchange="this.form.submit()">
+        <option value="">All products</option>
+        @foreach($product_options as $product)<option value="{{ $product->id }}" @selected((string)request('product_id') === (string)$product->id)>{{ $product->name }}</option>@endforeach
+    </select>
+    @if(request('q') || (request('period') && request('period') !== 'all') || request('branch_id') || request('payment_method') || request('product_id'))
     <a href="{{ route('payments.index') }}" class="filter-clear"><i class="fa-solid fa-xmark"></i> Clear</a>
     @endif
 </form>
@@ -55,8 +67,11 @@
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="created_at" checked class="rounded border-slate-300"> Created At</label>
 <label class="flex items-center gap-2"><input type="checkbox" name="columns[]" value="updated_at" checked class="rounded border-slate-300"> Updated At</label>
     </div>
-    <input type="hidden" name="period" value="{{ request('period', 'all') }}">
-    <input type="hidden" name="q" value="{{ request('q', '') }}">
+     <input type="hidden" name="period" value="{{ request('period', 'all') }}">
+     <input type="hidden" name="q" value="{{ request('q', '') }}">
+     <input type="hidden" name="branch_id" value="{{ request('branch_id', '') }}">
+     <input type="hidden" name="payment_method" value="{{ request('payment_method', '') }}">
+     <input type="hidden" name="product_id" value="{{ request('product_id', '') }}">
     <div class="flex items-center gap-2">
       <button formaction="{{ route('payments.export.csv') }}" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
       <button formaction="{{ route('payments.export.pdf') }}" class="bg-slate-600 text-white px-4 py-1.5 rounded-md text-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>

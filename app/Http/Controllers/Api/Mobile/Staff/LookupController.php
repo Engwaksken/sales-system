@@ -7,6 +7,7 @@ use App\Models\Expense;
 use App\Models\Category;
 use App\Models\ExpenseCategory;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\UnitType;
 use App\Services\SalePaymentService;
@@ -34,6 +35,9 @@ class LookupController extends StaffController
                 : [],
             'suppliers' => Schema::hasTable('suppliers')
                 ? Supplier::query()->orderBy('name')->get(['id', 'name', 'status'])
+                : [],
+            'products' => Schema::hasTable('products')
+                ? Product::query()->when(! $admin, fn ($q) => $q->where(fn ($branch) => $branch->where('branch_id', $own ?: 0)->orWhereNull('branch_id')))->orderBy('name')->get(['id', 'name'])
                 : [],
             'expense_categories' => Schema::hasTable('expense_categories')
                 ? ExpenseCategory::query()->orderBy('name')->get(['id', 'name'])

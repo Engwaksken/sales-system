@@ -172,7 +172,19 @@ class SaleController extends StaffController
         $this->authorizePermission($request, 'manage_sales');
 
         $query = Payment::query()->with(['sale:id,invoice_no,branch_id', 'customer:id,name'])
-            ->whereHas('sale', fn ($q) => $this->scopeBranch($q, $request));
+            ->whereHas('sale', function ($q) use ($request) {
+                $this->scopeBranch($q, $request);
+                if ($this->isAdmin($request) && $request->filled('branch_id')) {
+                    $q->where('branch_id', $request->integer('branch_id'));
+                }
+            });
+
+        if ($request->filled('payment_method')) {
+            $query->where('method', $request->query('payment_method'));
+        }
+        if ($request->filled('product_id')) {
+            $query->whereHas('sale.sale_items', fn ($items) => $items->where('product_id', $request->integer('product_id')));
+        }
 
         if ($search = trim((string) $request->query('q', ''))) {
             $query->where(fn ($q) => $q->where('receipt_no', 'like', "%{$search}%")

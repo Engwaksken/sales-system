@@ -107,9 +107,9 @@
                 @endphp
                 <details class="theme-nav-details" @if($groupActive) open @endif>
                     <summary class="theme-nav-group flex items-center gap-2 px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider">
-                        <i class="nav-group-chevron fas fa-chevron-right w-3 text-[9px] transition-transform duration-150" aria-hidden="true"></i>
                         <i class="fas {{ ($navGroupIcons ?? [])[$groupName] ?? 'fa-folder' }} w-4 text-center opacity-80" aria-hidden="true"></i>
                         <span>{{ $groupName }}</span>
+                        <i class="nav-group-chevron fas fa-chevron-right ml-auto w-3 text-right text-[9px] transition-transform duration-150" aria-hidden="true"></i>
                     </summary>
 
                 @foreach ($items as $routeName => $entry)
