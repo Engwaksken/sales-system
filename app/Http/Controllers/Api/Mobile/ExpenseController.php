@@ -173,7 +173,9 @@ class ExpenseController extends Controller
             'category_new' => ['nullable', 'string', 'max:150'],
             'category_id' => ['nullable', 'integer', Rule::exists('expense_categories', 'id')],
             'supplier_id' => ['nullable', 'integer', Rule::exists('suppliers', 'id')],
-            'branch_id' => ['nullable', 'integer', Rule::exists('branches', 'id')],
+            // Admins may create expenses across branches and must choose where
+            // the expense belongs; other staff are assigned their own branch.
+            'branch_id' => [$request->user()->role === 'admin' ? 'required' : 'nullable', 'integer', Rule::exists('branches', 'id')],
             'receipt_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
         $data['category'] = Expense::resolveCategory($data['category'] ?? null, $data['category_new'] ?? null);

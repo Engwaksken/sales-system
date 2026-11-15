@@ -58,6 +58,24 @@ class ExpenseFormTest extends TestCase
             ->assertJsonPath('data.payment_method', 'Mobile Money');
     }
 
+    public function test_admin_must_select_a_branch_when_saving_an_expense(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin', 'email' => Str::lower(Str::random(8)).'@example.com', 'password' => 'password',
+            'role' => 'admin', 'branch_id' => null,
+        ]);
+        Sanctum::actingAs($admin);
+
+        $payload = ['expense_date' => '2026-11-15', 'amount' => 50000, 'category' => 'Fuel'];
+        $this->postJson('/api/mobile/expenses', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('branch_id');
+
+        $this->postJson('/api/mobile/expenses', [...$payload, 'branch_id' => $this->branch->id])
+            ->assertCreated()
+            ->assertJsonPath('data.branch_id', $this->branch->id);
+    }
+
     public function test_app_can_add_a_custom_category_once(): void
     {
         Sanctum::actingAs($this->staff());
