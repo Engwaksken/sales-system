@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Mobile\AuthController;
 use App\Http\Controllers\Api\Mobile\BrandingController;
+use App\Http\Controllers\Api\Mobile\NotificationPreferenceController;
 use App\Http\Controllers\Api\Mobile\CustomerAppController;
 use App\Http\Controllers\Api\Mobile\DashboardController;
 use App\Http\Controllers\Api\Mobile\ExpenseController;
@@ -26,6 +27,8 @@ Route::prefix('mobile')->group(function (): void {
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/me', [AuthController::class, 'me']);
+        Route::get('/notification-preferences', [NotificationPreferenceController::class, 'show']);
+        Route::put('/notification-preferences', [NotificationPreferenceController::class, 'update']);
         Route::post('/logout', [AuthController::class, 'logout']);
 
         Route::get('/dashboard', DashboardController::class);

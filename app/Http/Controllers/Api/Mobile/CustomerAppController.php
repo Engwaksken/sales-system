@@ -516,10 +516,15 @@ class CustomerAppController extends Controller
 
     private function notificationsQuery(Request $request)
     {
+        // Announcements only for users who keep them on in their notification settings.
+        $announcements = \App\Models\NotificationPreference::wants($request->user(), 'announcements');
+
         return AppNotification::query()
-            ->where(function ($q) use ($request) {
-                $q->whereNull('user_id')
-                    ->orWhere('user_id', $request->user()->id);
+            ->where(function ($q) use ($request, $announcements) {
+                if ($announcements) {
+                    $q->whereNull('user_id');
+                }
+                $q->orWhere('user_id', $request->user()->id);
             });
     }
 

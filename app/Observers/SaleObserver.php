@@ -32,7 +32,7 @@ class SaleObserver
         try {
             $sale->loadMissing(['customer', 'sale_items.product', 'branch']);
             $email = $sale->customer?->email;
-            if (! $email) {
+            if (! $email || ! \App\Models\NotificationPreference::customerWantsEmail($sale->customer)) {
                 return;
             }
 

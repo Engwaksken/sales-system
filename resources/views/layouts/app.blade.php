@@ -167,6 +167,10 @@
                         </span>
                     </span>
 
+                    <a href="{{ route('notification-settings.edit') }}" class="text-slate-500 hover:text-slate-800" title="Notification settings">
+                        <i class="fas fa-gear"></i>
+                    </a>
+
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button class="text-red-600 hover:text-red-800 flex items-center gap-1" title="Logout">

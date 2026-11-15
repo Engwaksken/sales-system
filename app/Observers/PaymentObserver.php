@@ -91,7 +91,7 @@ class PaymentObserver
                 ?: $sourceOrder?->customer_name
                 ?: 'Customer';
 
-            if (! $email) {
+            if (! $email || ! \App\Models\NotificationPreference::customerWantsEmail($customer)) {
                 return;
             }
 

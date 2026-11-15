@@ -16,6 +16,7 @@ use App\Models\StockIssue;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\StaffAlerts;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -67,6 +68,10 @@ class ActivityObserver
         }
 
         ActivityLogger::record('updated', $this->describe($model, 'updated'), $model, $changes, $this->updateFlag($model, $changes));
+
+        if ($model instanceof Stock && isset($changes['quantity'])) {
+            StaffAlerts::stockDropped($model, (float) $changes['quantity'][0], (float) $changes['quantity'][1]);
+        }
     }
 
     public function deleted(Model $model): void

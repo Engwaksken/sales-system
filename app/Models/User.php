@@ -30,6 +30,11 @@ class User extends Authenticatable
     /** Back-office roles whose access is controlled by role_permissions (admin always passes). */
     public const STAFF_ROLES = ['general_manager', 'manager', 'marketing_manager', 'accountant', 'cashier'];
 
+    public function notificationPreference()
+    {
+        return $this->hasOne(NotificationPreference::class);
+    }
+
     public static function roleLabel(?string $role): string
     {
         try {

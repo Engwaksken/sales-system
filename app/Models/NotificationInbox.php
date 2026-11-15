@@ -77,8 +77,11 @@ final class NotificationInbox
                 AND system_notification_reads.user_id = ?
             ) ELSE notifications_app.is_read END AS notification_is_read', [$user->getKey()])
             ->where(function (Builder $query) use ($user) {
-                $query->whereNull('notifications_app.user_id')
-                    ->orWhere('notifications_app.user_id', $user->getKey());
+                // Broadcast announcements only for users who keep them on.
+                if (NotificationPreference::wants($user, 'announcements')) {
+                    $query->whereNull('notifications_app.user_id');
+                }
+                $query->orWhere('notifications_app.user_id', $user->getKey());
             });
     }
 
@@ -90,6 +93,11 @@ final class NotificationInbox
     private static function ownedOrders(User $user): Builder
     {
         $query = Order::query();
+
+        // Muted order notifications show no orders in the inbox (order pages are unaffected).
+        if (! NotificationPreference::wants($user, $user->role === 'customer' ? 'order_updates' : 'new_orders')) {
+            return $query->whereRaw('1 = 0');
+        }
 
         if ($user->role === 'customer') {
             $customerId = $user->customer?->getKey();
@@ -110,6 +118,10 @@ final class NotificationInbox
     public static function visibleChats(User $user): Builder
     {
         $query = ChatMessage::query()->with('conversation');
+
+        if (! NotificationPreference::wants($user, $user->role === 'customer' ? 'chat_replies' : 'customer_chats')) {
+            return $query->whereRaw('1 = 0');
+        }
 
         if ($user->role === 'customer') {
             if (! self::hasEmail($user)) {

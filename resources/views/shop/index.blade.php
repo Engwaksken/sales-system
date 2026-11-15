@@ -276,11 +276,26 @@
 .checkout-summary{border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;background:#fff;margin-bottom:20px}
 .checkout-summary-title{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
 .checkout-summary-title strong{font-size:.88rem;color:#334155}
-.cart-order-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid #f1f5f9}
+.cart-order-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid #f1f5f9}
+.cart-qty{display:inline-flex;align-items:center;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden;background:#fff}
+.cart-qty button{width:34px;height:34px;display:grid;place-items:center;color:#334155;background:#fff;border:0;cursor:pointer}
+.cart-qty button:hover:not(:disabled){background:#f1f5f9}
+.cart-qty button:disabled{color:#cbd5e1;cursor:not-allowed}
+.cart-qty input{width:46px;height:34px;border:0!important;border-left:1px solid #e2e8f0!important;border-right:1px solid #e2e8f0!important;text-align:center;font-weight:800;color:#0f172a;padding:0!important;box-shadow:none!important;-moz-appearance:textfield}
+.cart-qty input::-webkit-outer-spin-button,.cart-qty input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.cart-order-end{display:flex;align-items:center;gap:6px}
+.cart-remove{width:34px;height:34px;border-radius:10px;border:0;background:transparent;color:#94a3b8;display:grid;place-items:center;cursor:pointer}
+.cart-remove:hover{background:#fef2f2;color:#dc2626}
+.cart-limit{font-size:.7rem;color:#b45309;margin-top:2px}
+.cart-undo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;font-size:.8rem}
+.cart-undo[hidden]{display:none}
+.cart-undo button{border:0;background:transparent;color:var(--shop-primary,#0f766e);font-weight:800;cursor:pointer}
+.cart-clear{border:0;background:transparent;color:#dc2626;font-size:.75rem;font-weight:700;cursor:pointer}
+.cart-clear:hover{text-decoration:underline}
 .cart-order-row:last-child{border-bottom:0}
 .cart-order-name{font-weight:700;color:#1e293b}
 .cart-order-meta{font-size:.73rem;color:#94a3b8;margin-top:2px}
-.cart-order-price{text-align:right;font-weight:800;color:#0f172a;white-space:nowrap}
+.cart-order-price{text-align:right;font-weight:800;color:#0f172a;white-space:nowrap;min-width:92px}
 .checkout-totals{padding:12px 14px;background:#fcfcfd}
 .checkout-total-line{display:flex;justify-content:space-between;gap:18px;padding:4px 0;color:#475569}
 .checkout-total-line.total{margin-top:5px;padding-top:10px;border-top:1px solid #e2e8f0;color:#0f172a;font-weight:900;font-size:1.05rem}
@@ -308,7 +323,7 @@
 .checkout-place:disabled{opacity:.65;cursor:not-allowed}
 .mm-panel{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:14px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff}
 .mm-panel.hidden{display:none}
-@media(max-width:640px){#checkoutModal{padding:0!important;align-items:flex-end!important}.checkout-modal-card{max-height:94vh;border-radius:18px 18px 0 0}.checkout-modal-head{padding:15px 16px}.checkout-scroll{padding:16px}.checkout-grid,.mm-panel{grid-template-columns:1fr}.checkout-field.full,.mm-panel{grid-column:auto}.checkout-actions{position:sticky;bottom:-16px;margin-left:-16px;margin-right:-16px;padding:12px 16px 16px;background:#fff}.checkout-cancel{display:none}.checkout-place{width:100%}}
+@media(max-width:640px){.cart-order-row{grid-template-columns:minmax(0,1fr) auto;row-gap:8px}.cart-order-end{grid-column:1/-1;justify-content:space-between}.cart-order-price{text-align:left;min-width:0}#checkoutModal{padding:0!important;align-items:flex-end!important}.checkout-modal-card{max-height:94vh;border-radius:18px 18px 0 0}.checkout-modal-head{padding:15px 16px}.checkout-scroll{padding:16px}.checkout-grid,.mm-panel{grid-template-columns:1fr}.checkout-field.full,.mm-panel{grid-column:auto}.checkout-actions{position:sticky;bottom:-16px;margin-left:-16px;margin-right:-16px;padding:12px 16px 16px;background:#fff}.checkout-cancel{display:none}.checkout-place{width:100%}}
 </style>
 
 <div id="checkoutModal" class="fixed inset-0 bg-slate-950/50 hidden items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
@@ -332,7 +347,14 @@
       <div class="checkout-summary">
         <div class="checkout-summary-title">
           <strong><i class="fas fa-cart-shopping mr-1"></i> Order summary</strong>
-          <span id="checkoutItemCount" class="text-xs text-slate-500"></span>
+          <span class="flex items-center gap-3">
+            <span id="checkoutItemCount" class="text-xs text-slate-500"></span>
+            <button type="button" id="cartClearBtn" class="cart-clear" onclick="clearCart()">Clear cart</button>
+          </span>
+        </div>
+        <div id="cartUndo" class="cart-undo" hidden>
+          <span id="cartUndoText"></span>
+          <button type="button" onclick="undoRemove()">Undo</button>
         </div>
         <div id="cartItems"></div>
         <div id="cartTotals" class="checkout-totals"></div>
@@ -546,12 +568,112 @@ document.getElementById('orderSuccessPopup')?.addEventListener('click', function
 function addFromCard(id, name, price, stock){
   const existing = cart.find(i => i.id === id);
   if (existing) {
-    if (existing.qty < stock) existing.qty++;
+    existing.stock = stock;
+    existing.price = price;
+    if (existing.qty >= stock) {
+      appAlert(`Only ${stock} of "${name}" in stock, and they are all in your cart.`);
+      return;
+    }
+    existing.qty++;
   } else {
-    cart.push({id, name, price, qty: 1});
+    if (stock < 1) return;
+    cart.push({id, name, price, stock, qty: 1});
   }
   saveCart();
 }
+
+/* ---- Editing the cart at checkout -------------------------------------- */
+
+// Carts saved before stock was remembered have no limit here; checkout re-checks stock.
+function maxQty(item){
+  return Number.isFinite(Number(item.stock)) && Number(item.stock) > 0 ? Number(item.stock) : 9999;
+}
+
+let lastRemoved = null;
+let undoTimer = null;
+
+function setQty(id, qty){
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  qty = Math.floor(Number(qty));
+  if (!Number.isFinite(qty) || qty < 1) {
+    removeItem(id);
+    return;
+  }
+  item.qty = Math.min(qty, maxQty(item));
+  saveCart();
+  renderCart();
+}
+
+function changeQty(id, delta){
+  const item = cart.find(i => i.id === id);
+  if (item) setQty(id, item.qty + delta);
+}
+
+function removeItem(id){
+  const index = cart.findIndex(i => i.id === id);
+  if (index < 0) return;
+  lastRemoved = {item: cart[index], index};
+  cart.splice(index, 1);
+  saveCart();
+  renderCart();
+  showUndo(`Removed ${lastRemoved.item.name}.`);
+}
+
+function clearCart(){
+  if (!cart.length) return;
+  lastRemoved = {all: cart.slice()};
+  cart = [];
+  saveCart();
+  renderCart();
+  showUndo('Cart cleared.');
+}
+
+function undoRemove(){
+  if (!lastRemoved) return;
+  if (lastRemoved.all) {
+    cart = lastRemoved.all;
+  } else if (!cart.find(i => i.id === lastRemoved.item.id)) {
+    cart.splice(Math.min(lastRemoved.index, cart.length), 0, lastRemoved.item);
+  }
+  lastRemoved = null;
+  hideUndo();
+  saveCart();
+  renderCart();
+}
+
+function showUndo(text){
+  const bar = document.getElementById('cartUndo');
+  document.getElementById('cartUndoText').textContent = text;
+  bar.hidden = false;
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(hideUndo, 6000);
+}
+
+function hideUndo(){
+  const bar = document.getElementById('cartUndo');
+  if (bar) bar.hidden = true;
+}
+
+// One listener for every row's buttons and quantity box.
+document.getElementById('cartItems').addEventListener('click', function(event){
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const id = Number(button.closest('[data-id]').dataset.id);
+  if (button.dataset.action === 'inc') changeQty(id, 1);
+  if (button.dataset.action === 'dec') changeQty(id, -1);
+  if (button.dataset.action === 'remove') removeItem(id);
+});
+document.getElementById('cartItems').addEventListener('change', function(event){
+  if (!event.target.matches('input[data-qty]')) return;
+  setQty(Number(event.target.closest('[data-id]').dataset.id), event.target.value);
+});
+document.getElementById('cartItems').addEventListener('keydown', function(event){
+  if (event.key === 'Enter' && event.target.matches('input[data-qty]')) {
+    event.preventDefault();
+    event.target.blur();
+  }
+});
 
 function currentFee(){
   const sel = document.getElementById('zSel');
@@ -564,19 +686,44 @@ function renderCart(){
   const count = cart.reduce((sum, item) => sum + item.qty, 0);
   document.getElementById('checkoutItemCount').textContent = `${count} item${count === 1 ? '' : 's'}`;
 
+  document.getElementById('cartClearBtn').hidden = !cart.length;
+  document.getElementById('placeBtn').disabled = !cart.length;
+
   if (!cart.length) {
-    wrap.innerHTML = '<div class="text-center text-slate-400 py-7"><i class="fas fa-cart-shopping text-2xl mb-2"></i><p class="text-sm">Your cart is empty.</p></div>';
+    wrap.innerHTML = `<div class="text-center text-slate-400 py-7">
+      <i class="fas fa-cart-shopping text-2xl mb-2"></i>
+      <p class="text-sm mb-3">Your cart is empty.</p>
+      <button type="button" class="checkout-cancel" style="display:inline-block" onclick="closeCheckout()">Continue shopping</button>
+    </div>`;
   } else {
     wrap.innerHTML = '';
     cart.forEach(item => {
+      const max = maxQty(item);
+      const name = escapeCheckoutHtml(item.name);
       const row = document.createElement('div');
       row.className = 'cart-order-row';
+      row.dataset.id = item.id;
       row.innerHTML = `
-        <div>
-          <div class="cart-order-name">${escapeCheckoutHtml(item.name)}</div>
-          <div class="cart-order-meta">UGX ${Number(item.price).toLocaleString()} × ${item.qty}</div>
+        <div class="min-w-0">
+          <div class="cart-order-name">${name}</div>
+          <div class="cart-order-meta">UGX ${Number(item.price).toLocaleString()} each</div>
+          ${item.qty >= max && max < 9999 ? `<div class="cart-limit">Only ${max} in stock</div>` : ''}
         </div>
-        <div class="cart-order-price">UGX ${(Number(item.price) * item.qty).toLocaleString()}</div>`;
+        <div class="cart-qty" role="group" aria-label="Quantity of ${name}">
+          <button type="button" data-action="dec" aria-label="${item.qty === 1 ? 'Remove' : 'Reduce'} ${name}">
+            <i class="fas ${item.qty === 1 ? 'fa-trash-can' : 'fa-minus'} text-xs"></i>
+          </button>
+          <input type="number" inputmode="numeric" min="1" max="${max}" value="${item.qty}" data-qty aria-label="Quantity of ${name}">
+          <button type="button" data-action="inc" aria-label="Add one more ${name}" ${item.qty >= max ? 'disabled' : ''}>
+            <i class="fas fa-plus text-xs"></i>
+          </button>
+        </div>
+        <div class="cart-order-end">
+          <div class="cart-order-price">UGX ${(Number(item.price) * item.qty).toLocaleString()}</div>
+          <button type="button" class="cart-remove" data-action="remove" aria-label="Remove ${name}" title="Remove">
+            <i class="fas fa-xmark"></i>
+          </button>
+        </div>`;
       wrap.appendChild(row);
     });
   }

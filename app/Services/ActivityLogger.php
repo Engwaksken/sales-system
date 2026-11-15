@@ -83,7 +83,7 @@ class ActivityLogger
             $user ??= Auth::user();
             $request = app()->runningInConsole() && ! app()->runningUnitTests() ? null : request();
 
-            ActivityLog::create([
+            $log = ActivityLog::create([
                 'user_id' => $user?->getKey(),
                 'user_name' => $user?->name,
                 'user_role' => $user?->role,
@@ -101,6 +101,10 @@ class ActivityLogger
                 'user_agent' => $request ? Str::limit((string) $request->userAgent(), 250) : null,
                 'created_at' => now(),
             ]);
+
+            if ($log->flagged) {
+                StaffAlerts::flaggedActivity($log);
+            }
         } catch (Throwable $e) {
             report($e);
         }
