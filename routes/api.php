@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Mobile\AuthController;
+use App\Http\Controllers\Api\Mobile\BrandingController;
 use App\Http\Controllers\Api\Mobile\CustomerAppController;
 use App\Http\Controllers\Api\Mobile\DashboardController;
 use App\Http\Controllers\Api\Mobile\ExpenseController;
@@ -9,6 +10,9 @@ use App\Http\Controllers\Api\Mobile\Staff;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('mobile')->group(function (): void {
+    // Public: the sign-in screen shows the admin's logo and name before anyone logs in.
+    Route::get('/branding', BrandingController::class)->middleware('throttle:60,1');
+
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
@@ -64,6 +68,9 @@ Route::prefix('mobile')->group(function (): void {
             Route::get('/chats/{conversation}', [Staff\ChatController::class, 'show'])->whereNumber('conversation');
             Route::post('/chats/{conversation}/reply', [Staff\ChatController::class, 'reply'])->whereNumber('conversation')->middleware('throttle:30,1');
             Route::post('/chats/{conversation}/close', [Staff\ChatController::class, 'close'])->whereNumber('conversation');
+
+            Route::get('/activity-logs', [Staff\ActivityLogController::class, 'index']);
+            Route::get('/activity-logs/summary', [Staff\ActivityLogController::class, 'summary']);
 
             Route::get('/reports', [Staff\ReportController::class, 'index']);
             Route::get('/reports/{type}', [Staff\ReportController::class, 'show']);

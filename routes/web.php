@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\EfrisInvoiceController;
@@ -129,6 +130,8 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('efris_invoices', EfrisInvoiceController::class)->only(['index', 'show'])->middleware('permission:manage_settings');
     Route::post('/sales/{sale}/efris-submit', [EfrisInvoiceController::class, 'submit'])->name('sales.efris-submit')->middleware('permission:manage_settings');
+
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('permission:view_activity_logs');
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index')->middleware('permission:manage_settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update')->middleware('permission:manage_settings');

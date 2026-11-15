@@ -28,7 +28,9 @@ class StockService
 
         $added = $toppedUp = 0;
 
-        DB::transaction(function () use ($data, $branchIds, &$added, &$toppedUp): void {
+        // A plain closure, not fn(): the counters must be shared by reference.
+        ActivityLogger::during('stock_received', function () use ($data, $branchIds, &$added, &$toppedUp) {
+            DB::transaction(function () use ($data, $branchIds, &$added, &$toppedUp): void {
             foreach ($branchIds as $branchId) {
                 $stock = Stock::query()
                     ->where('product_id', $data['product_id'])
@@ -54,6 +56,7 @@ class StockService
                     $added++;
                 }
             }
+            });
         });
 
         return ['added' => $added, 'topped_up' => $toppedUp];
@@ -66,7 +69,7 @@ class StockService
      */
     public function issue(array $data, int $userId): StockIssue
     {
-        return DB::transaction(function () use ($data, $userId) {
+        return ActivityLogger::during('stock_issue', fn () => DB::transaction(function () use ($data, $userId) {
             $stock = Stock::query()->where('product_id', $data['product_id'])
                 ->where('branch_id', $data['branch_id'])->orderBy('id')->lockForUpdate()->first();
 
@@ -79,6 +82,6 @@ class StockService
             $stock->decrement('quantity', $data['quantity']);
 
             return StockIssue::create($data + ['user_id' => $userId]);
-        });
+        }));
     }
 }

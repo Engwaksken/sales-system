@@ -54,6 +54,7 @@ class LoginController extends Controller
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             RateLimiter::hit($key, 60);
+            \App\Services\ActivityLogger::record('login_failed', 'Failed website sign-in for '.$email, user: $user);
 
             return back()->withErrors([
                 'email' => 'Those credentials do not match our records.',

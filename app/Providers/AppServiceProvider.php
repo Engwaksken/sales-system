@@ -7,7 +7,13 @@ use App\Models\OrderPaymentReceipt;
 use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\Setting;
+use App\Observers\ActivityObserver;
 use App\Observers\ExpenseObserver;
+use App\Services\ActivityLogger;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Event;
 use App\Observers\OrderPaymentReceiptObserver;
 use App\Observers\PaymentObserver;
 use App\Observers\SaleObserver;
@@ -30,6 +36,18 @@ class AppServiceProvider extends ServiceProvider
         Expense::observe(ExpenseObserver::class);
         Payment::observe(PaymentObserver::class);
         OrderPaymentReceipt::observe(OrderPaymentReceiptObserver::class);
+
+        // Audit trail for the owner: who changed sales, stock, payments and access.
+        foreach (ActivityObserver::MODELS as $model) {
+            $model::observe(ActivityObserver::class);
+        }
+        Event::listen(Login::class, fn (Login $e) => ActivityLogger::record('login', 'Signed in to the website', user: $e->user));
+        Event::listen(Logout::class, fn (Logout $e) => $e->user ? ActivityLogger::record('logout', 'Signed out of the website', user: $e->user) : null);
+        Event::listen(Failed::class, fn (Failed $e) => ActivityLogger::record(
+            'login_failed',
+            'Failed website sign-in for '.($e->credentials['email'] ?? 'unknown email'),
+            user: $e->user,
+        ));
 
         View::share('navGroups', [
             'Dashboard' => [
@@ -83,6 +101,7 @@ class AppServiceProvider extends ServiceProvider
                 'permissions' => ['label' => 'Permissions', 'icon' => 'fa-lock'],
                 'role_permissions' => ['label' => 'Role Permissions', 'icon' => 'fa-user-shield'],
                 'settings' => ['label' => 'Settings', 'icon' => 'fa-gear'],
+                'activity-logs' => ['label' => 'Activity Log', 'icon' => 'fa-clipboard-list'],
                 'notifications_app' => ['label' => 'Notifications', 'icon' => 'fa-bell'],
             ],
         ]);

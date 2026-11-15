@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Services\ActivityLogger;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
@@ -37,6 +38,8 @@ class AuthController extends Controller
             ->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            ActivityLogger::record('login_failed', 'Failed app sign-in for '.strtolower($credentials['email']), user: $user);
+
             throw ValidationException::withMessages([
                 'email' => ['The supplied login details are incorrect.'],
             ]);
@@ -59,6 +62,8 @@ class AuthController extends Controller
                 'message' => 'This user account is not active.',
             ], 403);
         }
+
+        ActivityLogger::record('login', 'Signed in to the mobile app', user: $user);
 
         return $this->tokenResponse(
             $user,

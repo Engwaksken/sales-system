@@ -333,6 +333,8 @@ class BulkUploadController extends Controller
                 }
             }
 
+            // Uploaded stock is a delivery, not a hand edit of the counts.
+            \App\Services\ActivityLogger::enter('bulk_upload');
             try {
                 DB::transaction(function () use (
                     $sku,
@@ -448,6 +450,8 @@ class BulkUploadController extends Controller
                 report($e);
                 $errors[] = "Row {$rowNumber}: Unable to import this product due to an unexpected error.";
                 $skipped++;
+            } finally {
+                \App\Services\ActivityLogger::leave();
             }
         }
 

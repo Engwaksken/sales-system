@@ -124,7 +124,9 @@ class Importer
         }
 
         $counts = ['created' => 0, 'updated' => 0];
-        DB::transaction(function () use ($checked, &$counts): void {
+        // Imported stock is a delivery, not a hand edit of the counts.
+        \App\Services\ActivityLogger::during('stock_import', function () use ($checked, &$counts) {
+            DB::transaction(function () use ($checked, &$counts): void {
             foreach ($checked as $row) {
                 $result = match ($this->module['handler'] ?? null) {
                     'stock' => $this->saveStock($row['data']),
@@ -134,6 +136,7 @@ class Importer
                 $counts['created'] += $result['created'];
                 $counts['updated'] += $result['updated'];
             }
+            });
         });
 
         return $counts;

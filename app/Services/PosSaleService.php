@@ -36,7 +36,7 @@ class PosSaleService
         $tenders = $this->payments->normalise($data['payments'] ?? []);
         $customerId = $data['customer_id'] ?? null;
 
-        return DB::transaction(function () use ($data, $discount, $vat, $legacyFullPayment, $tenders, $customerId, $userId) {
+        return ActivityLogger::during('pos_sale', fn () => DB::transaction(function () use ($data, $discount, $vat, $legacyFullPayment, $tenders, $customerId, $userId) {
             $lines = [];
             $subtotal = 0.0;
 
@@ -101,7 +101,7 @@ class PosSaleService
             }
 
             return [$sale, $this->payments->record($sale, $tenders)];
-        });
+        }));
     }
 
     /**
@@ -116,7 +116,7 @@ class PosSaleService
             throw ValidationException::withMessages(['payment' => 'Enter at least one payment amount.']);
         }
 
-        return DB::transaction(function () use ($sale, $tenders) {
+        return ActivityLogger::during('sale_payment', fn () => DB::transaction(function () use ($sale, $tenders) {
             $locked = Sale::whereKey($sale->id)->lockForUpdate()->firstOrFail();
             $alreadyPaid = (float) $locked->payments()->where('status', 'successful')->sum('amount');
 
@@ -142,6 +142,6 @@ class PosSaleService
             }
 
             return $receipts;
-        });
+        }));
     }
 }
