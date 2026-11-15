@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Mobile\AuthController;
 use App\Http\Controllers\Api\Mobile\BrandingController;
 use App\Http\Controllers\Api\Mobile\NotificationPreferenceController;
+use App\Http\Controllers\Api\Mobile\ProfileController;
 use App\Http\Controllers\Api\Mobile\CustomerAppController;
 use App\Http\Controllers\Api\Mobile\DashboardController;
 use App\Http\Controllers\Api\Mobile\ExpenseController;
@@ -27,6 +28,10 @@ Route::prefix('mobile')->group(function (): void {
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/me', [AuthController::class, 'me']);
+        // The signed-in user's own profile (POST: multipart with an optional photo).
+        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::post('/profile', [ProfileController::class, 'update']);
+        Route::put('/profile/password', [ProfileController::class, 'password'])->middleware('throttle:6,1');
         Route::get('/notification-preferences', [NotificationPreferenceController::class, 'show']);
         Route::put('/notification-preferences', [NotificationPreferenceController::class, 'update']);
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -79,7 +84,7 @@ Route::prefix('mobile')->group(function (): void {
             Route::get('/reports/{type}', [Staff\ReportController::class, 'show']);
 
             // Products, categories, customers, suppliers and expense categories.
-            $catalog = 'products|categories|customers|suppliers|expense-categories';
+            $catalog = 'products|categories|customers|suppliers|expense-categories|unit-types';
             Route::get('/catalog/{resource}', [Staff\CatalogController::class, 'index'])->where('resource', $catalog);
             Route::post('/catalog/{resource}', [Staff\CatalogController::class, 'store'])->where('resource', $catalog);
             Route::get('/catalog/{resource}/{id}', [Staff\CatalogController::class, 'show'])->where('resource', $catalog)->whereNumber('id');

@@ -48,6 +48,10 @@ class StockController extends Controller
         if ($request->filled('branch_id')) {
             $query->where('branch_id', $request->integer('branch_id'));
         }
+        // Dashboard "Low Stock" card.
+        if ($request->boolean('low')) {
+            $query->where('quantity', '<=', 5);
+        }
 
         return $query;
     }

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\NotificationSettingsController;
+use App\Http\Controllers\UnitTypesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\EfrisInvoiceController;
@@ -208,6 +209,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock/export/csv', [StockController::class, 'exportCsv'])->name('stock.export.csv')->middleware('permission:manage_stock');
     Route::get('/stock/export/pdf', [StockController::class, 'exportPdf'])->name('stock.export.pdf')->middleware('permission:manage_stock');
     Route::get('/stock/lookup-barcode', [StockController::class, 'lookupBarcode'])->name('stock.lookup-barcode')->middleware(['throttle:60,1', 'permission:manage_stock']);
+    Route::resource('unit_types', UnitTypesController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:manage_stock');
     Route::resource('stock', StockController::class)->except(['create', 'edit'])->middleware('permission:manage_stock');
     Route::get('/sales/export/csv', [SalesController::class, 'exportCsv'])->name('sales.export.csv')->middleware('permission:manage_sales');
     Route::get('/sales/export/pdf', [SalesController::class, 'exportPdf'])->name('sales.export.pdf')->middleware('permission:manage_sales');

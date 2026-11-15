@@ -22,6 +22,9 @@ class OrdersController extends Controller
         if ($request->filled('period') && $request->period !== 'all') {
             $query = $this->applyPeriod($query, $request->period, 'created_at');
         }
+        if ($request->filled('status')) {
+            $query->where('status', $request->query('status'));
+        }
         $query = $this->applySearch($query, (string) $request->query('q', ''), ['order_id', 'customer_name', 'phone', 'email']);
         $orders = $query->latest()->paginate($this->perPage($request));
         $stat1 = 'UGX '.number_format(Order::sum('total_amount'), 0);

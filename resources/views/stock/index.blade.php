@@ -220,7 +220,7 @@
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Unit Type</label>
-  <input type="text" name="unit_type" class="w-full rounded-md border-slate-300 shadow-sm" >
+  @include('partials.unit-select', ['value' => null])
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Cost Price <span class="font-normal text-slate-400">(optional)</span></label>

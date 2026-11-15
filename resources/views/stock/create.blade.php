@@ -46,7 +46,7 @@
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Unit Type</label>
-  <input type="text" name="unit_type" value="{{ old('unit_type') }}" class="w-full rounded-md border-slate-300 shadow-sm" >
+  @include('partials.unit-select', ['value' => old('unit_type')])
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Cost Price</label>

@@ -9,6 +9,11 @@
 
     // Percentage change, or null when there is nothing to compare against.
     $change = fn ($now, $before) => (float) $before != 0.0 ? (($now - $before) / abs($before)) * 100 : null;
+
+    // Cards link to the list behind the number, only when the user may open it.
+    $can = fn (string $permission) => \App\Http\Middleware\CheckPermission::allows(auth()->user(), $permission);
+    $monthStart = now()->startOfMonth()->toDateString();
+    $today = now()->toDateString();
 @endphp
 
 <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -34,15 +39,20 @@
         $profitChange = $change($margin['gross_profit'], $prevMargin['gross_profit']);
         $marginPts = ($margin['margin'] !== null && $prevMargin['margin'] !== null) ? $margin['margin'] - $prevMargin['margin'] : null;
         $heroes = [
-            ['Month Sales', $ugx($monthSales), $salesChange, '%', 'fas fa-chart-line', 'text-indigo-600 bg-indigo-50'],
-            ['Gross Profit', $ugx($margin['gross_profit']), $profitChange, '%', 'fas fa-sack-dollar', 'text-emerald-600 bg-emerald-50'],
-            ['Gross Margin', $pct($margin['margin']), $marginPts, ' pts', 'fas fa-percent', 'text-sky-600 bg-sky-50'],
-            ['Net Profit', $ugx($netProfit), null, '', 'fas fa-scale-balanced', $netProfit < 0 ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50'],
+            ['Month Sales', $ugx($monthSales), $salesChange, '%', 'fas fa-chart-line', 'text-indigo-600 bg-indigo-50',
+                $can('manage_sales') ? route('sales.index', ['from' => $monthStart, 'to' => $today]) : null],
+            ['Gross Profit', $ugx($margin['gross_profit']), $profitChange, '%', 'fas fa-sack-dollar', 'text-emerald-600 bg-emerald-50',
+                route('reports.show', ['type' => 'profit'])],
+            ['Gross Margin', $pct($margin['margin']), $marginPts, ' pts', 'fas fa-percent', 'text-sky-600 bg-sky-50',
+                route('reports.show', ['type' => 'profit'])],
+            ['Net Profit', $ugx($netProfit), null, '', 'fas fa-scale-balanced', $netProfit < 0 ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50',
+                route('reports.show', ['type' => 'income_statement'])],
         ];
     @endphp
     <div class="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        @foreach($heroes as [$label, $value, $delta, $unit, $icon, $tone])
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        @foreach($heroes as [$label, $value, $delta, $unit, $icon, $tone, $url])
+            <{{ $url ? 'a' : 'div' }} @if($url) href="{{ $url }}" title="Open {{ $label }}" @endif
+                class="stat-card block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm {{ $url ? 'hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-300' : '' }}">
                 <div class="flex items-start justify-between gap-2">
                     <div class="min-w-0">
                         <div class="text-[11px] font-black uppercase tracking-wide text-slate-400">{{ $label }}</div>
@@ -63,7 +73,7 @@
                         <span class="text-slate-400">vs same days last month</span>
                     @endif
                 </div>
-            </div>
+            </{{ $url ? 'a' : 'div' }}>
         @endforeach
     </div>
 @endunless
@@ -71,27 +81,28 @@
 <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
     @php
         $cards = $isCustomer ? [
-            ['My Purchases Today', $ugx($todaySales), 'fas fa-cash-register'],
-            ['My Purchases This Month', $ugx($monthSales), 'fas fa-chart-line'],
-            ['Paid This Month', $ugx($monthCollected), 'fas fa-hand-holding-dollar'],
-            ['My Balance Due', $ugx($outstandingCredit), 'fas fa-file-invoice-dollar'],
-            ['Pending Orders', number_format((int) $pendingOrders), 'fas fa-cart-shopping'],
-            ['Products Available', number_format((int) $totalProducts), 'fas fa-box-open'],
-            ['Account', 'Active', 'fas fa-user-check'],
-            ['Support', number_format((int) $openChatsCount), 'fas fa-comments'],
+            ['My Purchases Today', $ugx($todaySales), 'fas fa-cash-register', null],
+            ['My Purchases This Month', $ugx($monthSales), 'fas fa-chart-line', null],
+            ['Paid This Month', $ugx($monthCollected), 'fas fa-hand-holding-dollar', null],
+            ['My Balance Due', $ugx($outstandingCredit), 'fas fa-file-invoice-dollar', null],
+            ['Pending Orders', number_format((int) $pendingOrders), 'fas fa-cart-shopping', null],
+            ['Products Available', number_format((int) $totalProducts), 'fas fa-box-open', route('shop.index')],
+            ['Account', 'Active', 'fas fa-user-check', route('notification-settings.edit')],
+            ['Support', number_format((int) $openChatsCount), 'fas fa-comments', route('shop.index').'#chat'],
         ] : [
-            ["Today's Sales", $ugx($todaySales), 'fas fa-cash-register'],
-            ['Collected This Month', $ugx($monthCollected), 'fas fa-hand-holding-dollar'],
-            ['Outstanding Credit', $ugx($outstandingCredit), 'fas fa-file-invoice-dollar'],
-            ['Month Expenses', $ugx($monthExpenses), 'fas fa-receipt'],
-            ['Stock Value (Cost)', $ugx($stockCostValue), 'fas fa-warehouse'],
-            ['Low Stock', number_format((int) $lowStock), 'fas fa-triangle-exclamation'],
-            ['Pending Orders', number_format((int) $pendingOrders), 'fas fa-clock'],
-            ['Open Chats', number_format((int) $openChatsCount), 'fas fa-comments'],
+            ["Today's Sales", $ugx($todaySales), 'fas fa-cash-register', $can('manage_sales') ? route('sales.index', ['from' => $today, 'to' => $today]) : null],
+            ['Collected This Month', $ugx($monthCollected), 'fas fa-hand-holding-dollar', $can('manage_sales') ? route('payments.index', ['period' => 'month']) : null],
+            ['Outstanding Credit', $ugx($outstandingCredit), 'fas fa-file-invoice-dollar', $can('manage_sales') ? route('sales.index', ['payment_status' => 'outstanding']) : null],
+            ['Month Expenses', $ugx($monthExpenses), 'fas fa-receipt', $can('manage_expenses') ? route('expenses.index', ['period' => 'month']) : null],
+            ['Stock Value (Cost)', $ugx($stockCostValue), 'fas fa-warehouse', route('reports.show', ['type' => 'stock'])],
+            ['Low Stock', number_format((int) $lowStock), 'fas fa-triangle-exclamation', $can('manage_stock') ? route('stock.index', ['low' => 1]) : null],
+            ['Pending Orders', number_format((int) $pendingOrders), 'fas fa-clock', $can('manage_orders') ? route('orders.index', ['status' => 'pending']) : null],
+            ['Open Chats', number_format((int) $openChatsCount), 'fas fa-comments', $can('manage_chats') ? route('chat.index') : null],
         ];
     @endphp
-    @foreach($cards as [$label, $value, $icon])
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    @foreach($cards as [$label, $value, $icon, $url])
+        <{{ $url ? 'a' : 'div' }} @if($url) href="{{ $url }}" title="Open {{ $label }}" @endif
+            class="stat-card block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm {{ $url ? 'hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-300' : '' }}">
             <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
                     <div class="text-[10px] font-black uppercase tracking-wide text-slate-400">{{ $label }}</div>
@@ -101,7 +112,8 @@
                     <i class="{{ $icon }}"></i>
                 </div>
             </div>
-        </div>
+            @if($url)<div class="mt-2 text-[11px] font-semibold text-indigo-600">View details <i class="fas fa-arrow-right text-[9px]"></i></div>@endif
+        </{{ $url ? 'a' : 'div' }}>
     @endforeach
 </div>
 

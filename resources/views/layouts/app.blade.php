@@ -106,7 +106,7 @@
                 @endphp
                 <details class="theme-nav-details" @if($groupActive) open @endif>
                     <summary class="theme-nav-group px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider">
-                        {{ $groupName }}
+                        <i class="fas {{ ($navGroupIcons ?? [])[$groupName] ?? 'fa-folder' }} mr-1.5 w-4 text-center opacity-80"></i>{{ $groupName }}
                     </summary>
 
                 @foreach ($items as $routeName => $entry)

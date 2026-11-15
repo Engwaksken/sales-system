@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\ExpenseCategory;
 use App\Models\Order;
 use App\Models\Supplier;
+use App\Models\UnitType;
 use App\Services\SalePaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,8 @@ class LookupController extends StaffController
             'expense_categories' => Schema::hasTable('expense_categories')
                 ? ExpenseCategory::query()->orderBy('name')->get(['id', 'name'])
                 : [],
+            // Units for stock forms: [{value: 'pcs', label: 'Pieces (pcs)', category}]
+            'unit_types' => UnitType::options(),
             'payment_methods' => SalePaymentService::METHODS,
             'order_stages' => collect(Order::STAGES)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
             'stock_issue_types' => collect(StockController::ISSUE_TYPES)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),

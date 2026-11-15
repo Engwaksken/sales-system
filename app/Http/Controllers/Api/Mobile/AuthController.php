@@ -372,6 +372,7 @@ class AuthController extends Controller
             'role' => $user->role ?: 'customer',
             'permissions' => $this->permissionKeys($user),
             'branch_id' => $user->branch_id ?? null,
+            'photo_url' => ProfileController::photoUrl($user->profile_pic ?? null),
             'customer_id' => $customer?->id,
             'phone' => $customer?->phone,
             'address' => $customer?->address,

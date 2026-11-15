@@ -29,7 +29,10 @@ class SaleController extends StaffController
             });
         }
         if ($status = $request->query('status')) {
-            $query->where('payment_status', $status);
+            // "outstanding" = anything still owed (part paid or on credit).
+            $status === 'outstanding'
+                ? $query->where('balance_amount', '>', 0)
+                : $query->where('payment_status', $status);
         }
         if ($request->filled('from')) {
             $query->whereDate('sale_date', '>=', $request->query('from'));

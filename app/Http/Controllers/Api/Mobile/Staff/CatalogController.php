@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\ExpenseCategory;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\UnitType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +29,7 @@ class CatalogController extends StaffController
         'suppliers' => [Supplier::class, 'manage_suppliers', ['name', 'contact_name', 'phone', 'email'], true],
         'expense-categories' => [ExpenseCategory::class, 'manage_expenses', ['name'], false],
         'products' => [Product::class, 'manage_products', ['name', 'sku', 'barcode'], false],
+        'unit-types' => [UnitType::class, 'manage_stock', ['name', 'abbreviation'], false],
     ];
 
     public function index(Request $request, string $resource): JsonResponse
@@ -54,6 +56,9 @@ class CatalogController extends StaffController
         }
 
         $orderColumn = $resource === 'categories' ? 'category_name' : 'name';
+        if ($resource === 'unit-types') {
+            $query->orderBy('category');
+        }
         $page = $query->orderBy($orderColumn)->paginate($this->perPage($request));
 
         return response()->json([
@@ -169,6 +174,12 @@ class CatalogController extends StaffController
                 'name' => $required,
                 'status' => 'boolean',
             ],
+            'unit-types' => [
+                'name' => $required.'|string|max:60',
+                'abbreviation' => [$record ? 'sometimes' : 'required', 'string', 'max:20', Rule::unique('unit_types', 'abbreviation')->ignore($record?->getKey())],
+                'category' => ['nullable', Rule::in(UnitType::CATEGORIES)],
+                'is_active' => 'boolean',
+            ],
             'products' => [
                 'name' => $required,
                 'sku' => 'nullable',
@@ -216,6 +227,10 @@ class CatalogController extends StaffController
             'customers' => $row->only(['id', 'name', 'phone', 'email', 'address', 'branch_id']),
             'suppliers' => $row->only(['id', 'name', 'contact_name', 'phone', 'email', 'address', 'status', 'branch_id']),
             'expense-categories' => ['id' => $row->id, 'name' => $row->name, 'status' => (bool) $row->status],
+            'unit-types' => $row->only(['id', 'name', 'abbreviation', 'category']) + [
+                'is_active' => (bool) $row->is_active,
+                'status' => $row->is_active ? 'active' : 'inactive',
+            ],
             'products' => $row->only(['id', 'name', 'sku', 'barcode', 'category_id', 'description']) + [
                 'is_active' => (bool) $row->is_active,
                 'category_name' => $row->category?->category_name,
@@ -243,6 +258,7 @@ class CatalogController extends StaffController
             'customers' => 'Customer',
             'suppliers' => 'Supplier',
             'expense-categories' => 'Expense category',
+            'unit-types' => 'Unit',
             'products' => 'Product',
         };
     }

@@ -49,6 +49,21 @@ class AppServiceProvider extends ServiceProvider
             user: $e->user,
         ));
 
+        // Icon shown beside each sidebar group heading.
+        View::share('navGroupIcons', [
+            'Dashboard' => 'fa-gauge-high',
+            'Sales' => 'fa-cash-register',
+            'Support' => 'fa-headset',
+            'Catalog' => 'fa-boxes-stacked',
+            'Purchasing' => 'fa-truck-ramp-box',
+            'Customers' => 'fa-users',
+            'Payments' => 'fa-money-bill-wave',
+            'Accounting' => 'fa-calculator',
+            'Tax (EFRIS)' => 'fa-file-shield',
+            'Organization' => 'fa-sitemap',
+            'Admin' => 'fa-user-shield',
+        ]);
+
         View::share('navGroups', [
             'Dashboard' => [
                 'dashboard' => ['label' => 'Dashboard', 'icon' => 'fa-gauge-high'],
@@ -66,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
                 'products' => ['label' => 'Products', 'icon' => 'fa-box'],
                 'categories' => ['label' => 'Categories', 'icon' => 'fa-tags'],
                 'stock' => ['label' => 'Stock', 'icon' => 'fa-warehouse'],
+                'unit_types' => ['label' => 'Unit Types', 'icon' => 'fa-ruler-combined'],
                 'bulk-upload' => ['label' => 'Bulk Upload', 'icon' => 'fa-file-arrow-up'],
             ],
             'Purchasing' => [
