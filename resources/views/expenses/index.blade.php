@@ -107,6 +107,30 @@
 </div>
 <div class="mt-4">@include('partials.table-pagination', ['paginator' => $items])</div>
 
+<script>
+(function () {
+    function syncNewCategory() {
+        const select = document.getElementById('expenseCategory');
+        const box = document.getElementById('expenseCategoryNew');
+        if (!select || !box) return;
+        const isNew = select.value === @json(\App\Models\Expense::NEW_CATEGORY);
+        box.classList.toggle('hidden', !isNew);
+        box.disabled = !isNew;
+        box.required = isNew;
+        if (isNew) box.focus(); else box.value = '';
+    }
+    document.addEventListener('change', e => { if (e.target.id === 'expenseCategory') syncNewCategory(); });
+    // The shared modal helpers set values without firing "change"; re-sync after they run.
+    document.addEventListener('DOMContentLoaded', () => {
+        ['openEditModal', 'openCreateModal'].forEach(name => {
+            const original = window[name];
+            if (typeof original !== 'function') return;
+            window[name] = function (...args) { const result = original.apply(this, args); syncNewCategory(); return result; };
+        });
+    });
+})();
+</script>
+
 <div id="expenses-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-30 p-4">
   <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
     <div class="flex justify-between items-center mb-4">
@@ -118,8 +142,8 @@
       @csrf
       <input type="hidden" name="_method" value="POST">
       <div>
-  <label class="block text-sm font-medium text-slate-700 mb-1">Title</label>
-  <input type="text" name="title" class="w-full rounded-md border-slate-300 shadow-sm" required>
+  <label class="block text-sm font-medium text-slate-700 mb-1">Title <span class="font-normal text-slate-400">(optional)</span></label>
+  <input type="text" name="title" maxlength="255" class="w-full rounded-md border-slate-300 shadow-sm" placeholder="Leave blank to use the category and date">
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Amount</label>
@@ -140,7 +164,14 @@
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
-  <select name="category" class="w-full rounded-md border-slate-300 shadow-sm" required><option value="">-- Select Category --</option>@foreach($expenseCategories as $category)<option value="{{ $category->name }}">{{ $category->name }}</option>@endforeach</select>
+  <select name="category" id="expenseCategory" class="w-full rounded-md border-slate-300 shadow-sm" required>
+    <option value="">-- Select Category --</option>
+    @foreach($expenseCategories as $category)<option value="{{ $category }}">{{ $category }}</option>@endforeach
+    <option value="{{ \App\Models\Expense::NEW_CATEGORY }}">+ Add a new category…</option>
+  </select>
+  <input type="text" name="category_new" id="expenseCategoryNew" maxlength="150" disabled
+         class="mt-2 hidden w-full rounded-md border-slate-300 shadow-sm" placeholder="New category name, e.g. Generator fuel">
+  <p class="mt-1 text-xs text-slate-400">New categories are saved to the list for next time.</p>
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>

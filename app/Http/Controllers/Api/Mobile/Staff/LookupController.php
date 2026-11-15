@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile\Staff;
 
 use App\Models\Branch;
+use App\Models\Expense;
 use App\Models\Category;
 use App\Models\ExpenseCategory;
 use App\Models\Order;
@@ -37,6 +38,8 @@ class LookupController extends StaffController
             'expense_categories' => Schema::hasTable('expense_categories')
                 ? ExpenseCategory::query()->orderBy('name')->get(['id', 'name'])
                 : [],
+            // Names for the expense form: active categories plus any already used.
+            'expense_category_names' => Schema::hasTable('expense_categories') ? Expense::categoryOptions() : [],
             // Units for stock forms: [{value: 'pcs', label: 'Pieces (pcs)', category}]
             'unit_types' => UnitType::options(),
             'payment_methods' => SalePaymentService::METHODS,

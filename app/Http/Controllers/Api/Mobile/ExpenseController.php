@@ -157,7 +157,8 @@ class ExpenseController extends Controller
     private function validateExpense(Request $request): array
     {
         $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            // Optional: a blank title becomes "Category – payee" or "Category – date".
+            'title' => ['nullable', 'string', 'max:255'],
             'expense_date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'min:0'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -165,13 +166,22 @@ class ExpenseController extends Controller
             'vendor' => ['nullable', 'string', 'max:255'],
             'reference_no' => ['nullable', 'string', 'max:255'],
             'receipt_no' => ['nullable', 'string', 'max:255'],
+            // The app offers SalePaymentService::METHODS; older app versions send free text.
             'payment_method' => ['nullable', 'string', 'max:100'],
-            'category' => ['required', 'string', 'max:150'],
+            'category' => ['required_without:category_new', 'nullable', 'string', 'max:150'],
+            // A category typed in the app; it is added to the list for next time.
+            'category_new' => ['nullable', 'string', 'max:150'],
             'category_id' => ['nullable', 'integer', Rule::exists('expense_categories', 'id')],
             'supplier_id' => ['nullable', 'integer', Rule::exists('suppliers', 'id')],
             'branch_id' => ['nullable', 'integer', Rule::exists('branches', 'id')],
             'receipt_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
+        $data['category'] = Expense::resolveCategory($data['category'] ?? null, $data['category_new'] ?? null);
+        unset($data['category_new']);
+        if (blank($data['title'] ?? null)) {
+            $data['title'] = Expense::defaultTitle($data);
+        }
+
         $user = $request->user();
         if ($user->role !== 'admin') {
             abort_unless($user->branch_id, 403);

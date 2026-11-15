@@ -41,7 +41,7 @@ class ExpensesController extends Controller
         $periodStats = $this->periodStats(Expense::class, 'expense_date', 'amount');
         $branch_options = Branch::orderBy('id')->get();
         $defaultBranchId = $branch_options->first(fn ($branch) => strtolower(trim($branch->name)) === 'main branch')?->id;
-        $expenseCategories = ExpenseCategory::where('status', true)->orderBy('name')->get();
+        $expenseCategories = Expense::categoryOptions();
         $availableStock = Stock::with('product')->where('quantity', '>', 0)->orderBy('branch_id')->get();
         return view('expenses.index', ['items' => $expenses, 'branch_options' => $branch_options, 'paymentMethods' => self::PAYMENT_METHODS, 'stat1' => $stat1, 'stat2' => $stat2, 'periodStats' => $periodStats, 'defaultBranchId' => $defaultBranchId, 'expenseCategories' => $expenseCategories, 'availableStock' => $availableStock]);
     }
@@ -95,15 +95,16 @@ class ExpensesController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required',
-            'amount' => 'required|numeric',
+            'title' => 'nullable|string|max:255',
+            'amount' => 'required|numeric|min:0',
             'payment_method' => ['nullable', 'string', 'max:100'],
             'expense_date' => 'required|date',
-            'category' => 'required',
+            'category' => 'required_without:category_new|nullable|string|max:150',
+            'category_new' => 'nullable|required_if:category,'.Expense::NEW_CATEGORY.'|string|max:150',
             'description' => 'nullable',
             'branch_id' => 'required|exists:branches,id',
-        ]);
-        Expense::create($validated);
+        ], ['category_new.required_if' => 'Type the name of the new category.']);
+        Expense::create($this->prepare($validated));
         return redirect()->route('expenses.index')->with('status', 'Expense created successfully.');
     }
 
@@ -115,16 +116,38 @@ class ExpensesController extends Controller
     public function update(Request $request, Expense $expense)
     {
         $validated = $request->validate([
-            'title' => 'sometimes|required',
-            'amount' => 'sometimes|required|numeric',
+            'title' => 'nullable|string|max:255',
+            'amount' => 'sometimes|required|numeric|min:0',
             'payment_method' => ['nullable', 'string', 'max:100'],
             'expense_date' => 'sometimes|required|date',
-            'category' => 'sometimes|required',
+            'category' => 'sometimes|required_without:category_new|nullable|string|max:150',
+            'category_new' => 'nullable|required_if:category,'.Expense::NEW_CATEGORY.'|string|max:150',
             'description' => 'nullable',
             'branch_id' => 'sometimes|required|exists:branches,id',
-        ]);
-        $expense->update($validated);
+        ], ['category_new.required_if' => 'Type the name of the new category.']);
+        $expense->update($this->prepare($validated, $expense));
         return redirect()->route('expenses.index')->with('status', 'Expense updated successfully.');
+    }
+
+    /**
+     * A typed category is saved to the list; a title left blank becomes "Category – date".
+     * On edits, only fields that were sent change.
+     */
+    private function prepare(array $data, ?Expense $existing = null): array
+    {
+        if (array_key_exists('category', $data) || array_key_exists('category_new', $data)) {
+            $data['category'] = Expense::resolveCategory($data['category'] ?? null, $data['category_new'] ?? null);
+        }
+        unset($data['category_new']);
+
+        if ((! $existing || array_key_exists('title', $data)) && blank($data['title'] ?? null)) {
+            $data['title'] = Expense::defaultTitle($data + [
+                'category' => $existing?->category,
+                'expense_date' => $existing?->expense_date,
+            ]);
+        }
+
+        return $data;
     }
 
     public function destroy(Expense $expense)
