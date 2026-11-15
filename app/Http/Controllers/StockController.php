@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\StockService;
 use App\Models\Stock;
 use App\Models\Branch;
 use App\Models\Product;
@@ -154,43 +155,9 @@ class StockController extends Controller
             'stock_date' => 'nullable|date',
         ], ['branch_ids.required_without' => 'Select at least one branch.']);
 
-        // When the stock was received; defaults to right now (app time zone: Kampala).
-        $validated['stock_date'] = filled($validated['stock_date'] ?? null)
-            ? \Illuminate\Support\Carbon::parse($validated['stock_date'])
-            : now();
-
         $branchIds = array_map('intval', $validated['branch_ids'] ?? [$validated['branch_id']]);
         unset($validated['branch_ids'], $validated['branch_id']);
-        $added = $toppedUp = 0;
-
-        DB::transaction(function () use ($validated, $branchIds, &$added, &$toppedUp): void {
-            foreach ($branchIds as $branchId) {
-                // One row per product, branch and supplier: sales read the first row, so top it up.
-                $stock = Stock::query()
-                    ->where('product_id', $validated['product_id'])
-                    ->where('branch_id', $branchId)
-                    ->when($validated['supplier_id'] ?? null, fn ($q, $id) => $q->where('supplier_id', $id), fn ($q) => $q->whereNull('supplier_id'))
-                    ->lockForUpdate()
-                    ->first();
-
-                if ($stock) {
-                    $stock->fill(array_filter([
-                        'unit_type' => $validated['unit_type'] ?? null,
-                        'cost_price' => $validated['cost_price'] ?? null,
-                        'selling_price' => $validated['selling_price'] ?? null,
-                        'expiry_date' => $validated['expiry_date'] ?? null,
-                        'stock_date' => $validated['stock_date'],
-                    ], fn ($value) => $value !== null));
-                    $stock->quantity = (float) $stock->quantity + (float) $validated['quantity'];
-                    $stock->total_stock = (float) $stock->total_stock + (float) $validated['total_stock'];
-                    $stock->save();
-                    $toppedUp++;
-                } else {
-                    Stock::create($validated + ['branch_id' => $branchId]);
-                    $added++;
-                }
-            }
-        });
+        ['added' => $added, 'topped_up' => $toppedUp] = app(StockService::class)->receive($validated, $branchIds);
 
         $message = count($branchIds) === 1
             ? ($toppedUp ? 'Stock topped up successfully.' : 'Stock created successfully.')

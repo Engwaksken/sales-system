@@ -11,6 +11,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Stock;
 use App\Models\Payment;
+use App\Services\PosSaleService;
 use App\Services\SalePaymentService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -438,7 +439,7 @@ public function index(Request $request)
      * Paying less than the total (part payment, or nothing = on credit) is allowed
      * only for registered customers. Every tender becomes its own receipt.
      */
-    public function posStore(Request $request, SalePaymentService $payments)
+    public function posStore(Request $request, PosSaleService $pos)
     {
         $data = $request->validate([
             'branch_id' => 'required|exists:branches,id',
@@ -455,79 +456,10 @@ public function index(Request $request)
             'payment_method' => 'nullable|string|max:50',
         ]);
 
-        $discount = (float) ($data['discount'] ?? 0);
-        $vat = (float) ($data['vat'] ?? 0);
         $legacyFullPayment = ! $request->has('payments') && ! empty($data['payment_method']);
-        $tenders = $payments->normalise($data['payments'] ?? []);
-        $customerId = $data['customer_id'] ?? null;
 
         try {
-            [$sale, $receipts] = DB::transaction(function () use ($data, $discount, $vat, $legacyFullPayment, $tenders, $customerId, $payments) {
-                $lines = [];
-                $subtotal = 0.0;
-
-                foreach ($data['items'] as $item) {
-                    $stock = Stock::with('product')
-                        ->where('product_id', $item['product_id'])
-                        ->where('branch_id', $data['branch_id'])
-                        ->lockForUpdate()
-                        ->first();
-
-                    if (! $stock || $stock->quantity < $item['quantity']) {
-                        throw ValidationException::withMessages(['pos' => 'Insufficient stock for "'.($stock?->product?->name ?? 'product #'.$item['product_id']).'". '
-                            .'Available: '.($stock?->quantity ?? 0).', requested: '.$item['quantity'].'.']);
-                    }
-
-                    if ($stock->selling_price === null) {
-                        throw ValidationException::withMessages(['pos' => '"'.($stock->product?->name ?? 'Product #'.$item['product_id']).'" has no selling price yet. Set one on the Stock page before selling it.']);
-                    }
-
-                    $lineTotal = (float) $stock->selling_price * $item['quantity'];
-                    $subtotal += $lineTotal;
-
-                    $lines[] = [
-                        'product_id' => $item['product_id'],
-                        'quantity' => $item['quantity'],
-                        'price' => $stock->selling_price,
-                        'total' => $lineTotal,
-                    ];
-
-                    $stock->decrement('quantity', $item['quantity']);
-                }
-
-                $totalAmount = round(max($subtotal - $discount + $vat, 0), 2);
-
-                if ($legacyFullPayment && $totalAmount > 0) {
-                    $tenders = [['method' => $data['payment_method'], 'amount' => $totalAmount]];
-                }
-
-                // Checked against the server-side total, not what the browser displayed.
-                $payments->assertTendersFit($totalAmount, $tenders, $customerId);
-
-                $sale = Sale::create([
-                    'transaction_type' => 'sale',
-                    'customer_id' => $customerId,
-                    'user_id' => auth()->id(),
-                    'invoice_no' => DocumentNumber::invoice(),
-                    'total_amount' => $totalAmount,
-                    'discount' => $discount,
-                    'vat' => $vat,
-                    'sale_date' => now()->format('Y-m-d'),
-                    'branch_id' => $data['branch_id'],
-                ] + $payments->openingState($totalAmount, $tenders));
-
-                foreach ($lines as $line) {
-                    $sale->sale_items()->create([
-                        'product_id' => $line['product_id'],
-                        'quantity' => $line['quantity'],
-                        'price' => $line['price'],
-                        'vat_amount' => 0,
-                        'total' => $line['total'],
-                    ]);
-                }
-
-                return [$sale, $payments->record($sale, $tenders)];
-            });
+            [$sale, $receipts] = $pos->create($data, auth()->id(), $legacyFullPayment);
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -544,7 +476,7 @@ public function index(Request $request)
      * off credit in cash + mobile money). Each tender gets its own receipt;
      * PaymentObserver emails it and posts it to the ledger.
      */
-    public function recordPayment(Request $request, Sale $sale, SalePaymentService $payments)
+    public function recordPayment(Request $request, Sale $sale, SalePaymentService $payments, PosSaleService $pos)
     {
         $data = $request->validate([
             // Either a list of tenders, or the single amount/method pair older forms send.
@@ -557,38 +489,8 @@ public function index(Request $request)
 
         $tenders = $payments->normalise($data['payments'] ?? [['method' => $data['method'] ?? '', 'amount' => $data['amount'] ?? 0]]);
 
-        if ($tenders === []) {
-            return back()->withErrors(['payment' => 'Enter at least one payment amount.']);
-        }
-
         try {
-            $receipts = DB::transaction(function () use ($sale, $tenders, $payments) {
-                $locked = Sale::whereKey($sale->id)->lockForUpdate()->firstOrFail();
-                $alreadyPaid = (float) $locked->payments()->where('status', 'successful')->sum('amount');
-
-                if ((float) $locked->total_amount - $alreadyPaid <= 0.005) {
-                    throw ValidationException::withMessages(['payment' => 'This sale is already fully paid.']);
-                }
-
-                // Paying towards an existing balance is always allowed (walk-in sales
-                // from before this rule included); only overpaying is rejected.
-                $payments->assertTendersFit((float) $locked->total_amount, $tenders, $locked->customer_id ?: -1, $alreadyPaid);
-
-                $receipts = $payments->record($locked, $tenders);
-                $paidNow = $receipts->sum(fn ($p) => (float) $p->amount);
-                $locked->refresh();
-
-                foreach ($locked->orders as $order) {
-                    OrderLog::create([
-                        'order_id' => $order->id,
-                        'action' => 'payment_recorded',
-                        'description' => 'POS payment of UGX '.number_format($paidNow, 0).' recorded ('.$receipts->pluck('method')->unique()->join(', ').'). Receipt '.$receipts->pluck('receipt_no')->join(', ').'.'
-                            .((float) $locked->balance_amount <= 0 ? ' Order completed.' : ' Outstanding balance UGX '.number_format((float) $locked->balance_amount, 0).'.'),
-                    ]);
-                }
-
-                return $receipts;
-            });
+            $receipts = $pos->recordPayment($sale, $tenders);
         } catch (ValidationException $e) {
             return back()->withErrors(['payment' => collect($e->errors())->flatten()->first()]);
         }

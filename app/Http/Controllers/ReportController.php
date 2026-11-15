@@ -139,7 +139,8 @@ class ReportController extends Controller
     }
 
     /** @return array{0: Carbon, 1: Carbon, 2: array} */
-    private function build(Request $request, string $type): array
+    /** Report data for the website and the mobile app: [from, to, data with headers, rows and moneyColumns]. */
+    public function build(Request $request, string $type): array
     {
         [$from, $to] = $this->resolveDates($request);
 

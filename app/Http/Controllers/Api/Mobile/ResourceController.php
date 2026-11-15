@@ -21,6 +21,14 @@ class ResourceController extends Controller
         'order-payment-receipts' => 'order_payment_receipts',
         'notifications' => 'notifications_app',
         'expenses' => 'expenses',
+        // View-only admin modules; changes to these stay on the website.
+        'users' => 'users',
+        'branches' => 'branches',
+        'delivery-zones' => 'delivery_zones',
+        'chart-of-accounts' => 'chart_of_accounts',
+        'accounting-journals' => 'accounting_journals',
+        'efris-invoices' => 'efris_invoices',
+        'mobile-money' => 'iotec_collections',
     ];
 
     public function index(Request $request, string $resource): JsonResponse
@@ -60,6 +68,12 @@ class ResourceController extends Controller
                 'description',
                 'reference_no',
                 'gateway_reference',
+                'zone_name',
+                'account_name',
+                'account_code',
+                'journal_no',
+                'iotec_ref',
+                'role',
             ]));
 
             $saleIds = collect();
@@ -208,6 +222,9 @@ class ResourceController extends Controller
                 'sales' => 'manage_sales', 'payments' => 'manage_sales', 'order-payment-receipts' => 'manage_sales',
                 'expenses' => 'manage_expenses', 'orders' => 'manage_orders', 'products' => 'manage_products',
                 'stock' => 'manage_stock', 'customers' => 'manage_customers', 'notifications' => 'manage_notifications',
+                'users' => 'manage_users', 'branches' => 'manage_branches', 'delivery-zones' => 'manage_settings',
+                'chart-of-accounts' => 'manage_statements', 'accounting-journals' => 'manage_statements',
+                'efris-invoices' => 'manage_settings', 'mobile-money' => 'manage_sales',
             ];
             abort_unless(isset($permissions[$resource]), 403);
             $this->requirePermission($user, $permissions[$resource]);
@@ -263,6 +280,13 @@ class ResourceController extends Controller
             'order-payment-receipts' => ['id','order_id','order_number','receipt_number','payment_method','amount_paid','currency','created_at'],
             'notifications' => ['id','title','message','type','is_read','created_at'],
             'expenses' => ['id','title','amount','expense_date','category','description','branch_id','created_at'],
+            'users' => ['id','name','email','role','branch_id','created_at'],
+            'branches' => ['id','name','location','contact','branch_email'],
+            'delivery-zones' => ['id','zone_name','fee','description','is_active'],
+            'chart-of-accounts' => ['id','account_code','account_name','account_type','account_category','normal_balance','is_active'],
+            'accounting-journals' => ['id','journal_no','journal_type','reference_no','journal_date','description','branch_id','is_posted','created_at'],
+            'efris-invoices' => ['id','sale_id','invoice_no','issued_at','gross_amount','status','created_at'],
+            'mobile-money' => ['id','order_id','phone','network','amount','iotec_ref','status','created_at'],
         ];
         abort_unless(isset($allow[$resource]), 403);
         $safe = array_intersect($allow[$resource], $columns);
