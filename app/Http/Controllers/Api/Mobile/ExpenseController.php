@@ -188,7 +188,8 @@ class ExpenseController extends Controller
     {
         $user = $request->user();
         abort_unless($user, 401);
-        abort_if(in_array($user->role, ['customer', 'cashier'], true), 403);
+        // Same rule as the website: any staff role granted manage_expenses.
+        abort_if($user->role === 'customer', 403);
         if ($user->role !== 'admin') {
             abort_unless(RolePermission::where('role', $user->role)->where('permission_key', 'manage_expenses')->exists(), 403);
         }

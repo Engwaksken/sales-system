@@ -62,7 +62,7 @@ class AuthController extends Controller
 
         return $this->tokenResponse(
             $user,
-            $credentials['device_name'] ?: 'NSales Mobile'
+            ($credentials['device_name'] ?? null) ?: 'NSales Mobile'
         );
     }
 
@@ -169,7 +169,7 @@ class AuthController extends Controller
 
         return $this->tokenResponse(
             $user,
-            $data['device_name'] ?: 'NSales Mobile'
+            ($data['device_name'] ?? null) ?: 'NSales Mobile'
         );
     }
 

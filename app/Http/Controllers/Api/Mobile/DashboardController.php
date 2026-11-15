@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
+        // Business-wide totals are for staff only; customers use /customer/home.
+        abort_if(($request->user()?->role ?: 'customer') === 'customer', 403);
+
         $today = now()->toDateString();
         $monthStart = now()->startOfMonth()->toDateString();
 
