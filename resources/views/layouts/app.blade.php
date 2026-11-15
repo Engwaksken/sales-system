@@ -61,8 +61,9 @@
         }
         .stat-card { transition: transform .15s ease, box-shadow .15s ease; }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -8px rgba(0,0,0,.15); }
-        .theme-nav-details > summary { cursor: pointer; list-style: disclosure-closed inside; }
-        .theme-nav-details[open] > summary { list-style-type: disclosure-open; }
+        .theme-nav-details > summary { cursor: pointer; list-style: none; }
+        .theme-nav-details > summary::-webkit-details-marker { display: none; }
+        .theme-nav-details[open] > summary .nav-group-chevron { transform: rotate(90deg); }
         .theme-nav-details > summary:focus-visible,
         .theme-nav-details .theme-nav-link:focus-visible {
             outline: 2px solid currentColor;
@@ -105,8 +106,10 @@
                     }
                 @endphp
                 <details class="theme-nav-details" @if($groupActive) open @endif>
-                    <summary class="theme-nav-group px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider">
-                        <i class="fas {{ ($navGroupIcons ?? [])[$groupName] ?? 'fa-folder' }} mr-1.5 w-4 text-center opacity-80"></i>{{ $groupName }}
+                    <summary class="theme-nav-group flex items-center gap-2 px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider">
+                        <i class="nav-group-chevron fas fa-chevron-right w-3 text-[9px] transition-transform duration-150" aria-hidden="true"></i>
+                        <i class="fas {{ ($navGroupIcons ?? [])[$groupName] ?? 'fa-folder' }} w-4 text-center opacity-80" aria-hidden="true"></i>
+                        <span>{{ $groupName }}</span>
                     </summary>
 
                 @foreach ($items as $routeName => $entry)
@@ -1022,7 +1025,7 @@ document.querySelectorAll('form').forEach(form => {
             : (\Illuminate\Support\Facades\Route::has('chat.index') ? route('chat.index') : '#');
     @endphp
     <a href="{{ $supportHref }}"
-       class="fixed bottom-5 right-5 z-[80] inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-2xl hover:bg-indigo-700"
+       class="chat-support-launcher fixed right-5 z-[80] inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-2xl hover:bg-indigo-700 {{ ($siteSettings['accessibility_widget_enabled'] ?? '1') === '1' ? '' : 'chat-support-alone' }}"
        title="Open chatbot / support">
         <i class="fa-solid fa-headset text-lg"></i>
         <span class="hidden sm:inline">Chat Support</span>

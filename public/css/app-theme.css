@@ -145,6 +145,35 @@ label { color: #334155; }
 
 .theme-main { background: var(--theme-background); }
 
+/* Brand utility colors used across older Blade screens and Tailwind actions. */
+[class~="bg-indigo-600"], [class~="bg-indigo-700"],
+[class~="bg-teal-600"], [class~="bg-teal-700"] {
+    background-color: var(--theme-primary) !important;
+}
+[class~="hover:bg-indigo-700"]:hover, [class~="hover:bg-indigo-800"]:hover,
+[class~="hover:bg-teal-700"]:hover, [class~="hover:bg-teal-800"]:hover {
+    background-color: var(--theme-primary) !important;
+    filter: brightness(.9);
+}
+[class~="text-indigo-500"], [class~="text-indigo-600"], [class~="text-indigo-700"],
+[class~="text-teal-600"], [class~="text-teal-700"] {
+    color: var(--theme-primary) !important;
+}
+[class~="border-indigo-500"], [class~="border-indigo-600"],
+[class~="border-teal-600"], [class~="border-teal-700"] {
+    border-color: var(--theme-primary) !important;
+}
+[class~="focus:ring-indigo-500"]:focus, [class~="focus:border-indigo-500"]:focus {
+    --tw-ring-color: var(--theme-primary) !important;
+    border-color: var(--theme-primary) !important;
+}
+[class~="bg-sky-600"], [class~="bg-blue-600"] {
+    background-color: var(--theme-secondary) !important;
+}
+[class~="text-sky-600"], [class~="text-blue-600"] {
+    color: var(--theme-secondary) !important;
+}
+
 .btn-theme-primary {
     border: 0;
     min-height: 42px;
@@ -609,6 +638,9 @@ label { color: #334155; }
     box-shadow: 0 8px 28px rgba(15,23,42,.25);
     cursor: pointer;
 }
+
+.chat-support-launcher { bottom: 84px !important; }
+.chat-support-launcher.chat-support-alone { bottom: 20px !important; }
 
 .a11y-panel {
     position: fixed;
