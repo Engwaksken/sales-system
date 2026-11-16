@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Support\PublicMedia;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\User;
@@ -115,13 +116,7 @@ class ProfileController extends Controller
 
     public static function photoUrl(?string $path): ?string
     {
-        $path = trim((string) $path);
-
-        return match (true) {
-            $path === '' => null,
-            str_starts_with($path, 'http://'), str_starts_with($path, 'https://') => $path,
-            default => asset('storage/'.ltrim($path, '/')),
-        };
+        return PublicMedia::url($path);
     }
 
     private function customer(User $user): ?Customer

@@ -55,6 +55,11 @@ use App\Http\Controllers\UserNotificationController;
 // Branded "you are offline" page, cached by public/sw.js and shown when a page can't load.
 Route::view('/offline', 'errors.offline')->name('offline');
 
+// Product and profile photos (used by the mobile app; works without the public/storage symlink).
+Route::get('/media/{folder}/{file}', [\App\Http\Controllers\MediaController::class, 'show'])
+    ->where(['folder' => 'products|avatars', 'file' => '[A-Za-z0-9._-]+'])
+    ->name('media.show');
+
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');

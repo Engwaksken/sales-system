@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Support\PublicMedia;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\ChatConversation;
@@ -76,12 +77,7 @@ class CustomerAppController extends Controller
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'description' => $product->description,
-                    'image_url' => $image === ''
-                        ? null
-                        : (str_starts_with($image, 'http://') ||
-                           str_starts_with($image, 'https://')
-                            ? $image
-                            : asset('storage/'.ltrim($image, '/'))),
+                    'image_url' => PublicMedia::url($image),
                     'available' => $available,
                     'selling_price' => $price,
                 ];

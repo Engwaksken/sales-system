@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile\Staff;
 
+use App\Support\PublicMedia;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\ExpenseCategory;
@@ -242,13 +243,7 @@ class CatalogController extends StaffController
 
     private function imageUrl(?string $path): ?string
     {
-        $path = trim((string) $path);
-
-        return match (true) {
-            $path === '' => null,
-            str_starts_with($path, 'http://'), str_starts_with($path, 'https://') => $path,
-            default => asset('storage/'.ltrim($path, '/')),
-        };
+        return PublicMedia::url($path);
     }
 
     private function label(string $resource): string

@@ -144,7 +144,7 @@ class DashboardUnitsProfileTest extends TestCase
         $this->getJson('/api/mobile/profile')->assertOk()->assertJsonPath('data.branch_name', 'Main Branch')->assertJsonPath('data.is_customer', false);
         $path = $this->post('/api/mobile/profile', ['name' => 'Grace N.', 'photo' => UploadedFile::fake()->image('me.jpg')], ['Accept' => 'application/json'])
             ->assertOk()->assertJsonPath('data.name', 'Grace N.')->json('data.photo_url');
-        $this->assertStringContainsString('/storage/avatars/', $path);
+        $this->assertStringContainsString('/media/avatars/', $path);
         Storage::disk('public')->assertExists($user->fresh()->profile_pic);
 
         $this->putJson('/api/mobile/profile/password', ['current_password' => 'wrong', 'password' => 'newpass123', 'password_confirmation' => 'newpass123'])
