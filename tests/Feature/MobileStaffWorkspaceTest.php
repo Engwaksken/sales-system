@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\ChatConversation;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\RolePermission;
 use App\Models\Sale;
@@ -110,6 +111,28 @@ class MobileStaffWorkspaceTest extends TestCase
         $this->getJson('/api/mobile/staff/pos/customers?q=jane')->assertOk()->assertJsonPath('data.0.id', $customer->id);
         $this->getJson('/api/mobile/staff/sales?q=Jane')->assertOk()->assertJsonPath('data.0.id', $saleId);
         $this->getJson('/api/mobile/staff/payments')->assertOk()->assertJsonCount(1, 'data');
+    }
+
+    public function test_payments_filter_by_date_and_status_like_the_dashboard_card(): void
+    {
+        $this->staff('cashier', ['manage_sales']);
+        $saleId = $this->postJson('/api/mobile/staff/sales', [
+            'items' => [['product_id' => $this->product->id, 'quantity' => 1]],
+            'payments' => [['method' => 'Cash', 'amount' => 10000]],
+        ])->assertCreated()->json('data.id');
+        $payment = Payment::where('sale_id', $saleId)->sole();
+        $today = now()->toDateString();
+
+        $this->getJson("/api/mobile/staff/payments?from={$today}&to={$today}&status=successful")->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/mobile/staff/payments?status=failed')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/mobile/staff/payments?to='.now()->subDay()->toDateString())->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/mobile/staff/payments?from=not-a-date&status=bogus')->assertOk()->assertJsonCount(1, 'data');
+
+        $card = collect($this->getJson('/api/mobile/dashboard')->json('stats'))->firstWhere('key', 'month_collected');
+        $this->assertNotNull($card, 'the Collected This Month card is on the dashboard');
+        $this->assertSame('payments', $card['module']);
+        $this->assertSame(['from' => now()->startOfMonth()->toDateString(), 'to' => $today, 'status' => 'successful'], $card['filter']);
+        $this->assertSame('successful', $payment->status);
     }
 
     public function test_pos_products_lists_sellable_stock_for_the_branch(): void

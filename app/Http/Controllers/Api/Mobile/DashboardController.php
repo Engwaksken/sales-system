@@ -38,7 +38,7 @@ class DashboardController extends Controller
             $stats[] = $this->stat('today_sales', "Today's Sales", $this->sum('sales', 'total_amount', 'sale_date', $today, $today, $branchId), 'point_of_sale', 'money', 'sales', ['from' => $today, 'to' => $today]);
             $stats[] = $this->stat('month_sales', 'Month Sales', $this->sum('sales', 'total_amount', 'sale_date', $monthStart, $today, $branchId), 'trending_up', 'money', 'sales', ['from' => $monthStart, 'to' => $today]);
             $stats[] = $this->stat('outstanding', 'Outstanding Credit', $this->scoped('sales', $branchId)?->where('balance_amount', '>', 0)->sum('balance_amount') ?? 0, 'account_balance_wallet', 'money', 'sales', ['status' => 'outstanding']);
-            $stats[] = $this->stat('month_collected', 'Collected This Month', $this->collected($monthStart, $today, $branchId), 'payments', 'money', 'payments');
+            $stats[] = $this->stat('month_collected', 'Collected This Month', $this->collected($monthStart, $today, $branchId), 'payments', 'money', 'payments', ['from' => $monthStart, 'to' => $today, 'status' => 'successful']);
         }
         if ($can('manage_statements')) {
             $stats[] = $this->stat('gross_profit', 'Gross Profit', $this->grossProfit($monthStart, $today, $branchId), 'savings', 'money', 'report', ['type' => 'profit']);

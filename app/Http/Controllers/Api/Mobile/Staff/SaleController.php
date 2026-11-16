@@ -186,6 +186,15 @@ class SaleController extends StaffController
         if ($request->filled('product_id')) {
             $query->whereHas('sale.sale_items', fn ($items) => $items->where('product_id', $request->integer('product_id')));
         }
+        if (in_array($request->query('status'), ['successful', 'pending', 'failed'], true)) {
+            $query->where('status', $request->query('status'));
+        }
+        if ($from = $this->dateParam($request, 'from')) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to = $this->dateParam($request, 'to')) {
+            $query->whereDate('created_at', '<=', $to);
+        }
 
         if ($search = trim((string) $request->query('q', ''))) {
             $query->where(fn ($q) => $q->where('receipt_no', 'like', "%{$search}%")
@@ -251,6 +260,14 @@ class SaleController extends StaffController
             ])->values(),
             'payments' => $sale->payments->map(fn (Payment $p) => $this->paymentPayload($p))->values(),
         ];
+    }
+
+    /** A yyyy-mm-dd query parameter, or null when missing or malformed. */
+    private function dateParam(Request $request, string $key): ?string
+    {
+        $value = (string) $request->query($key, '');
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : null;
     }
 
     private function paymentPayload(Payment $payment): array
