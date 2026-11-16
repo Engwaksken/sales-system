@@ -1,11 +1,34 @@
 @extends('layouts.auth')
-@section('title','Forgot Password')
-@section('subtitle','Secure account recovery')
+
+@section('title', 'Forgot Password')
+@section('heading', 'Reset your password')
+@section('lead', 'Enter the email address on your account and we will send you a 6-digit code to reset your password.')
+
 @section('content')
-<div class="auth-intro"><h2>Forgot your password?</h2><p>Enter the email address linked to your account. We’ll send you a secure 6-digit reset code.</p></div>
-<form method="POST" action="{{ route('password.email') }}">@csrf
-<div class="auth-field"><label for="email">Email address</label><div class="auth-control"><i class="fas fa-envelope leading-icon"></i><input id="email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required autofocus></div></div>
-<button class="auth-submit" type="submit"><i class="fas fa-paper-plane"></i> Send verification code</button>
+<form method="POST" action="{{ route('password.email') }}" class="auth-form">
+    @csrf
+
+    <div class="auth-field @error('email') is-invalid @enderror">
+        <label for="email">Email address</label>
+        <div class="auth-control">
+            <i class="fas fa-envelope leading-icon" aria-hidden="true"></i>
+            <input id="email" type="email" name="email" value="{{ old('email') }}"
+                   autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"
+                   placeholder="you@example.com" required autofocus
+                   @error('email') aria-invalid="true" aria-describedby="email-error" @enderror>
+        </div>
+        @error('email')
+            <p class="auth-error" id="email-error"><i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>{{ $message }}</span></p>
+        @enderror
+    </div>
+
+    <button class="auth-submit" type="submit" data-loading-text="Sending code…">
+        <span class="auth-spinner" aria-hidden="true"></span>
+        <span data-label>Send reset code</span>
+    </button>
 </form>
-<a class="auth-back" href="{{ route('login') }}"><i class="fas fa-arrow-left"></i> Back to sign in</a>
+
+<p class="auth-alt">
+    <a class="auth-link auth-link-back" href="{{ route('login') }}"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to sign in</a>
+</p>
 @endsection
