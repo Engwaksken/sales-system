@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class SettingsController extends Controller
 {
-    private const DEFAULTS = [
+    public const DEFAULTS = [
         // General
         'site_name' => 'Kemmytech Sales',
         'currency' => 'UGX',
@@ -84,7 +84,17 @@ class SettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
+        $this->save($request);
+
+        return redirect()
+            ->route('settings.index')
+            ->with('status', 'System settings updated successfully.');
+    }
+
+    /** The settings form's rules; the mobile app's Settings screen uses the same ones. */
+    public static function rules(): array
+    {
+        return [
             'site_name' => ['required', 'string', 'max:100'],
             'currency' => ['required', 'string', 'max:10'],
             'timezone' => ['required', 'timezone'],
@@ -123,13 +133,17 @@ class SettingsController extends Controller
             'enable_guest_checkout' => ['nullable', 'boolean'],
             'enable_mobile_money' => ['nullable', 'boolean'],
             'accessibility_widget_enabled' => ['nullable', 'boolean'],
-        ], [
+        ];
+    }
+
+    /** Validates and stores the settings (website form and mobile app). */
+    public function save(Request $request): array
+    {
+        $validated = Validator::make($request->all(), self::rules(), [
             'theme_primary.regex' => 'Primary theme color must be a valid HEX color, for example #0f766e.',
             'theme_secondary.regex' => 'Secondary theme color must be a valid HEX color.',
             'theme_accent.regex' => 'Accent theme color must be a valid HEX color.',
-        ]);
-
-        $validated = $validator->validate();
+        ])->validate();
 
         $stored = Setting::query()
             ->pluck('setting_value', 'setting_key')
@@ -167,10 +181,9 @@ class SettingsController extends Controller
         }
 
         Cache::forget('app.site_settings');
+        Cache::forget('app.document_branding');
 
-        return redirect()
-            ->route('settings.index')
-            ->with('status', 'System settings updated successfully.');
+        return array_merge(self::DEFAULTS, Setting::query()->pluck('setting_value', 'setting_key')->toArray());
     }
 
     private function storeBrandAsset($file, ?string $oldPath, string $prefix): string

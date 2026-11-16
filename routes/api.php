@@ -85,6 +85,21 @@ Route::prefix('mobile')->group(function (): void {
             Route::get('/reports', [Staff\ReportController::class, 'index']);
             Route::get('/reports/{type}', [Staff\ReportController::class, 'show']);
 
+            // Website admin modules (users, branches, accounting, gateways, EFRIS...), settings and role permissions.
+            Route::get('/admin/modules', [Staff\AdminController::class, 'modules']);
+            Route::get('/admin/settings', [Staff\AdminSettingsController::class, 'settings']);
+            Route::post('/admin/settings', [Staff\AdminSettingsController::class, 'saveSettings']);
+            Route::get('/admin/role-permissions', [Staff\AdminSettingsController::class, 'rolePermissions']);
+            Route::put('/admin/role-permissions', [Staff\AdminSettingsController::class, 'saveRolePermissions']);
+            Route::post('/admin/roles', [Staff\AdminSettingsController::class, 'storeRole']);
+            $admin = '[a-z-]+';
+            Route::get('/admin/{resource}/schema', [Staff\AdminController::class, 'schema'])->where('resource', $admin);
+            Route::get('/admin/{resource}', [Staff\AdminController::class, 'index'])->where('resource', $admin);
+            Route::post('/admin/{resource}', [Staff\AdminController::class, 'store'])->where('resource', $admin);
+            Route::get('/admin/{resource}/{id}', [Staff\AdminController::class, 'show'])->where('resource', $admin)->whereNumber('id');
+            Route::match(['put', 'post'], '/admin/{resource}/{id}', [Staff\AdminController::class, 'update'])->where('resource', $admin)->whereNumber('id');
+            Route::delete('/admin/{resource}/{id}', [Staff\AdminController::class, 'destroy'])->where('resource', $admin)->whereNumber('id');
+
             // Products, categories, customers, suppliers and expense categories.
             $catalog = 'products|categories|customers|suppliers|expense-categories|unit-types';
             Route::get('/catalog/{resource}', [Staff\CatalogController::class, 'index'])->where('resource', $catalog);

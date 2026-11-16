@@ -53,9 +53,21 @@ class RolePermissionsController extends Controller
             'permissions.*.*' => 'string',
         ]);
 
-        $selected = $data['permissions'] ?? [];
+        self::sync($data['permissions'] ?? []);
 
-        $roles = array_values(array_filter(array_keys(User::roleOptions()), fn ($role) => $role !== 'admin'));
+        return redirect()->route('role_permissions.index')->with('status', 'Role permissions updated successfully.');
+    }
+
+    /** Roles that can be restricted (every role except admin). */
+    public static function editableRoles(): array
+    {
+        return array_values(array_filter(array_keys(User::roleOptions()), fn ($role) => $role !== 'admin'));
+    }
+
+    /** Replaces every editable role's permissions with [role => [permission_key, ...]]. Website and mobile app. */
+    public static function sync(array $selected): void
+    {
+        $roles = self::editableRoles();
         DB::transaction(function () use ($selected, $roles) {
             foreach ($roles as $role) {
                 RolePermission::where('role', $role)->delete();
@@ -66,7 +78,5 @@ class RolePermissionsController extends Controller
             }
         });
         \Illuminate\Support\Facades\Cache::flush();
-
-        return redirect()->route('role_permissions.index')->with('status', 'Role permissions updated successfully.');
     }
 }
