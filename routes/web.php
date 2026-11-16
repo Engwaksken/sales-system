@@ -52,6 +52,9 @@ use App\Http\Controllers\JournalEntriesController;
 use App\Http\Controllers\NotificationsAppController;
 use App\Http\Controllers\UserNotificationController;
 
+// Branded "you are offline" page, cached by public/sw.js and shown when a page can't load.
+Route::view('/offline', 'errors.offline')->name('offline');
+
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');

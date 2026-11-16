@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => 429, 'icon' => 'clock', 'title' => 'Too many attempts', 'message' => 'You have made too many requests in a short time. Wait a minute, then try again.', 'actions' => ['retry', 'back']])

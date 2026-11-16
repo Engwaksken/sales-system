@@ -1095,6 +1095,7 @@ document.querySelectorAll('form').forEach(form => {
 </script>
 
 @include('partials.relationship-name-labels')
+@include('partials.network-status')
 @stack('scripts')
 @include('partials.flash-autohide')
 </body>

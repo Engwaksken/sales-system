@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => '', 'icon' => 'wifi', 'title' => 'You are offline', 'message' => 'Check your Wi-Fi or mobile data. This page will reload by itself as soon as you are back online.', 'actions' => ['retry'], 'autoRetry' => true])

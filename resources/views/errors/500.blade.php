@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => 500, 'icon' => 'alert', 'title' => 'Something went wrong', 'message' => 'We hit a problem on our side and could not finish your request. Nothing you did caused this. Please try again in a moment.', 'actions' => ['retry', 'home']])

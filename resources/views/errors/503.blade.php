@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => 503, 'icon' => 'wrench', 'title' => 'Down for maintenance', 'message' => 'We are making some improvements and will be back shortly. Please check again in a few minutes.', 'actions' => ['retry']])

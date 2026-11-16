@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => isset($exception) && method_exists($exception, 'getStatusCode') ? $exception->getStatusCode() : '', 'icon' => 'alert', 'title' => 'Something went wrong', 'message' => 'We hit a problem on our side and could not finish your request. Please try again in a moment.', 'actions' => ['retry', 'home']])

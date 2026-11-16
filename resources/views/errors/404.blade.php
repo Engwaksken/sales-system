@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => 404, 'icon' => 'search', 'title' => 'Page not found', 'message' => 'The page or record you are looking for does not exist, was moved, or has been deleted.', 'actions' => ['home', 'back']])

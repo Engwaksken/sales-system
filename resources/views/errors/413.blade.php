@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => 413, 'icon' => 'alert', 'title' => 'File too large', 'message' => 'What you uploaded is bigger than the server accepts. Choose a smaller file or image and try again.', 'actions' => ['back', 'home']])

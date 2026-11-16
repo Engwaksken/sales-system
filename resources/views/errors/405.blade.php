@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => 405, 'icon' => 'alert', 'title' => 'That action is not allowed here', 'message' => 'The link you followed cannot be opened this way. Go back and use the buttons on the page instead.', 'actions' => ['back', 'home']])

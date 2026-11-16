@@ -1,0 +1,1 @@
+@include('errors.page', ['code' => 402, 'icon' => 'lock', 'title' => 'Payment required', 'message' => 'This feature needs an active subscription. Please contact your administrator.', 'actions' => ['back', 'home']])
