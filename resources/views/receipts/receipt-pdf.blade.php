@@ -178,6 +178,8 @@
         </div>
     </div>
 
+    @include('partials.document-signature', ['signer' => $signer ?? null])
+
     <div class="thanks">
         {{ $branding['receipt_footer_note'] ?: 'Thank you for your business!' }}
     </div>

@@ -170,6 +170,12 @@
                         </span>
                     </span>
 
+                    @if((auth()->user()->role ?: 'customer') !== 'customer')
+                        <a href="{{ route('signature.edit') }}" class="text-slate-500 hover:text-slate-800" title="My signature" aria-label="My signature">
+                            <i class="fas fa-signature"></i>
+                        </a>
+                    @endif
+
                     <a href="{{ route('notification-settings.edit') }}" class="text-slate-500 hover:text-slate-800" title="Notification settings">
                         <i class="fas fa-gear"></i>
                     </a>

@@ -143,6 +143,9 @@ Route::middleware('auth')->group(function () {
 
     // Every signed-in user manages their own notifications.
     Route::get('/notification-settings', [NotificationSettingsController::class, 'edit'])->name('notification-settings.edit');
+    Route::get('/my-signature', [\App\Http\Controllers\SignatureController::class, 'edit'])->name('signature.edit');
+    Route::put('/my-signature', [\App\Http\Controllers\SignatureController::class, 'update'])->name('signature.update');
+    Route::delete('/my-signature', [\App\Http\Controllers\SignatureController::class, 'destroy'])->name('signature.destroy');
     Route::put('/notification-settings', [NotificationSettingsController::class, 'update'])->name('notification-settings.update');
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('permission:view_activity_logs');

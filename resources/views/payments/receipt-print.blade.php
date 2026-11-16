@@ -44,7 +44,9 @@ body{width:{{ $paperWidth }};max-width:100%;margin:0 auto;font-family:Arial,"Dej
     <button class="close-btn" onclick="window.close()">Close</button>
 </div>
 
-<div class="receipt">
+@include('partials.print-watermark', ['branding' => $branding, 'paper' => $paper])
+
+<div class="receipt" style="position:relative; z-index:1;">
     <div class="header">
         @if(!empty($branding['logo_data_uri']))
             <img src="{{ $branding['logo_data_uri'] }}" class="logo" alt="Logo">
@@ -75,6 +77,11 @@ body{width:{{ $paperWidth }};max-width:100%;margin:0 auto;font-family:Arial,"Dej
         <small>Amount Paid</small>
         <strong>{{ $currency }} {{ number_format((float)$payment->amount,0) }}</strong>
     </div>
+
+    @include('partials.document-signature', [
+        'signer' => \App\Support\DocumentSignature::forSale($payment->sale) ?? \App\Support\DocumentSignature::forUser($payment->receivedBy ?? null, 'Received by'),
+        'compact' => in_array($paper, ['58mm', '80mm'], true),
+    ])
 
     <div class="footer">
         {{ $branding['receipt_footer_note'] ?? 'Thank you for your business!' }}<br>

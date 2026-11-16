@@ -102,6 +102,7 @@ class PaymentObserver
                 method: $payment->method,
                 amount: (float) $payment->amount,
                 reference: $payment->invoice_no,
+                signer: \App\Support\DocumentSignature::forSale($payment->sale) ?? \App\Support\DocumentSignature::forUser($payment->receivedBy, 'Received by'),
             );
 
             Mail::to($email)->send(new ReceiptMail(

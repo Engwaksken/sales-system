@@ -24,6 +24,8 @@ class OrderPaymentReceiptObserver
                 method: $receipt->payment_method,
                 amount: (float) $receipt->amount_paid,
                 reference: $receipt->gateway_reference,
+                signer: \App\Support\DocumentSignature::forOrder($receipt->order)
+                    ?? \App\Support\DocumentSignature::forUser($receipt->createdBy ?? null, 'Received by'),
             );
 
             Mail::to($receipt->email)->send(new ReceiptMail(

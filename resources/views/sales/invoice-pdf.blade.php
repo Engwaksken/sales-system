@@ -237,6 +237,8 @@
         </tr>
     </table>
 
+    @include('partials.document-signature', ['signer' => \App\Support\DocumentSignature::forSale($sale), 'label' => 'Sold by'])
+
     <div class="footer">
         <strong>{{ $branding['site_name'] }}</strong><br>
         @if(!empty($branding['business_phone'])){{ $branding['business_phone'] }}@endif

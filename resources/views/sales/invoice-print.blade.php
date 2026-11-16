@@ -62,7 +62,9 @@ body{
     <button class="close-btn" onclick="window.close()">Close</button>
 </div>
 
-<div class="wrap">
+@include('partials.print-watermark', ['branding' => $branding, 'paper' => $paper])
+
+<div class="wrap" style="position:relative; z-index:1;">
     <div class="header">
         @if(!empty($branding['logo_data_uri']))
             <img src="{{ $branding['logo_data_uri'] }}" class="logo" alt="Logo">
@@ -114,6 +116,8 @@ body{
         <div class="row"><span>Paid</span><span>{{ $currency }} {{ number_format((float)$sale->partial_amount,0) }}</span></div>
         <div class="row"><span>Balance</span><span>{{ $currency }} {{ number_format((float)$sale->balance_amount,0) }}</span></div>
     </div>
+
+    @include('partials.document-signature', ['signer' => \App\Support\DocumentSignature::forSale($sale), 'label' => 'Sold by', 'compact' => $paper === '80mm'])
 
     <div class="footer">
         {{ $branding['receipt_footer_note'] ?? 'Thank you for your business!' }}

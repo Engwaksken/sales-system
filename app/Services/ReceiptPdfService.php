@@ -17,7 +17,8 @@ class ReceiptPdfService
         string $customerName,
         string $method,
         float $amount,
-        ?string $reference = null
+        ?string $reference = null,
+        ?array $signer = null
     ): string {
         $options = new Options();
         $options->set('isRemoteEnabled', true);
@@ -32,6 +33,7 @@ class ReceiptPdfService
                 'method' => $method,
                 'amount' => $amount,
                 'reference' => $reference,
+                'signer' => $signer,
                 'branding' => DocumentBranding::get(),
             ])->render()
         );

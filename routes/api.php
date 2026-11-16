@@ -31,6 +31,8 @@ Route::prefix('mobile')->group(function (): void {
         // The signed-in user's own profile (POST: multipart with an optional photo).
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::post('/profile', [ProfileController::class, 'update']);
+        Route::post('/profile/signature', [ProfileController::class, 'saveSignature']);
+        Route::delete('/profile/signature', [ProfileController::class, 'removeSignature']);
         Route::put('/profile/password', [ProfileController::class, 'password'])->middleware('throttle:6,1');
         Route::get('/notification-preferences', [NotificationPreferenceController::class, 'show']);
         Route::put('/notification-preferences', [NotificationPreferenceController::class, 'update']);

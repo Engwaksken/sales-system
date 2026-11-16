@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Branch;
 use App\Models\Product;
 use App\Services\ReceiptPdfService;
+use App\Support\DocumentSignature;
 use App\Services\SalePaymentService;
 use App\Support\DocumentBranding;
 use App\Support\ExportsCsv;
@@ -32,6 +33,7 @@ class PaymentsController extends Controller
             method: $payment->method,
             amount: (float) $payment->amount,
             reference: $payment->invoice_no,
+            signer: DocumentSignature::forSale($payment->sale) ?? DocumentSignature::forUser($payment->receivedBy, 'Received by'),
         );
 
         return response($pdf, 200, [
@@ -84,6 +86,7 @@ class PaymentsController extends Controller
             method: $payment->method,
             amount: (float) $payment->amount,
             reference: $payment->invoice_no,
+            signer: DocumentSignature::forSale($payment->sale) ?? DocumentSignature::forUser($payment->receivedBy, 'Received by'),
         );
 
         return response($pdf, 200, [

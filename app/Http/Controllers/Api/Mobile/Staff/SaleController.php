@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile\Staff;
 
+use App\Support\DocumentSignature;
 use App\Models\Customer;
 use App\Models\Payment;
 use App\Models\Sale;
@@ -228,13 +229,16 @@ class SaleController extends StaffController
 
     private function detail(Sale $sale): array
     {
-        $sale->load(['customer', 'branch', 'user:id,name', 'sale_items.product:id,name,sku', 'payments' => fn ($q) => $q->orderBy('id')]);
+        $sale->load(['customer', 'branch', 'user', 'sale_items.product:id,name,sku', 'payments' => fn ($q) => $q->orderBy('id')]);
+        $signer = DocumentSignature::forSale($sale);
 
         return $this->summary($sale) + [
             'customer_id' => $sale->customer_id,
             'customer_phone' => $sale->customer?->phone,
             'branch_id' => $sale->branch_id,
             'sold_by' => $sale->user?->name,
+            'sold_by_role' => $signer['role'] ?? null,
+            'sold_by_signature' => $signer['data_uri'] ?? null,
             'discount' => $this->money($sale->discount),
             'vat' => $this->money($sale->vat),
             'items' => $sale->sale_items->map(fn ($item) => [

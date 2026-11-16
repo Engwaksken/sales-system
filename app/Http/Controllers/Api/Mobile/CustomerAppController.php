@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Support\DocumentSignature;
 use App\Support\PublicMedia;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
@@ -142,6 +143,11 @@ class CustomerAppController extends Controller
             ->values();
 
         $payload['timeline'] = $this->timeline($record);
+
+        $signer = DocumentSignature::forOrder($record);
+        $payload['sold_by'] = $signer['name'] ?? null;
+        $payload['sold_by_role'] = $signer['role'] ?? null;
+        $payload['sold_by_signature'] = $signer['data_uri'] ?? null;
 
         return response()->json(['data' => $payload]);
     }

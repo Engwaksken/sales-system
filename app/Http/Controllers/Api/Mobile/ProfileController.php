@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Support\DocumentSignature;
 use App\Support\PublicMedia;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
@@ -69,6 +70,31 @@ class ProfileController extends Controller
         ]);
     }
 
+    /** Saves the signature printed on this user's invoices and receipts: a drawn PNG (data URL) or an uploaded image. */
+    public function saveSignature(Request $request): JsonResponse
+    {
+        $request->validate([
+            'signature' => ['required_without:signature_data', 'nullable', 'image', 'mimes:png,jpg,jpeg', 'max:512'],
+            'signature_data' => ['required_without:signature', 'nullable', 'string', 'max:700000'],
+        ]);
+
+        $user = $request->user();
+        DocumentSignature::store($user, $request->file('signature') ?? $request->input('signature_data'));
+
+        return response()->json([
+            'message' => 'Signature saved. It will appear on your invoices and receipts.',
+            'data' => $this->payload($user->fresh()),
+        ]);
+    }
+
+    public function removeSignature(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        DocumentSignature::remove($user);
+
+        return response()->json(['message' => 'Signature removed.', 'data' => $this->payload($user->fresh())]);
+    }
+
     public function password(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -107,6 +133,7 @@ class ProfileController extends Controller
             'branch_name' => $user->branch_id && Schema::hasTable('branches')
                 ? DB::table('branches')->where('id', $user->branch_id)->value('name') : null,
             'photo_url' => self::photoUrl($user->profile_pic),
+            'signature' => DocumentSignature::dataUri($user),
             'phone' => $customer?->phone,
             'address' => $customer?->address,
             'is_customer' => ($user->role ?: 'customer') === 'customer',
