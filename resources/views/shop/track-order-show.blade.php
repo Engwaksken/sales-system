@@ -11,16 +11,16 @@
   };
 @endphp
 <div class="space-y-5">
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <div class="text-xs font-bold uppercase text-slate-400">Order reference</div>
+  <div class="{{ $cancelled ? 'bg-red-600 text-white' : 'brand-band' }} rounded-2xl p-5 shadow-sm flex flex-wrap items-start justify-between gap-4">
+    <div class="min-w-0">
+      <div class="text-xs font-bold uppercase opacity-75">Order reference</div>
       <h1 class="text-2xl font-extrabold break-all">{{ $order->order_number ?: $order->order_id }}</h1>
-      <p class="text-sm text-slate-500 mt-1">Placed {{ $order->created_at?->format('d M Y, H:i') }}@if($order->branch) · {{ $order->branch->name }}@endif</p>
+      <p class="text-sm opacity-80 mt-1">Placed {{ $order->created_at?->format('d M Y, H:i') }}@if($order->branch) · {{ $order->branch->name }}@endif</p>
     </div>
-    <div class="text-right">
-      <div class="text-xs font-bold uppercase text-slate-400">Current status</div>
-      <div class="text-lg font-extrabold {{ $cancelled ? 'text-red-600' : 'text-primary' }}">{{ $order->stageLabel() }}</div>
-      <div class="text-xs text-slate-400">Updated {{ $order->updated_at?->diffForHumans() }}</div>
+    <div class="sm:text-right">
+      <div class="text-xs font-bold uppercase opacity-75">Current status</div>
+      <div class="text-xl font-extrabold">{{ $order->stageLabel() }}</div>
+      <div class="text-xs opacity-75">Updated {{ $order->updated_at?->diffForHumans() }}</div>
     </div>
   </div>
 
@@ -78,6 +78,18 @@
       <div class="flex justify-between border-t border-slate-200 pt-2 text-base font-extrabold"><span>Total</span><span>UGX {{ number_format((float) $order->total_amount, 0) }}</span></div>
     </div>
   </section>
+
+  @if ($order->branch && ($order->branch->contact || $order->branch->branch_email))
+  <section class="bg-primary-soft rounded-xl p-4 text-sm flex flex-wrap items-center gap-x-5 gap-y-2">
+    <span class="font-bold text-slate-800"><i class="fas fa-headset mr-1 text-primary"></i> Need help? {{ $order->branch->name }}</span>
+    @if ($order->branch->contact)
+      <a href="tel:{{ preg_replace('/[^\d+]/', '', $order->branch->contact) }}" class="font-semibold text-primary"><i class="fas fa-phone mr-1"></i>{{ $order->branch->contact }}</a>
+    @endif
+    @if ($order->branch->branch_email)
+      <a href="mailto:{{ $order->branch->branch_email }}?subject={{ rawurlencode('Order '.$order->order_number) }}" class="font-semibold text-primary"><i class="fas fa-envelope mr-1"></i>{{ $order->branch->branch_email }}</a>
+    @endif
+  </section>
+  @endif
 
   <div class="flex flex-wrap gap-3">
     <button type="button" onclick="location.reload()" class="btn-primary rounded-lg px-4 py-2.5 text-sm font-bold"><i class="fas fa-rotate mr-1"></i> Refresh status</button>

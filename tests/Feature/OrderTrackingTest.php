@@ -167,6 +167,40 @@ class OrderTrackingTest extends TestCase
             ->assertSee('track-order/'.$order->order_number.'?signature=', false);
     }
 
+    public function test_tracking_pages_and_order_emails_carry_the_store_branding(): void
+    {
+        \App\Models\Setting::create(['setting_key' => 'site_name', 'setting_value' => 'Acme Hardware']);
+        \App\Models\Setting::create(['setting_key' => 'theme_primary', 'setting_value' => '#7C3AED']);
+        \App\Models\Setting::create(['setting_key' => 'system_logo', 'setting_value' => 'uploads/settings/logo-acme.png']);
+        $this->branch->update(['contact' => '0772000111', 'branch_email' => 'main@acme.test']);
+        \Illuminate\Support\Facades\Cache::flush();
+        \App\Support\Brand::flush();
+
+        $data = $this->placeOrderWithEmail();
+        $order = Order::with(['order_items', 'branch'])->where('order_number', $data['order_number'])->sole();
+
+        $this->get(route('orders.track'))->assertOk()
+            ->assertSee('Acme Hardware')
+            ->assertSee('uploads/settings/logo-acme.png', false)
+            ->assertSee('--shop-primary:#7c3aed', false);
+
+        $this->get($data['tracking_url'])->assertOk()
+            ->assertSee('Acme Hardware')
+            ->assertSee('0772000111')
+            ->assertSee('main@acme.test');
+
+        $confirmation = (new \App\Mail\OrderConfirmationMail($order, $this->branch->fresh()))->render();
+        $stage = (new OrderStageUpdatedMail($order, 'Confirmed', 'Confirmed.'))->render();
+
+        foreach ([$confirmation, $stage] as $html) {
+            $this->assertStringContainsString('Acme Hardware', $html);
+            $this->assertStringContainsString('uploads/settings/logo-acme.png', $html);
+            $this->assertStringContainsString('background-color: #7c3aed', $html);
+            $this->assertStringContainsString('0772000111', $html);
+            $this->assertStringNotContainsString('Laravel', $html);
+        }
+    }
+
     public function test_cancelled_orders_show_a_notice_instead_of_the_timeline(): void
     {
         $data = $this->placeOrder();

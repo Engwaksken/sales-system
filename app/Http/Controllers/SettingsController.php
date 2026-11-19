@@ -182,6 +182,7 @@ class SettingsController extends Controller
 
         Cache::forget('app.site_settings');
         Cache::forget('app.document_branding');
+        \App\Support\Brand::flush();
 
         return array_merge(self::DEFAULTS, Setting::query()->pluck('setting_value', 'setting_key')->toArray());
     }

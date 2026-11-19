@@ -3,7 +3,7 @@
 @section('content')
 <div class="max-w-md mx-auto">
   <div class="text-center mb-6">
-    <div class="mx-auto mb-3 w-14 h-14 rounded-full grid place-items-center text-xl text-white btn-primary"><i class="fas fa-truck-fast"></i></div>
+    <div class="mx-auto mb-3 w-14 h-14 rounded-full grid place-items-center text-xl btn-primary"><i class="fas fa-truck-fast"></i></div>
     <h1 class="text-2xl font-extrabold">Track your order</h1>
     <p class="text-sm text-slate-500 mt-1">Enter your order reference and the phone number you used at checkout.</p>
   </div>
