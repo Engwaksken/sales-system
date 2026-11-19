@@ -1,6 +1,6 @@
 @php
     $showSearch = $showSearch ?? true;
-    $searchPlaceholder = $searchPlaceholder ?? 'Search…';
+    $searchPlaceholder = $searchPlaceholder ?? 'Search...';
     $clearRoute = $clearRoute ?? url()->current();
     $isFiltered = request('q') || request('from') || request('to') || request('branch_id') || request('supplier_id')
         || (request('period') && request('period') !== 'all');

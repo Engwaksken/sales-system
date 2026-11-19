@@ -18,7 +18,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Guest checkout — faithful port of guest_order_api.php's create_guest_order action.
+ * Guest checkout, faithful port of guest_order_api.php's create_guest_order action.
  * Same validation rules, same customer-matching-by-email-or-phone logic, same
  * transactional stock decrement, same order reference format (ORD-YYYYMMDD-XXXXXX).
  */

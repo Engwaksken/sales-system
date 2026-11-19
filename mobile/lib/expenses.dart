@@ -98,7 +98,7 @@ class _ExpenseTile extends StatelessWidget {
     onTap: onTap,
     leading: CircleAvatar(backgroundColor: const Color(0xFFE6F2EE), child: Icon(expense['receipt_url'] != null ? Icons.receipt_long : Icons.request_quote_outlined, color: brand)),
     title: Text('${expense['title'] ?? 'Expense'}', maxLines: 1, overflow: TextOverflow.ellipsis),
-    subtitle: Text('${expense['category'] ?? ''} · ${'${expense['expense_date'] ?? ''}'.split('T').first}', maxLines: 1, overflow: TextOverflow.ellipsis),
+    subtitle: Text('${expense['category'] ?? ''} | ${'${expense['expense_date'] ?? ''}'.split('T').first}', maxLines: 1, overflow: TextOverflow.ellipsis),
     trailing: Text('${expense['amount'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w600)),
   ));
 }

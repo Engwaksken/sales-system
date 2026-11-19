@@ -429,7 +429,7 @@ class CustomerAppController extends Controller
             ->map(fn ($order) => [
                 'type' => 'order',
                 'title' => $order->order_number ?: $order->order_id,
-                'subtitle' => 'Order · '.ucfirst(str_replace('_', ' ', $order->status)),
+                'subtitle' => 'Order | '.ucfirst(str_replace('_', ' ', $order->status)),
                 'date' => optional($order->created_at)?->format('d M Y'),
                 'sort' => optional($order->created_at)?->timestamp ?? 0,
             ]);
@@ -441,7 +441,7 @@ class CustomerAppController extends Controller
             ->map(fn ($payment) => [
                 'type' => 'payment',
                 'title' => $payment->receipt_no ?: 'Payment',
-                'subtitle' => 'UGX '.number_format((float) $payment->amount, 0).' · '.$payment->method,
+                'subtitle' => 'UGX '.number_format((float) $payment->amount, 0).' | '.$payment->method,
                 'date' => optional($payment->created_at)?->format('d M Y'),
                 'sort' => optional($payment->created_at)?->timestamp ?? 0,
             ]);

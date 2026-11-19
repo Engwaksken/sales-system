@@ -17,7 +17,7 @@ class UsersController extends Controller
 
     public function exportCsv(Request $request)
     {
-        // Deliberately excludes password/remember_token regardless of what's requested —
+        // Deliberately excludes password/remember_token regardless of what's requested -
         // those must never leave the system via an export, unlike every other module's
         // generic export which lets the user pick from all columns.
         $allColumns = ['name', 'email', 'role', 'branch_id'];

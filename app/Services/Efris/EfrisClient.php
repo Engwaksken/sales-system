@@ -14,7 +14,7 @@ use RuntimeException;
  *   4. Wrap all three in the `data` / `globalInfo` / `returnStateInfo` envelope.
  *
  * Laravel's Crypt facade (AES-256-CBC over APP_KEY) already covers "encrypt secrets
- * at rest" via the EfrisConfig model's `encrypted` casts — this class only implements
+ * at rest" via the EfrisConfig model's `encrypted` casts, this class only implements
  * the EFRIS wire-protocol crypto, which is a different, protocol-mandated scheme and
  * cannot be swapped for Laravel's encryption.
  */

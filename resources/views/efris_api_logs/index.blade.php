@@ -14,7 +14,7 @@
 <form method="GET" class="filter-toolbar__filters">
     <div class="filter-search">
         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
-        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search efris api logs…"
+        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search efris api logs..."
                class="rounded-md border-slate-300 text-sm pl-8 pr-3 py-1.5 w-56">
     </div>
     <button type="submit" class="filter-btn" title="Search" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
@@ -83,7 +83,7 @@
 <thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Operation Code</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Http Status Code</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Is Success</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Requested At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
 <tbody class="divide-y divide-slate-100">
 @forelse($items as $row)
-<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->operation_code }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->http_status_code }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->is_success ? 'Yes' : 'No' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->requested_at }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm">
+<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->operation_code }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->http_status_code }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->is_success ? 'Yes' : 'No' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->requested_at }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '-' }}</td><td class="px-4 py-2 text-right text-sm">
 <a href="{{ route('efris_api_logs.show', $row->id) }}" class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></a>
 </td></tr>
 @empty

@@ -17,7 +17,7 @@ class OrderObserver implements ShouldHandleEventsAfterCommit
 {
     private const MESSAGES = [
         'pending' => 'We have received your order and will confirm it shortly.',
-        'confirmed' => 'Good news — your order has been confirmed.',
+        'confirmed' => 'Good news! Your order has been confirmed.',
         'processing' => 'Your order is now being prepared.',
         'ready_for_pickup' => 'Your order is ready for pickup.',
         'ready_for_delivery' => 'Your order is packed and ready for delivery.',

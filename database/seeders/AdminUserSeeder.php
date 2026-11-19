@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Hash;
 /**
  * Creates one bootstrap admin account so you can log in immediately after migrating.
  *
- * IMPORTANT: change this password immediately after first login — it is a
+ * IMPORTANT: change this password immediately after first login, it is a
  * placeholder, not a real credential. Never commit real credentials into a seeder.
  */
 class AdminUserSeeder extends Seeder

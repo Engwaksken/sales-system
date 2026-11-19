@@ -5,7 +5,7 @@
     <i class="fa-solid fa-user-shield text-slate-400"></i> Role Permissions
 </h1>
 <p class="text-sm text-slate-500 mb-4">
-    Tick a box to grant that role the permission. <strong>Admin</strong> isn't shown here —
+    Tick a box to grant that role the permission. <strong>Admin</strong> isn't shown here:
     it always has full access regardless of these settings.
 </p>
 

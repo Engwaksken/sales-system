@@ -9,7 +9,7 @@
                 <span>
                     Showing
                     <strong>{{ $paginator->firstItem() ?? 0 }}</strong>
-                    –
+                    -
                     <strong>{{ $paginator->lastItem() ?? 0 }}</strong>
                     of
                     <strong>{{ $paginator->total() }}</strong>

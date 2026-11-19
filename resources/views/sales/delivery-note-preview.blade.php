@@ -47,7 +47,7 @@
             @endif
             <div>
                 <strong class="block text-slate-800">{{ $branding['site_name'] }}</strong>
-                <span class="text-xs text-slate-400">Delivery note preview · {{ $recipient['name'] }}</span>
+                <span class="text-xs text-slate-400">Delivery note preview | {{ $recipient['name'] }}</span>
             </div>
         </div>
         <iframe

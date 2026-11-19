@@ -77,7 +77,7 @@
                 <div><dt class="text-xs uppercase text-slate-400">Customer</dt><dd class="font-bold text-slate-700">{{ $customer?->name ?? 'Walk-in Customer' }}</dd></div>
                 <div><dt class="text-xs uppercase text-slate-400">Amount</dt><dd class="font-extrabold text-emerald-700">{{ $branding['currency'] }} {{ number_format((float)$payment->amount, 0) }}</dd></div>
                 <div><dt class="text-xs uppercase text-slate-400">Method</dt><dd class="font-bold text-slate-700">{{ $payment->method }}</dd></div>
-                <div><dt class="text-xs uppercase text-slate-400">Invoice</dt><dd class="font-bold text-slate-700">{{ $payment->invoice_no ?: '—' }}</dd></div>
+                <div><dt class="text-xs uppercase text-slate-400">Invoice</dt><dd class="font-bold text-slate-700">{{ $payment->invoice_no ?: '-' }}</dd></div>
                 <div><dt class="text-xs uppercase text-slate-400">Status</dt><dd class="font-bold text-slate-700">{{ str($payment->status)->title() }}</dd></div>
             </dl>
         </aside>

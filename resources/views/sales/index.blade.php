@@ -86,7 +86,7 @@
         <div class="filter-search">
             <i class="fas fa-magnifying-glass"></i>
             <input type="search" name="q" value="{{ request('q') }}" aria-label="Search sales"
-                   placeholder="Search invoice or method…" class="rounded-lg border-slate-300">
+                   placeholder="Search invoice or method..." class="rounded-lg border-slate-300">
         </div>
         <button type="submit" class="filter-btn" title="Search" aria-label="Search"><i class="fas fa-magnifying-glass"></i></button>
         <span class="filter-toolbar__divider" aria-hidden="true"></span>
@@ -250,7 +250,7 @@
                             </td>
 
                             <td class="px-4 py-3 whitespace-nowrap text-slate-500">
-                                {{ $row->sale_date?->format('d M Y') ?: '—' }}
+                                {{ $row->sale_date?->format('d M Y') ?: '-' }}
                             </td>
 
                             <td class="px-4 py-3 text-right whitespace-nowrap">
@@ -275,19 +275,19 @@
                                             data-id="{{ $row->id }}"
                                             data-invoice="{{ $row->invoice_no }}"
                                             data-customer="{{ $row->customer?->name ?: ($row->orders->first()?->customer_name ?: 'Walk-in Customer') }}"
-                                            data-supplier="{{ $row->supplier?->name ?: '—' }}"
-                                            data-branch="{{ $row->branch?->name ?: '—' }}"
-                                            data-user="{{ $row->user?->name ?: $row->createdBy?->name ?: '—' }}"
+                                            data-supplier="{{ $row->supplier?->name ?: '-' }}"
+                                            data-branch="{{ $row->branch?->name ?: '-' }}"
+                                            data-user="{{ $row->user?->name ?: $row->createdBy?->name ?: '-' }}"
                                             data-total="{{ number_format((float)$row->total_amount, 2) }}"
                                             data-discount="{{ number_format((float)$row->discount, 2) }}"
                                             data-vat="{{ number_format((float)$row->vat, 2) }}"
-                                            data-method="{{ $row->payment_method ?: '—' }}"
+                                            data-method="{{ $row->payment_method ?: '-' }}"
                                             data-status="{{ ucfirst($row->payment_status ?: 'pending') }}"
                                             data-partial="{{ number_format((float)$row->partial_amount, 2) }}"
                                             data-balance="{{ number_format((float)$row->balance_amount, 2) }}"
                                             data-payments="{{ $row->payments->where('status', 'successful')->sortBy('id')->values()->map(fn ($p) => ['receipt' => $p->receipt_no, 'method' => $p->method, 'amount' => (float) $p->amount, 'date' => $p->created_at?->format('d M Y H:i'), 'url' => route('payments.receipt-preview', $p->id)])->toJson() }}"
-                                            data-date="{{ $row->sale_date?->format('d M Y') ?: '—' }}"
-                                            data-products="{{ $row->sale_items->map(fn($item) => ($item->product?->name ?: 'Product').' × '.$item->quantity)->join(', ') ?: '—' }}">
+                                            data-date="{{ $row->sale_date?->format('d M Y') ?: '-' }}"
+                                            data-products="{{ $row->sale_items->map(fn($item) => ($item->product?->name ?: 'Product').' x '.$item->quantity)->join(', ') ?: '-' }}">
                                         <i class="fas fa-eye"></i>
                                     </button>
 
@@ -485,7 +485,7 @@
                     <select id="pos-customer" name="customer_id" class="w-full rounded-lg border-slate-300" onchange="posRecalc()">
                         <option value="" data-balance="0">Walk-in Customer (pays in full)</option>
                         @foreach($customer_options as $customer)
-                            <option value="{{ $customer->id }}" data-balance="{{ (float) $customer->outstanding_balance }}">{{ $customer->name }}{{ (float) $customer->outstanding_balance > 0 ? ' — owes UGX '.number_format((float) $customer->outstanding_balance, 0) : '' }}</option>
+                            <option value="{{ $customer->id }}" data-balance="{{ (float) $customer->outstanding_balance }}">{{ $customer->name }}{{ (float) $customer->outstanding_balance > 0 ? ' (owes UGX '.number_format((float) $customer->outstanding_balance, 0).')' : '' }}</option>
                         @endforeach
                     </select>
                     <p id="pos-customer-hint" class="mt-1 text-[11px] text-slate-400">Registered customers can pay part now or buy on credit.</p>
@@ -573,7 +573,7 @@
 
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div class="text-xs font-bold uppercase tracking-wide text-slate-400">Customer</div>
-                <div id="quickPayCustomer" class="mt-1 font-bold text-slate-800">—</div>
+                <div id="quickPayCustomer" class="mt-1 font-bold text-slate-800">-</div>
                 <div class="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Outstanding Balance</div>
                 <div id="quickPayBalance" class="mt-1 text-2xl font-extrabold text-emerald-700">UGX 0</div>
             </div>
@@ -640,7 +640,7 @@
                         <div class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                             <i class="fas {{ $icon }} mr-1"></i>{{ $label }}
                         </div>
-                        <div id="{{ $id }}" class="mt-1 break-words font-bold text-slate-800">—</div>
+                        <div id="{{ $id }}" class="mt-1 break-words font-bold text-slate-800">-</div>
                     </div>
                 @endforeach
             </div>
@@ -649,7 +649,7 @@
                 <div class="text-xs font-bold uppercase tracking-wide text-slate-400">
                     <i class="fas fa-boxes-stacked mr-1"></i> Products
                 </div>
-                <div id="saleViewProducts" class="mt-2 text-sm font-semibold leading-6 text-slate-700">—</div>
+                <div id="saleViewProducts" class="mt-2 text-sm font-semibold leading-6 text-slate-700">-</div>
             </div>
 
             <div class="mt-4 rounded-xl border border-slate-200 bg-white p-4">
@@ -774,7 +774,7 @@ function posPaymentSummary() {
         tone = 'bg-red-50 text-red-700';
         blocked = true;
     } else if (posTotal > 0 && balance > 0.004) {
-        warning = `${money(balance)} goes on ${escapeHtml(option.textContent.split(' — ')[0])}'s credit. New balance owed: ${money(owed + balance)}.`;
+        warning = `${money(balance)} goes on ${escapeHtml(option.textContent.split(' (owes')[0])}'s credit. New balance owed: ${money(owed + balance)}.`;
         tone = 'bg-amber-50 text-amber-800';
         label = paid > 0 ? 'Record Part-Paid Sale' : 'Record Credit Sale';
     } else if (tenderRows('pos').filter(r => Number(r.querySelector('.tender-amount').value) > 0).length > 1) {
@@ -941,7 +941,7 @@ function openQuickPayFromButton(button) {
     form.action = `{{ url('/sales') }}/${saleId}/payments`;
 
     document.getElementById('quickPayReference').textContent = order
-        ? `Online Order ${order} · Invoice ${invoice}`
+        ? `Online Order ${order} | Invoice ${invoice}`
         : `Invoice ${invoice}`;
     document.getElementById('quickPayCustomer').textContent = customer;
     document.getElementById('quickPayBalance').textContent = money(balance);
@@ -1016,7 +1016,7 @@ document.getElementById('quickPayForm')?.addEventListener('form:restored', event
 function openSaleViewModal(button) {
     const setText = (id, value) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = value || '—';
+        if (el) el.textContent = value || '-';
     };
 
     setText('saleViewTitle', `Sale #${button.dataset.id || ''}`);
@@ -1038,17 +1038,17 @@ function openSaleViewModal(button) {
     try { payments = JSON.parse(button.dataset.payments || '[]'); } catch (e) { payments = []; }
     const list = document.getElementById('saleViewPayments');
     const paidTotal = payments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
-    setText('saleViewPaid', payments.length ? `${payments.length} payment${payments.length > 1 ? 's' : ''} · ${money(paidTotal)}` : '');
+    setText('saleViewPaid', payments.length ? `${payments.length} payment${payments.length > 1 ? 's' : ''} | ${money(paidTotal)}` : '');
     list.innerHTML = payments.length
         ? payments.map(p => `
             <div class="flex items-center justify-between gap-3 py-2">
                 <div>
                     <a href="${escapeHtml(p.url)}" class="font-bold text-indigo-600 hover:underline"><i class="fas fa-receipt mr-1"></i>${escapeHtml(p.receipt || 'Receipt')}</a>
-                    <div class="text-xs text-slate-400">${escapeHtml(p.date || '')} · ${escapeHtml(p.method || '')}</div>
+                    <div class="text-xs text-slate-400">${escapeHtml(p.date || '')} | ${escapeHtml(p.method || '')}</div>
                 </div>
                 <div class="font-bold text-emerald-700">${money(p.amount)}</div>
             </div>`).join('')
-        : '<div class="py-2 text-sm text-slate-400">No payments yet — the full amount is on credit.</div>';
+        : '<div class="py-2 text-sm text-slate-400">No payments yet. The full amount is on credit.</div>';
 
     const modal = document.getElementById('sale-view-modal');
     modal.classList.remove('hidden');

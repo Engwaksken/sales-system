@@ -5,7 +5,7 @@
     $actionColors = ['created' => 'bg-emerald-100 text-emerald-800', 'updated' => 'bg-sky-100 text-sky-800', 'deleted' => 'bg-rose-100 text-rose-800',
         'login' => 'bg-slate-100 text-slate-700', 'logout' => 'bg-slate-100 text-slate-700', 'login_failed' => 'bg-amber-100 text-amber-800'];
     $fmt = function ($v) {
-        if ($v === null || $v === '') return '—';
+        if ($v === null || $v === '') return '-';
         return is_numeric($v) ? rtrim(rtrim(number_format((float) $v, 2), '0'), '.') : \Illuminate\Support\Str::limit((string) $v, 80);
     };
 @endphp
@@ -26,7 +26,7 @@
     <div class="flex flex-wrap gap-2">
         @foreach($topFlagged as $row)
             <a href="{{ route('activity-logs.index', ['flagged' => 1, 'user_id' => $row->user_id]) }}" class="rounded-full bg-white px-3 py-1 text-amber-900 shadow-sm hover:underline">
-                {{ $row->user_name ?? 'User #'.$row->user_id }} · {{ $row->total }}
+                {{ $row->user_name ?? 'User #'.$row->user_id }} | {{ $row->total }}
             </a>
         @endforeach
     </div>
@@ -66,7 +66,7 @@
                 @if($log->changes && $log->action === 'updated')
                     <ul class="space-y-0.5 text-xs">
                         @foreach($log->changes as $field => $pair)
-                            <li><span class="text-slate-500">{{ str_replace('_', ' ', $field) }}:</span> <span class="text-rose-700 line-through">{{ $fmt($pair[0] ?? null) }}</span> → <span class="font-semibold text-emerald-700">{{ $fmt($pair[1] ?? null) }}</span></li>
+                            <li><span class="text-slate-500">{{ str_replace('_', ' ', $field) }}:</span> <span class="text-rose-700 line-through">{{ $fmt($pair[0] ?? null) }}</span> to <span class="font-semibold text-emerald-700">{{ $fmt($pair[1] ?? null) }}</span></li>
                         @endforeach
                     </ul>
                 @elseif($log->changes)
@@ -74,7 +74,7 @@
                         <ul class="mt-1 space-y-0.5">@foreach($log->changes as $field => $pair)<li><span class="text-slate-500">{{ str_replace('_', ' ', $field) }}:</span> {{ $fmt($pair[1] ?? $pair[0] ?? null) }}</li>@endforeach</ul>
                     </details>
                 @else
-                    <span class="text-slate-400">—</span>
+                    <span class="text-slate-400">-</span>
                 @endif
             </td>
             <td class="whitespace-nowrap p-3 text-xs text-slate-500">{{ ucfirst($log->source ?? '') }}<br>{{ $log->ip_address }}</td>

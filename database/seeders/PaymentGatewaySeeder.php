@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
  *
  * The original SQL dump had live client_id/client_secret values embedded in the
  * `payment_gateways` table. Storing API secrets in a database row (let alone a
- * seeder file that gets committed to source control) is unsafe — those credentials
+ * seeder file that gets committed to source control) is unsafe, those credentials
  * were exposed in the files you uploaded and should be rotated with IOTEC regardless
  * of what happens here. This seeder only fills in the non-secret/structural fields;
  * secrets are pulled from .env (see services.iotec) and should be set there instead.

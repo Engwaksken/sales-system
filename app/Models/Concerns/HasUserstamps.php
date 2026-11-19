@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * Auto-fills created_by/updated_by from the authenticated user whenever a model
- * that has those columns is saved. Applied to every generated model — safe to use
+ * that has those columns is saved. Applied to every generated model, safe to use
  * even on models without these columns (it checks first).
  *
  * Deliberately not tied to $fillable: even if a request smuggled a created_by/

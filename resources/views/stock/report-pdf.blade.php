@@ -134,8 +134,8 @@
         <tbody>
             @forelse ($rows as $row)
                 <tr>
-                    <td>{{ $row->product->name ?? '—' }}</td>
-                    <td>{{ $row->supplier->name ?? '—' }}</td>
+                    <td>{{ $row->product->name ?? '-' }}</td>
+                    <td>{{ $row->supplier->name ?? '-' }}</td>
                     <td>{{ $row->quantity }}</td>
                     <td>{{ $branding['currency'] }} {{ number_format((float)$row->cost_price, 2) }}</td>
                     <td>{{ $branding['currency'] }} {{ number_format((float)$row->selling_price, 2) }}</td>

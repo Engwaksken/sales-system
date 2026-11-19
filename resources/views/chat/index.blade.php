@@ -21,7 +21,7 @@
         <div class="filter-search">
             <i class="fas fa-magnifying-glass"></i>
             <input type="search" name="q" value="{{ request('q') }}" aria-label="Search conversations"
-                   placeholder="Customer, email, phone…" class="rounded-lg border-slate-300">
+                   placeholder="Customer, email, phone..." class="rounded-lg border-slate-300">
         </div>
         <select name="status" aria-label="Status" class="rounded-lg border-slate-300" onchange="this.form.submit()">
             <option value="">All Conversations</option>

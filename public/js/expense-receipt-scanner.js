@@ -277,7 +277,7 @@
             description: [
                 payee ? `Receipt from ${payee}` : 'Scanned receipt',
                 reference ? `Ref: ${reference}` : '',
-            ].filter(Boolean).join(' — '),
+            ].filter(Boolean).join(' - '),
         };
     }
 
@@ -515,7 +515,7 @@
 
             const setText = (selector, value) => {
                 const element = root.querySelector(selector);
-                if (element) element.textContent = value || '—';
+                if (element) element.textContent = value || '-';
             };
 
             setText('[data-ers-summary-payee]', data.payee);
@@ -524,7 +524,7 @@
                 '[data-ers-summary-amount]',
                 Number.isFinite(data.amount)
                     ? `UGX ${data.amount.toLocaleString('en-UG', { maximumFractionDigits: 2 })}`
-                    : '—'
+                    : '-'
             );
             setText('[data-ers-summary-reference]', data.reference);
 

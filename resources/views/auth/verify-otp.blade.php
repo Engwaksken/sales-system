@@ -12,7 +12,7 @@
 
     @include('partials.auth-otp-input')
 
-    <button class="auth-submit" type="submit" data-loading-text="Verifying…">
+    <button class="auth-submit" type="submit" data-loading-text="Verifying...">
         <span class="auth-spinner" aria-hidden="true"></span>
         <span data-label>Verify code</span>
     </button>
@@ -21,7 +21,7 @@
 <form method="POST" action="{{ route('password.otp.resend') }}" class="auth-alt">
     @csrf
     <span>Didn't get a code?</span>
-    <button type="submit" class="link-button" data-loading-text="Sending…">Resend code</button>
+    <button type="submit" class="link-button" data-loading-text="Sending...">Resend code</button>
 </form>
 
 <p class="auth-alt auth-alt-tight">

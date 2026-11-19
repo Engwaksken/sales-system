@@ -159,14 +159,14 @@ class ActivityObserver
     {
         $what = match (true) {
             $model instanceof Sale => 'sale '.($model->invoice_no ?: '#'.$model->id).' ('.$this->money($model->total_amount).')',
-            $model instanceof SaleItem => $this->number($model->quantity).' × '.($model->product?->name ?? 'product #'.$model->product_id)
+            $model instanceof SaleItem => $this->number($model->quantity).' x '.($model->product?->name ?? 'product #'.$model->product_id)
                 .' on sale '.($model->sale?->invoice_no ?? '#'.$model->sale_id),
             $model instanceof Payment => 'payment '.($model->receipt_no ?: '#'.$model->id).' of '.$this->money($model->amount)
                 .($model->sale?->invoice_no ? ' for '.$model->sale->invoice_no : ''),
             $model instanceof Stock => 'stock of '.($model->product?->name ?? 'product #'.$model->product_id)
                 .($model->branch?->name ? ' at '.$model->branch->name : ''),
             $model instanceof StockIssue => 'stock issue ('.str_replace('_', ' ', (string) $model->type).') of '
-                .$this->number($model->quantity).' × '.($model->product?->name ?? 'product #'.$model->product_id),
+                .$this->number($model->quantity).' x '.($model->product?->name ?? 'product #'.$model->product_id),
             $model instanceof Product => 'product '.$model->name,
             $model instanceof Order => 'order '.($model->order_number ?: $model->order_id ?: '#'.$model->id),
             $model instanceof Expense => 'expense '.($model->title ?: '#'.$model->id).' ('.$this->money($model->amount).')',

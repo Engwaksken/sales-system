@@ -18,7 +18,7 @@ class SaleObserver
         try {
             app(JournalPostingService::class)->postForSale($sale);
         } catch (Throwable $e) {
-            // Never block a sale from saving because of a bookkeeping error —
+            // Never block a sale from saving because of a bookkeeping error -
             // log it so it can be posted/fixed manually instead.
             report($e);
         }

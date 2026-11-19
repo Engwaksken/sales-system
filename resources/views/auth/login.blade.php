@@ -46,7 +46,7 @@
         <a class="auth-link" href="{{ route('password.request') }}">Forgot password?</a>
     </div>
 
-    <button class="auth-submit" type="submit" data-loading-text="Signing in…">
+    <button class="auth-submit" type="submit" data-loading-text="Signing in...">
         <span class="auth-spinner" aria-hidden="true"></span>
         <span data-label>Sign in</span>
     </button>

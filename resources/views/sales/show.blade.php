@@ -7,7 +7,7 @@
 <div class="mb-5 max-w-2xl rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
   <div>
     <div class="text-xs uppercase tracking-wide text-emerald-600 font-bold"><i class="fas fa-globe mr-1"></i> Online order pushed to POS</div>
-    <div class="font-bold text-emerald-900 mt-1">{{ $sourceOrder->order_number ?: $sourceOrder->order_id }} · {{ $sourceOrder->customer_name }}</div>
+    <div class="font-bold text-emerald-900 mt-1">{{ $sourceOrder->order_number ?: $sourceOrder->order_id }} | {{ $sourceOrder->customer_name }}</div>
   </div>
   <a href="{{ route('orders.index', ['q'=>$sourceOrder->order_number ?: $sourceOrder->order_id]) }}" class="text-sm font-bold text-emerald-700 hover:text-emerald-900"><i class="fas fa-arrow-up-right-from-square"></i> View Order</a>
 </div>
@@ -15,9 +15,9 @@
 
 <div class="bg-white shadow rounded-lg p-6 max-w-2xl">
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Transaction Type</span><span class='text-slate-800'>{{ $sale->transaction_type }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Customer Id</span><span class='text-slate-800'>{{ $sale->customer?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Supplier Id</span><span class='text-slate-800'>{{ $sale->supplier?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>User Id</span><span class='text-slate-800'>{{ $sale->user?->name ?? '—' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Customer Id</span><span class='text-slate-800'>{{ $sale->customer?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Supplier Id</span><span class='text-slate-800'>{{ $sale->supplier?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>User Id</span><span class='text-slate-800'>{{ $sale->user?->name ?? '-' }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Invoice No</span><span class='text-slate-800'>{{ $sale->invoice_no }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Total Amount</span><span class='text-slate-800'>{{ $sale->total_amount }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Discount</span><span class='text-slate-800'>{{ $sale->discount }}</span></div>
@@ -27,11 +27,11 @@
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Payment Status</span><span class='text-slate-800'>{{ $sale->payment_status }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Partial Amount</span><span class='text-slate-800'>{{ $sale->partial_amount }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Balance Amount</span><span class='text-slate-800'>{{ $sale->balance_amount }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Branch Id</span><span class='text-slate-800'>{{ $sale->branch?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created By</span><span class='text-slate-800'>{{ $sale->createdBy?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated By</span><span class='text-slate-800'>{{ $sale->updatedBy?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created At</span><span class='text-slate-800'>{{ $sale->created_at?->format('d M Y H:i') ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated At</span><span class='text-slate-800'>{{ $sale->updated_at?->format('d M Y H:i') ?? '—' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Branch Id</span><span class='text-slate-800'>{{ $sale->branch?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created By</span><span class='text-slate-800'>{{ $sale->createdBy?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated By</span><span class='text-slate-800'>{{ $sale->updatedBy?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created At</span><span class='text-slate-800'>{{ $sale->created_at?->format('d M Y H:i') ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated At</span><span class='text-slate-800'>{{ $sale->updated_at?->format('d M Y H:i') ?? '-' }}</span></div>
 </div>
 
 <div class="mt-6 bg-white shadow rounded-lg p-6 max-w-2xl">
@@ -61,7 +61,7 @@
         </a>
     </div>
     @empty
-    <p class="text-sm text-slate-400">No payments recorded yet — this sale was fully paid at POS.</p>
+    <p class="text-sm text-slate-400">No payments recorded yet, this sale was fully paid at POS.</p>
     @endforelse
 </div>
 

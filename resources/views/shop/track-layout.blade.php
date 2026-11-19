@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="{{ $brand['primary'] }}">
-<title>@yield('title', 'Track your order') · {{ $brand['name'] }}</title>
+<title>@yield('title', 'Track your order') | {{ $brand['name'] }}</title>
 @if ($brand['favicon'])<link rel="icon" href="{{ $brand['favicon'] }}">@endif
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ urlencode($brand['font']) }}:wght@400;600;700;800;900&display=swap">

@@ -17,7 +17,7 @@
 <form method="GET" class="filter-toolbar__filters">
     <div class="filter-search">
         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
-        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search expenses…"
+        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search expenses..."
                class="rounded-md border-slate-300 text-sm pl-8 pr-3 py-1.5 w-56">
     </div>
     <button type="submit" class="filter-btn" title="Search" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
@@ -91,7 +91,7 @@
 <thead class="bg-slate-50"><tr><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Title</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Amount</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Payment Method</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Expense Date</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Category</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Branch</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Createdby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updatedby</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Created At</th><th class='px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase'>Updated At</th><th class="px-4 py-2"></th></tr></thead>
 <tbody class="divide-y divide-slate-100">
 @forelse($items as $row)
-<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->title }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ number_format((float) $row->amount, 0) }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->payment_method ?: '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expense_date?->format('d M Y') }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
+<tr><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->title }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ number_format((float) $row->amount, 0) }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->payment_method ?: '-' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->expense_date?->format('d M Y') }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '-' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("expenses-modal", "expenses-form", @json($row))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("expenses-modal", "expenses-form", "{{ route('expenses.update', $row->id) }}", @json($row))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
 <form method="POST" action="{{ route('expenses.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
@@ -167,7 +167,7 @@
   <select name="category" id="expenseCategory" class="w-full rounded-md border-slate-300 shadow-sm" required>
     <option value="">-- Select Category --</option>
     @foreach($expenseCategories as $category)<option value="{{ $category }}">{{ $category }}</option>@endforeach
-    <option value="{{ \App\Models\Expense::NEW_CATEGORY }}">+ Add a new category…</option>
+    <option value="{{ \App\Models\Expense::NEW_CATEGORY }}">+ Add a new category...</option>
   </select>
   <input type="text" name="category_new" id="expenseCategoryNew" maxlength="150" disabled
          class="mt-2 hidden w-full rounded-md border-slate-300 shadow-sm" placeholder="New category name, e.g. Generator fuel">
@@ -194,10 +194,10 @@
     <form id="stock-issue-panel" data-expense-panel="stock-issue-panel" class="hidden space-y-4" method="POST" action="{{ route('stock-issues.store') }}">
       @csrf
       <p class="text-sm text-slate-500">Record stock given away or consumed without creating a cash expense or sale.</p>
-      <label class="block text-sm font-medium text-slate-700">Product and branch<select name="stock_selection" required class="mt-1 w-full rounded-md border-slate-300" onchange="document.getElementById('issue-product-id').value=this.selectedOptions[0].dataset.product;document.getElementById('issue-branch-id').value=this.selectedOptions[0].dataset.branch;document.getElementById('issue-available').textContent=this.selectedOptions[0].dataset.available || '—';"><option value="">-- Select stock --</option>@foreach($availableStock as $stock)<option value="{{ $stock->id }}" data-product="{{ $stock->product_id }}" data-branch="{{ $stock->branch_id }}" data-available="{{ $stock->quantity }}">{{ $stock->product?->name }} — {{ $stock->branch?->name }} ({{ $stock->quantity }} available)</option>@endforeach</select></label>
+      <label class="block text-sm font-medium text-slate-700">Product and branch<select name="stock_selection" required class="mt-1 w-full rounded-md border-slate-300" onchange="document.getElementById('issue-product-id').value=this.selectedOptions[0].dataset.product;document.getElementById('issue-branch-id').value=this.selectedOptions[0].dataset.branch;document.getElementById('issue-available').textContent=this.selectedOptions[0].dataset.available || '-';"><option value="">-- Select stock --</option>@foreach($availableStock as $stock)<option value="{{ $stock->id }}" data-product="{{ $stock->product_id }}" data-branch="{{ $stock->branch_id }}" data-available="{{ $stock->quantity }}">{{ $stock->product?->name }}, {{ $stock->branch?->name }} ({{ $stock->quantity }} available)</option>@endforeach</select></label>
       <input id="issue-product-id" type="hidden" name="product_id"><input id="issue-branch-id" type="hidden" name="branch_id">
       <label class="block text-sm font-medium text-slate-700">Issue type<select name="type" required class="mt-1 w-full rounded-md border-slate-300"><option value="staff_consumption">Staff consumption</option><option value="gratis">Guest / gratis</option></select></label>
-      <p class="text-sm text-slate-500">Available: <span id="issue-available">—</span></p>
+      <p class="text-sm text-slate-500">Available: <span id="issue-available">-</span></p>
       <label class="block text-sm font-medium text-slate-700">Quantity<input type="number" name="quantity" min="1" step="1" required class="mt-1 w-full rounded-md border-slate-300"></label>
       <label class="block text-sm font-medium text-slate-700">Staff / guest name and notes<textarea name="reason" rows="2" maxlength="1000" class="mt-1 w-full rounded-md border-slate-300"></textarea></label>
       <div class="pt-2"><button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white">Record stock issue</button></div>

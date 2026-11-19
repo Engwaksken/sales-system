@@ -41,7 +41,7 @@
         </p>
     </div>
 
-    <button class="auth-submit" type="submit" data-loading-text="Updating password…">
+    <button class="auth-submit" type="submit" data-loading-text="Updating password...">
         <span class="auth-spinner" aria-hidden="true"></span>
         <span data-label>Update password</span>
     </button>

@@ -169,7 +169,7 @@
             </td>
             <td>
                 <div class="label">Branch</div>
-                <strong>{{ $sale->branch->name ?? '—' }}</strong>
+                <strong>{{ $sale->branch->name ?? '-' }}</strong>
             </td>
         </tr>
         <tr>
@@ -198,7 +198,7 @@
         <tbody>
             @forelse ($sale->sale_items as $item)
                 <tr>
-                    <td>{{ $item->product->name ?? '—' }}</td>
+                    <td>{{ $item->product->name ?? '-' }}</td>
                     <td class="right">{{ $item->quantity }}</td>
                     <td class="right">{{ number_format((float)$item->price, 2) }}</td>
                     <td class="right">{{ number_format((float)$item->vat_amount, 2) }}</td>
@@ -227,7 +227,7 @@
         </tr>
         @foreach($sale->payments->where('status', 'successful')->sortBy('id') as $payment)
             <tr>
-                <td>Paid · {{ $payment->method }} ({{ $payment->receipt_no }})</td>
+                <td>Paid | {{ $payment->method }} ({{ $payment->receipt_no }})</td>
                 <td class="right">{{ $branding['currency'] }} {{ number_format((float)$payment->amount, 2) }}</td>
             </tr>
         @endforeach

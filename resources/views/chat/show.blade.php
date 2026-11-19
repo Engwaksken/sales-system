@@ -10,7 +10,7 @@
             {{ trim($conversation->first_name.' '.$conversation->last_name) }}
         </h1>
         <div class="mt-1 text-sm text-slate-500">
-            {{ $conversation->email }} · {{ $conversation->phone }}
+            {{ $conversation->email }} | {{ $conversation->phone }}
         </div>
     </div>
 

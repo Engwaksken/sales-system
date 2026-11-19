@@ -208,9 +208,9 @@ class AdminController extends StaffController
             'branches' => $q('branches')?->orderBy('name')->get(['id', 'name'])->map(fn ($r) => [$r->id, $r->name ?: 'Branch #'.$r->id]),
             'users' => $q('users')?->where('role', '!=', 'customer')->orderBy('name')->get(['id', 'name', 'email'])->map(fn ($r) => [$r->id, "{$r->name} ({$r->email})"]),
             'customers' => $q('customers')?->orderBy('name')->limit(500)->get(['id', 'name'])->map(fn ($r) => [$r->id, $r->name]),
-            'orders' => $q('orders')?->orderByDesc('id')->limit(300)->get()->map(fn ($r) => [$r->id, trim(($r->order_number ?? $r->order_id ?? '#'.$r->id).' · '.($r->customer_name ?? ''), ' ·')]),
-            'journals' => $q('accounting_journals')?->orderByDesc('journal_date')->limit(300)->get(['id', 'journal_no', 'description'])->map(fn ($r) => [$r->id, "{$r->journal_no} · ".Str::limit((string) $r->description, 40)]),
-            'accounts' => $q('chart_of_accounts')?->orderBy('account_code')->get(['account_code', 'account_name'])->map(fn ($r) => [$r->account_code, "{$r->account_code} · {$r->account_name}"]),
+            'orders' => $q('orders')?->orderByDesc('id')->limit(300)->get()->map(fn ($r) => [$r->id, trim(($r->order_number ?? $r->order_id ?? '#'.$r->id).' | '.($r->customer_name ?? ''), ' |')]),
+            'journals' => $q('accounting_journals')?->orderByDesc('journal_date')->limit(300)->get(['id', 'journal_no', 'description'])->map(fn ($r) => [$r->id, "{$r->journal_no} | ".Str::limit((string) $r->description, 40)]),
+            'accounts' => $q('chart_of_accounts')?->orderBy('account_code')->get(['account_code', 'account_name'])->map(fn ($r) => [$r->account_code, "{$r->account_code} | {$r->account_name}"]),
             'efris-config' => $q('efris_config')?->get(['id', 'taxpayer_name', 'tin'])->map(fn ($r) => [$r->id, "{$r->taxpayer_name} ({$r->tin})"]),
             'nav-pages' => $q('nav_pages')?->orderBy('label')->get(['id', 'label'])->map(fn ($r) => [$r->id, $r->label]),
             'permission-keys' => $q('permissions')?->orderBy('label')->get(['permission_key', 'label'])->map(fn ($r) => [$r->permission_key, "{$r->label} ({$r->permission_key})"]),
@@ -231,7 +231,7 @@ class AdminController extends StaffController
         $subtitle = collect($r['subtitle'] ?: array_slice(array_diff($columns, ['id', ...self::HIDDEN]), 1, 3))
             ->map(fn ($c) => $this->display($attrs[$c] ?? null, $c))
             ->filter(fn ($v) => $v !== '')
-            ->implode(' · ');
+            ->implode(' | ');
 
         return ['id' => $m->getKey(), 'title' => (string) $title, 'subtitle' => $subtitle, 'active' => array_key_exists('is_active', $attrs) ? (bool) $attrs['is_active'] : null];
     }

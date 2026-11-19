@@ -130,7 +130,7 @@ class ExpensesController extends Controller
     }
 
     /**
-     * A typed category is saved to the list; a title left blank becomes "Category – date".
+     * A typed category is saved to the list; a title left blank becomes "Category - date".
      * On edits, only fields that were sent change.
      */
     private function prepare(array $data, ?Expense $existing = null): array

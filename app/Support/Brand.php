@@ -91,7 +91,7 @@ final class Brand
         return (1.05 / ($luminance + 0.05)) < 4.5 ? '#0f172a' : '#ffffff';
     }
 
-    /** The colour blended onto white — a tint that email clients render without color-mix(). */
+    /** The colour blended onto white, a tint that email clients render without color-mix(). */
     private static function mix(string $hex, float $amount): string
     {
         $out = '#';

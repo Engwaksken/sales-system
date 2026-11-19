@@ -20,7 +20,7 @@ $isMoney = false;
 @include('partials.branch-supplier-stat-cards')
 <div class="filter-toolbar">
 @include('partials.business-filter-bar', [
-    'searchPlaceholder' => 'Search products…',
+    'searchPlaceholder' => 'Search products...',
     'clearRoute' => route('products.index'),
     'inToolbar' => true,
 ])
@@ -91,7 +91,7 @@ $isMoney = false;
             <i class="fa-solid fa-image"></i>
         </div>
     @endif
-</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category?->category_name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->is_active ? 'Yes' : 'No' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '—' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '—' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
+</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->category?->category_name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->branch?->name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->is_active ? 'Yes' : 'No' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->createdBy?->name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-700'>{{ $row->updatedBy?->name ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->created_at?->format('d M Y H:i') ?? '-' }}</td><td class='px-4 py-2 text-sm text-slate-500'>{{ $row->updated_at?->format('d M Y H:i') ?? '-' }}</td><td class="px-4 py-2 text-right text-sm space-x-3 whitespace-nowrap">
 <button type="button" title="View" onclick='openViewModal("products-modal", "products-form", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id'), 'image_preview_url' => $row->image_preview_url]))' class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-eye"></i></button>
 <button type="button" title="Edit" onclick='openEditModal("products-modal", "products-form", "{{ route('products.update', $row->id) }}", @json($row->toArray() + ['branch_ids' => $row->product_branches->pluck('branch_id'), 'image_preview_url' => $row->image_preview_url]))' class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
 <form method="POST" action="{{ route('products.destroy', $row->id) }}" class="inline" data-confirm="Delete this record?">
@@ -143,7 +143,7 @@ $isMoney = false;
   <div id="product-barcode-camera-wrap" class="mt-3 hidden">
     <video id="product-barcode-video" class="max-h-64 w-full rounded-lg bg-black" muted playsinline></video>
     <div class="mt-2 flex items-center gap-3">
-      <p id="product-barcode-camera-status" class="text-xs text-slate-500" role="status" aria-live="polite">Starting camera…</p>
+      <p id="product-barcode-camera-status" class="text-xs text-slate-500" role="status" aria-live="polite">Starting camera...</p>
       <button type="button" id="stop-product-barcode-camera" class="ml-auto text-xs text-red-600 hover:text-red-800">Stop camera</button>
     </div>
   </div>
@@ -276,7 +276,7 @@ $isMoney = false;
         }
         try {
             cameraWrap.classList.remove('hidden');
-            cameraStatus.textContent = 'Starting camera…';
+            cameraStatus.textContent = 'Starting camera...';
             cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
             video.srcObject = cameraStream;
             await video.play();

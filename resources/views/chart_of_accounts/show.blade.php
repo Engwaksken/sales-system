@@ -11,10 +11,10 @@
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Is Active</span><span class='text-slate-800'>{{ $chart_of_account->is_active ? 'Yes' : 'No' }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Parent Code</span><span class='text-slate-800'>{{ $chart_of_account->parent_code }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Description</span><span class='text-slate-800'>{{ $chart_of_account->description }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created By</span><span class='text-slate-800'>{{ $chart_of_account->createdBy?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated By</span><span class='text-slate-800'>{{ $chart_of_account->updatedBy?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created At</span><span class='text-slate-800'>{{ $chart_of_account->created_at?->format('d M Y H:i') ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated At</span><span class='text-slate-800'>{{ $chart_of_account->updated_at?->format('d M Y H:i') ?? '—' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created By</span><span class='text-slate-800'>{{ $chart_of_account->createdBy?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated By</span><span class='text-slate-800'>{{ $chart_of_account->updatedBy?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created At</span><span class='text-slate-800'>{{ $chart_of_account->created_at?->format('d M Y H:i') ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated At</span><span class='text-slate-800'>{{ $chart_of_account->updated_at?->format('d M Y H:i') ?? '-' }}</span></div>
 </div>
 <a href="{{ route('chart_of_accounts.index') }}" class="inline-block mt-4 text-sm text-slate-500">&larr; Back to list</a>
 @endsection

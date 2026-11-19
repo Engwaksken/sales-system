@@ -210,11 +210,11 @@
         <tr>
             <td>
                 <div class="label">Invoice Ref.</div>
-                <strong>{{ $sale->invoice_no ?: '—' }}</strong>
+                <strong>{{ $sale->invoice_no ?: '-' }}</strong>
             </td>
             <td>
                 <div class="label">Dispatched From</div>
-                <strong>{{ $sale->branch->name ?? '—' }}</strong>
+                <strong>{{ $sale->branch->name ?? '-' }}</strong>
             </td>
         </tr>
         @if(!empty($recipient['order_number']))
@@ -242,8 +242,8 @@
             @forelse ($sale->sale_items as $item)
                 <tr>
                     <td>{{ $loop->iteration }}</td>
-                    <td>{{ $item->product->name ?? '—' }}</td>
-                    <td>{{ $item->product->sku ?? '—' }}</td>
+                    <td>{{ $item->product->name ?? '-' }}</td>
+                    <td>{{ $item->product->sku ?? '-' }}</td>
                     <td class="right">{{ $item->quantity }}</td>
                     <td class="center"><span class="check-box"></span></td>
                 </tr>

@@ -190,7 +190,7 @@ class OrderTrackingTest extends TestCase
             ->assertSee('main@acme.test');
 
         $this->get(route('shop.index'))->assertOk()
-            ->assertSee('<title>Shop · Acme Hardware · Main Branch</title>', false)
+            ->assertSee('<title>Shop | Acme Hardware | Main Branch</title>', false)
             ->assertSee('uploads/settings/logo-acme.png', false)
             ->assertSee('--shop-primary:#7c3aed', false)
             ->assertSee('Welcome to')

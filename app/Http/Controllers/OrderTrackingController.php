@@ -114,7 +114,7 @@ class OrderTrackingController extends Controller
     }
 
     /**
-     * When each step was reached, read from the "Stage changed … to X" order log
+     * When each step was reached, read from the "Stage changed ... to X" order log
      * entries written by the web admin and the staff app.
      *
      * @return array<string, \Illuminate\Support\Carbon>
@@ -137,7 +137,7 @@ class OrderTrackingController extends Controller
         return array_filter($times);
     }
 
-    /** Compare phone numbers by their last nine digits so 07…, 2567… and +2567… all match. */
+    /** Compare phone numbers by their last nine digits so 07..., 2567... and +2567... all match. */
     private function phonesMatch(?string $stored, string $given): bool
     {
         $a = substr(preg_replace('/\D/', '', (string) $stored), -9);

@@ -197,7 +197,7 @@
                             </div>
                             <div class="upload-card-body">
                                 <h3>Favicon</h3>
-                                <p>PNG, JPG, WebP or ICO. A square 64×64 or 128×128 image works best.</p>
+                                <p>PNG, JPG, WebP or ICO. A square 64x64 or 128x128 image works best.</p>
                                 <label class="file-picker">
                                     <i class="fas fa-cloud-arrow-up"></i>
                                     <span>Choose Favicon</span>
@@ -307,7 +307,7 @@
                                        value="{{ old('font_size', $settings['font_size']) }}" required>
                                 <span class="field-suffix">px</span>
                             </div>
-                            <small>Recommended: 14–16 px.</small>
+                            <small>Recommended: 14-16 px.</small>
                         </div>
                     </div>
 

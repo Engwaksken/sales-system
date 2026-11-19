@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $headline }} · {{ $brandName }}</title>
+    <title>{{ $headline }} | {{ $brandName }}</title>
 </head>
 <body style="margin:0;background:#f3f6fa;color:#172033;font-family:Arial,Helvetica,sans-serif">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 12px;background:#f3f6fa">

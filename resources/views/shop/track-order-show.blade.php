@@ -15,7 +15,7 @@
     <div class="min-w-0">
       <div class="text-xs font-bold uppercase opacity-75">Order reference</div>
       <h1 class="text-2xl font-extrabold break-all">{{ $order->order_number ?: $order->order_id }}</h1>
-      <p class="text-sm opacity-80 mt-1">Placed {{ $order->created_at?->format('d M Y, H:i') }}@if($order->branch) · {{ $order->branch->name }}@endif</p>
+      <p class="text-sm opacity-80 mt-1">Placed {{ $order->created_at?->format('d M Y, H:i') }}@if($order->branch) | {{ $order->branch->name }}@endif</p>
     </div>
     <div class="sm:text-right">
       <div class="text-xs font-bold uppercase opacity-75">Current status</div>
@@ -42,7 +42,7 @@
             </span>
             <span class="{{ $step['state'] === 'upcoming' ? 'text-slate-400' : 'font-bold text-slate-800' }}">
               {{ $step['label'] }}
-              @if ($step['state'] === 'current')<span class="ml-1 text-xs font-semibold text-primary">— current</span>@endif
+              @if ($step['state'] === 'current')<span class="ml-1 text-xs font-semibold text-primary">- current</span>@endif
               @if ($step['at'])<span class="block text-xs font-normal text-slate-400">{{ $step['at']->format('d M Y, H:i') }}</span>@endif
             </span>
           </li>
@@ -68,7 +68,7 @@
     <h2 class="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold">Items</h2>
     @foreach ($order->order_items as $item)
       <div class="flex justify-between gap-4 border-b border-slate-100 px-4 py-3 text-sm">
-        <span>{{ $item->product_name }} <span class="text-slate-400">× {{ $item->quantity }}</span></span>
+        <span>{{ $item->product_name }} <span class="text-slate-400">x {{ $item->quantity }}</span></span>
         <span class="whitespace-nowrap">UGX {{ number_format((float) $item->subtotal, 0) }}</span>
       </div>
     @endforeach
@@ -95,7 +95,7 @@
     <button type="button" onclick="location.reload()" class="btn-primary rounded-lg px-4 py-2.5 text-sm font-bold"><i class="fas fa-rotate mr-1"></i> Refresh status</button>
     <button type="button" id="copyLinkBtn" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700"><i class="fas fa-link mr-1"></i> Copy tracking link</button>
   </div>
-  <p class="text-xs text-slate-400">Bookmark this page or keep the link — anyone with it can see this order's status.</p>
+  <p class="text-xs text-slate-400">Bookmark this page or keep the link, anyone with it can see this order's status.</p>
 </div>
 
 <script>

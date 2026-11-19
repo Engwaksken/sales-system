@@ -43,5 +43,5 @@ Track your order
 @include('emails.partials.order-help', ['branch' => $branch])
 
 Thank you for shopping with us,<br>
-**{{ $branch->name }}** · {{ $brand['name'] }}
+**{{ $branch->name }}** | {{ $brand['name'] }}
 @endcomponent

@@ -20,7 +20,7 @@ class OrderStageUpdatedMail extends Mailable
 
     public function build()
     {
-        return $this->subject("Order {$this->order->order_number} — {$this->stageLabel}")
+        return $this->subject("Order {$this->order->order_number}: {$this->stageLabel}")
             ->markdown('emails.order-stage-updated');
     }
 }

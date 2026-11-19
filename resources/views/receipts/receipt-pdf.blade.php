@@ -151,7 +151,7 @@
 
         <tr>
             <td class="label">Invoice / Reference</td>
-            <td class="value">{{ $reference ?: '—' }}</td>
+            <td class="value">{{ $reference ?: '-' }}</td>
         </tr>
 
         <tr>

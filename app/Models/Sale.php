@@ -40,7 +40,7 @@ class Sale extends Model
         'balance_amount' => 'decimal:2',
     ];
 
-    /** The delivery note shares the invoice's sequence: INV-20261027-001 → DN-20261027-001. */
+    /** The delivery note shares the invoice's sequence: INV-20261027-001 -> DN-20261027-001. */
     public function getDeliveryNoteNoAttribute(): string
     {
         $invoiceNo = trim((string) $this->invoice_no);

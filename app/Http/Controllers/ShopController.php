@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Public storefront. Ported from shop.php — same filter set (branch, category,
+ * Public storefront. Ported from shop.php, same filter set (branch, category,
  * price range, search, sort), same "fall back to newest in-stock products if no
  * slides configured" behaviour for the hero banner.
  */

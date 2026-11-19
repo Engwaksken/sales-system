@@ -15,7 +15,7 @@ use RuntimeException;
  * Note on the original codebase: iotec_collect.php implemented a *different*,
  * username/password-based auth flow against a `payment_settings` table
  * (base_url + '/auth/token' with iotec_username/iotec_password). That appears to be
- * an older/abandoned code path — check_payment_status.php (the most recently modified
+ * an older/abandoned code path, check_payment_status.php (the most recently modified
  * file, and the one referenced by the payment_gateways-driven admin UI) uses the
  * client_id/client_secret flow below, so that's what this port standardizes on.
  */

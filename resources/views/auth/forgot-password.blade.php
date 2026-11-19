@@ -22,7 +22,7 @@
         @enderror
     </div>
 
-    <button class="auth-submit" type="submit" data-loading-text="Sending code…">
+    <button class="auth-submit" type="submit" data-loading-text="Sending code...">
         <span class="auth-spinner" aria-hidden="true"></span>
         <span data-label>Send reset code</span>
     </button>

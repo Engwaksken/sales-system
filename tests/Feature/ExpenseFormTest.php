@@ -54,7 +54,7 @@ class ExpenseFormTest extends TestCase
             'expense_date' => '2026-11-15', 'amount' => 50000, 'payee' => 'Shell Bugolobi',
             'payment_method' => 'Mobile Money', 'category' => 'Fuel',
         ])->assertCreated()
-            ->assertJsonPath('data.title', 'Fuel – Shell Bugolobi')
+            ->assertJsonPath('data.title', 'Fuel - Shell Bugolobi')
             ->assertJsonPath('data.payment_method', 'Mobile Money');
     }
 
@@ -87,7 +87,7 @@ class ExpenseFormTest extends TestCase
         }
 
         $this->assertSame(1, ExpenseCategory::whereRaw('LOWER(name) = ?', ['generator fuel'])->count());
-        $this->assertSame('Generator fuel – 15 Nov 2026', Expense::latest('id')->value('title'));
+        $this->assertSame('Generator fuel - 15 Nov 2026', Expense::latest('id')->value('title'));
         $this->assertContains('Generator fuel', $this->getJson('/api/mobile/staff/lookups')->json('expense_category_names'));
     }
 
@@ -110,7 +110,7 @@ class ExpenseFormTest extends TestCase
 
         $expense = Expense::sole();
         $this->assertSame('Water for staff', $expense->category);
-        $this->assertSame('Water for staff – 15 Nov 2026', $expense->title);
+        $this->assertSame('Water for staff - 15 Nov 2026', $expense->title);
         $this->assertSame('Cash', $expense->payment_method);
         $this->assertTrue(ExpenseCategory::where('name', 'Water for staff')->exists());
 

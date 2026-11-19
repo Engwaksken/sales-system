@@ -6,16 +6,16 @@
 @php
   $brand = \App\Support\Brand::get();
   $visibleCategories = $categories->filter(fn ($c) => $c->cnt > 0);
-  $sortOptions = ['name_asc' => 'Name (A–Z)', 'newest' => 'Newest first', 'price_asc' => 'Price: low to high', 'price_desc' => 'Price: high to low'];
+  $sortOptions = ['name_asc' => 'Name (A-Z)', 'newest' => 'Newest first', 'price_asc' => 'Price: low to high', 'price_desc' => 'Price: high to low'];
   $filterQuery = fn (array $changes = []) => array_filter(array_merge([
       'branch_id' => $branch->id, 'cat' => $catFilter ?: null, 'q' => $search !== '' ? $search : null,
       'sort' => $sort !== 'name_asc' ? $sort : null,
   ], $changes), fn ($v) => $v !== null && $v !== '');
 @endphp
-<title>Shop · {{ $brand['name'] }}{{ $branch->name !== $brand['name'] ? ' · '.$branch->name : '' }}</title>
-<meta name="description" content="Shop online at {{ $brand['name'] }} — {{ $branch->name }}{{ $branch->location ? ', '.$branch->location : '' }}.">
+<title>Shop | {{ $brand['name'] }}{{ $branch->name !== $brand['name'] ? ' | '.$branch->name : '' }}</title>
+<meta name="description" content="Shop online at {{ $brand['name'] }}, {{ $branch->name }}{{ $branch->location ? ', '.$branch->location : '' }}.">
 <meta name="theme-color" content="{{ $brand['primary'] }}">
-<meta property="og:title" content="{{ $brand['name'] }} — Shop online">
+<meta property="og:title" content="{{ $brand['name'] }} | Shop online">
 @if ($brand['logo'])<meta property="og:image" content="{{ $brand['logo'] }}">@endif
 @if ($brand['favicon'])<link rel="icon" href="{{ $brand['favicon'] }}">@endif
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -98,7 +98,7 @@ body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-
       <label for="shopSearch" class="sr-only">Search products</label>
       <div class="relative">
         <i class="fas fa-magnifying-glass pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
-        <input id="shopSearch" type="search" name="q" value="{{ $search }}" placeholder="Search products…" enterkeyhint="search"
+        <input id="shopSearch" type="search" name="q" value="{{ $search }}" placeholder="Search products..." enterkeyhint="search"
                class="shop-search w-full rounded-full border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm">
       </div>
       <input type="hidden" name="branch_id" value="{{ $branch->id }}">
@@ -124,7 +124,7 @@ body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-
       <p class="text-xs font-bold uppercase tracking-wider opacity-75">Welcome to</p>
       <h1 class="text-[clamp(1.4rem,3.2vw,2.4rem)] font-black leading-tight">{{ $brand['name'] }}</h1>
       <p class="mt-1 text-sm opacity-85">
-        <i class="fas fa-location-dot mr-1"></i>Shopping at {{ $branch->name }}{{ $branch->location ? ' · '.$branch->location : '' }}
+        <i class="fas fa-location-dot mr-1"></i>Shopping at {{ $branch->name }}{{ $branch->location ? ' | '.$branch->location : '' }}
       </p>
     </div>
     <div class="flex flex-wrap gap-2 text-sm">
@@ -269,7 +269,7 @@ body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <p class="text-sm text-slate-500">
         <strong class="text-slate-800">{{ $products->count() }}</strong> {{ \Illuminate\Support\Str::plural('product', $products->count()) }}
-        @if ($search !== '') for “<strong class="text-slate-800">{{ $search }}</strong>” <a href="?{{ http_build_query($filterQuery(['q' => null])) }}" class="ml-1 text-brand font-semibold">Clear</a>@endif
+        @if ($search !== '') for "<strong class="text-slate-800">{{ $search }}</strong>" <a href="?{{ http_build_query($filterQuery(['q' => null])) }}" class="ml-1 text-brand font-semibold">Clear</a>@endif
       </p>
       <form method="GET" class="flex items-center gap-2">
         @foreach ($filterQuery(['sort' => null]) as $key => $value)
@@ -1050,7 +1050,7 @@ async function csrfPost(url, makeBody, extraHeaders = {}){
   return res;
 }
 
-// Pages restored from the back/forward cache carry an old token — refresh it.
+// Pages restored from the back/forward cache carry an old token, refresh it.
 window.addEventListener('pageshow', (e) => { if (e.persisted) refreshCsrfToken().catch(() => {}); });
 
 document.getElementById('coForm').addEventListener('submit', placeOrder);
@@ -1102,7 +1102,7 @@ async function placeOrder(event){
     const res = await csrfPost('{{ route('checkout.store') }}', buildCheckoutBody);
 
     if (res.status === 419) {
-      throw new Error('Your session expired. Please refresh the page and place your order again — your cart is saved.');
+      throw new Error('Your session expired. Please refresh the page and place your order again. Your cart is saved.');
     }
 
     const contentType = res.headers.get('content-type') || '';

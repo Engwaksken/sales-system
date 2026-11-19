@@ -12,10 +12,10 @@
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Bg Color</span><span class='text-slate-800'>{{ $slide->bg_color }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Sort Order</span><span class='text-slate-800'>{{ $slide->sort_order }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Is Active</span><span class='text-slate-800'>{{ $slide->is_active ? 'Yes' : 'No' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created By</span><span class='text-slate-800'>{{ $slide->createdBy?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated By</span><span class='text-slate-800'>{{ $slide->updatedBy?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created At</span><span class='text-slate-800'>{{ $slide->created_at?->format('d M Y H:i') ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated At</span><span class='text-slate-800'>{{ $slide->updated_at?->format('d M Y H:i') ?? '—' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created By</span><span class='text-slate-800'>{{ $slide->createdBy?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated By</span><span class='text-slate-800'>{{ $slide->updatedBy?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created At</span><span class='text-slate-800'>{{ $slide->created_at?->format('d M Y H:i') ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated At</span><span class='text-slate-800'>{{ $slide->updated_at?->format('d M Y H:i') ?? '-' }}</span></div>
 </div>
 <a href="{{ route('slides.index') }}" class="inline-block mt-4 text-sm text-slate-500">&larr; Back to list</a>
 @endsection

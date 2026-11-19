@@ -104,7 +104,7 @@ Route::prefix('my-notifications')->name('my-notifications.')->middleware(['auth'
     Route::post('/{notification}/read', [UserNotificationController::class, 'read'])->name('read');
 });
 
-// Public mobile-money endpoints — called by the storefront/checkout (collect, status)
+// Public mobile-money endpoints, called by the storefront/checkout (collect, status)
 // and by the IOTEC gateway itself (webhook). None require a logged-in user, matching
 // the original iotec_collect.php / check_payment_status.php / iotec_webhook.php.
 Route::post('/iotec/collect', [IotecPaymentController::class, 'collect'])->name('iotec.collect');
@@ -116,9 +116,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/{type}/export/{format}', [ReportController::class, 'export'])->name('reports.export')->whereIn('format', ['csv', 'pdf', 'print']);
     Route::get('/reports/{type?}', [ReportController::class, 'show'])->name('reports.show');
 
-    // Exports (CSV/PDF) — must be registered before the resource routes below so
+    // Exports (CSV/PDF), must be registered before the resource routes below so
     // 'export' isn't swallowed by Route::resource's {product} etc. wildcard.
-    // PDF exports have no generic equivalent — kept as specials.
+    // PDF exports have no generic equivalent, kept as specials.
     Route::get('/stock/report/pdf', [StockController::class, 'reportPdf'])->name('stock.report.pdf')->middleware('permission:manage_stock');
     Route::get('/stock-issues', [StockIssueController::class, 'index'])->name('stock-issues.index')->middleware('permission:manage_stock');
     Route::post('/stock-issues', [StockIssueController::class, 'store'])->name('stock-issues.store')->middleware('permission:manage_stock');

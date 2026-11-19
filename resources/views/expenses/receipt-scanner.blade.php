@@ -85,19 +85,19 @@
             <div class="ers-summary-grid">
                 <div>
                     <span>Merchant / Payee</span>
-                    <strong data-ers-summary-payee>—</strong>
+                    <strong data-ers-summary-payee>-</strong>
                 </div>
                 <div>
                     <span>Date</span>
-                    <strong data-ers-summary-date>—</strong>
+                    <strong data-ers-summary-date>-</strong>
                 </div>
                 <div>
                     <span>Total Amount</span>
-                    <strong data-ers-summary-amount>—</strong>
+                    <strong data-ers-summary-amount>-</strong>
                 </div>
                 <div>
                     <span>Reference</span>
-                    <strong data-ers-summary-reference>—</strong>
+                    <strong data-ers-summary-reference>-</strong>
                 </div>
             </div>
 

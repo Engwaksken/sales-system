@@ -152,7 +152,7 @@ class IotecPaymentController extends Controller
 
     /**
      * Poll IOTEC for the current status of an order's payment.
-     * Equivalent of the original check_payment_status.php (IOTEC branch only —
+     * Equivalent of the original check_payment_status.php (IOTEC branch only -
      * the original also stubbed a 'yopayments' gateway that was never implemented).
      */
     public function status(Request $request)

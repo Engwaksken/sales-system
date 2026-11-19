@@ -100,7 +100,7 @@
         </label>
     </div>
 
-    <button class="auth-submit" type="submit" data-loading-text="Creating account…">
+    <button class="auth-submit" type="submit" data-loading-text="Creating account...">
         <span class="auth-spinner" aria-hidden="true"></span>
         <span data-label>Create account</span>
     </button>

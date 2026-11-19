@@ -53,7 +53,7 @@
     const a = document.createElement('a');
     a.href = o.url;
     a.className = 'text-sm font-bold text-primary whitespace-nowrap';
-    a.textContent = 'View status →';
+    a.textContent = 'View status';
     li.append(left, a);
     list.appendChild(li);
   });

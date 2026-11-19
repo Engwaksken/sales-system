@@ -14,17 +14,17 @@ use App\Models\Sale;
  * accounting_journals / journal_entries schema (and three reporting SQL views built
  * on top of them), but no code anywhere in the uploaded files actually *writes* to
  * those tables from a sale or expense. This service fills that gap with a standard,
- * reasonable double-entry convention — it is new logic, not a port of something that
+ * reasonable double-entry convention, it is new logic, not a port of something that
  * existed, and the account-code mapping below should be reviewed/adjusted for your
  * actual bookkeeping practice rather than trusted blindly.
  *
- * Sale posting (journal_type = SJ) — the whole invoice goes to receivables:
+ * Sale posting (journal_type = SJ), the whole invoice goes to receivables:
  *   Dr  Accounts Receivable (1100)              total_amount
  *   Dr  Discount Allowed (4900)                 discount        [if > 0]
  *   Cr  VAT Payable (2100)                      vat             [if > 0]
  *   Cr  Sales Revenue (4000)                    total_amount + discount - vat
  *
- * Payment posting (journal_type = CRJ) — one per payment/receipt, so part
+ * Payment posting (journal_type = CRJ), one per payment/receipt, so part
  * payments, split tenders and credit settled later all clear receivables:
  *   Dr  Cash (branch) / Mobile Money (1010)     amount
  *   Cr  Accounts Receivable (1100)              amount

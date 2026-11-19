@@ -157,7 +157,7 @@ class ExpenseController extends Controller
     private function validateExpense(Request $request): array
     {
         $data = $request->validate([
-            // Optional: a blank title becomes "Category – payee" or "Category – date".
+            // Optional: a blank title becomes "Category - payee" or "Category - date".
             'title' => ['nullable', 'string', 'max:255'],
             'expense_date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'min:0'],

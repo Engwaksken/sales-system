@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/** Upload → preview every row with its errors → confirm to save all rows at once. */
+/** Upload -> preview every row with its errors -> confirm to save all rows at once. */
 class ImportController extends Controller
 {
     public function template(string $module): StreamedResponse

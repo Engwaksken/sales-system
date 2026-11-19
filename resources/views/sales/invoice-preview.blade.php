@@ -40,7 +40,7 @@
             @endif
             <div>
                 <strong class="block text-slate-800">{{ $branding['site_name'] }}</strong>
-                <span class="text-xs text-slate-400">Invoice preview · {{ $sale->customer?->name ?? 'Walk-in Customer' }}</span>
+                <span class="text-xs text-slate-400">Invoice preview | {{ $sale->customer?->name ?? 'Walk-in Customer' }}</span>
             </div>
         </div>
         <iframe

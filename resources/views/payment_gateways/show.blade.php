@@ -24,10 +24,10 @@
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Supports Disbursement</span><span class='text-slate-800'>{{ $payment_gateway->supports_disbursement ? 'Yes' : 'No' }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Supports Mtn</span><span class='text-slate-800'>{{ $payment_gateway->supports_mtn ? 'Yes' : 'No' }}</span></div>
 <div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Supports Airtel</span><span class='text-slate-800'>{{ $payment_gateway->supports_airtel ? 'Yes' : 'No' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created By</span><span class='text-slate-800'>{{ $payment_gateway->createdBy?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated By</span><span class='text-slate-800'>{{ $payment_gateway->updatedBy?->name ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created At</span><span class='text-slate-800'>{{ $payment_gateway->created_at?->format('d M Y H:i') ?? '—' }}</span></div>
-<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated At</span><span class='text-slate-800'>{{ $payment_gateway->updated_at?->format('d M Y H:i') ?? '—' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created By</span><span class='text-slate-800'>{{ $payment_gateway->createdBy?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated By</span><span class='text-slate-800'>{{ $payment_gateway->updatedBy?->name ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Created At</span><span class='text-slate-800'>{{ $payment_gateway->created_at?->format('d M Y H:i') ?? '-' }}</span></div>
+<div class='py-2 border-b border-slate-100'><span class='text-xs uppercase text-slate-400 block'>Updated At</span><span class='text-slate-800'>{{ $payment_gateway->updated_at?->format('d M Y H:i') ?? '-' }}</span></div>
 </div>
 <a href="{{ route('payment_gateways.index') }}" class="inline-block mt-4 text-sm text-slate-500">&larr; Back to list</a>
 @endsection

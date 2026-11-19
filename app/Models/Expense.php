@@ -72,13 +72,13 @@ class Expense extends Model
         return ExpenseCategory::query()->create(['name' => mb_substr($name, 0, 150), 'status' => true])->name;
     }
 
-    /** A readable title when none is typed: "Fuel – Shell Bugolobi" or "Fuel – 15 Nov 2026". */
+    /** A readable title when none is typed: "Fuel - Shell Bugolobi" or "Fuel - 15 Nov 2026". */
     public static function defaultTitle(array $data): string
     {
         $category = trim((string) ($data['category'] ?? '')) ?: 'Expense';
         $who = trim((string) ($data['payee'] ?? $data['vendor'] ?? ''));
         if ($who !== '') {
-            return mb_substr($category.' – '.$who, 0, 255);
+            return mb_substr($category.' - '.$who, 0, 255);
         }
 
         $date = $data['expense_date'] ?? null;
@@ -88,7 +88,7 @@ class Expense extends Model
             $date = now()->format('d M Y');
         }
 
-        return $category.' – '.$date;
+        return $category.' - '.$date;
     }
 
     /**

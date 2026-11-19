@@ -38,7 +38,7 @@ class DashboardMarginTest extends TestCase
             'total_stock' => 10, 'quantity' => 6, 'cost_price' => 6000, 'selling_price' => 10000,
         ]);
 
-        // Two buckets at 10,000 less a 2,000 invoice discount → 18,000 net, 12,000 cost.
+        // Two buckets at 10,000 less a 2,000 invoice discount -> 18,000 net, 12,000 cost.
         $sale = Sale::create([
             'transaction_type' => 'sale', 'user_id' => $cashier->id, 'branch_id' => $branch->id,
             'invoice_no' => 'INV-T-1', 'total_amount' => 18000, 'discount' => 2000, 'vat' => 0,

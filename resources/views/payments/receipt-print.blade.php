@@ -60,7 +60,7 @@ body{width:{{ $paperWidth }};max-width:100%;margin:0 auto;font-family:Arial,"Dej
 
     <div class="section">
         <div class="row"><b>Receipt</b><span>{{ $payment->receipt_no }}</span></div>
-        <div class="row"><b>Invoice</b><span>{{ $payment->invoice_no ?: '—' }}</span></div>
+        <div class="row"><b>Invoice</b><span>{{ $payment->invoice_no ?: '-' }}</span></div>
         @if($sourceOrder)
             <div class="row"><b>Order</b><span>{{ $sourceOrder->order_number ?: $sourceOrder->order_id }}</span></div>
         @endif
