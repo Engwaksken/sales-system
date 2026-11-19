@@ -162,4 +162,34 @@ class WebProfileTest extends TestCase
 
         $this->assertDatabaseMissing('sessions', ['id' => 'other-browser']);
     }
+
+    public function test_profile_is_split_into_tabs_starting_on_details(): void
+    {
+        $html = $this->actingAs($this->user())->get(route('profile.edit'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('role="tablist"', $html);
+        foreach (['details', 'password', 'security'] as $tab) {
+            $this->assertStringContainsString('id="profile-tab-'.$tab.'"', $html);
+            $this->assertStringContainsString('id="profile-panel-'.$tab.'"', $html);
+        }
+        $this->assertStringContainsString('data-start="details"', $html);
+        $this->assertMatchesRegularExpression('/id="profile-panel-password"[^>]*class="hidden"/', $html);
+    }
+
+    public function test_password_errors_reopen_the_password_tab(): void
+    {
+        $user = $this->user();
+
+        $this->actingAs($user)->from(route('profile.edit'))->followingRedirects()->put(route('profile.password'), [
+            'current_password' => 'nope', 'password' => 'NewPass456', 'password_confirmation' => 'NewPass456',
+        ])->assertSee('data-start="password"', false)
+          ->assertSee('Your current password is not correct.');
+    }
+
+    public function test_a_changed_password_returns_to_the_password_tab(): void
+    {
+        $this->actingAs($this->user())->followingRedirects()->put(route('profile.password'), [
+            'current_password' => 'OldPass123', 'password' => 'NewPass456', 'password_confirmation' => 'NewPass456',
+        ])->assertSee('data-start="password"', false);
+    }
 }

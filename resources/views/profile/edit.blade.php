@@ -4,6 +4,8 @@
 @php
     $initials = collect(preg_split('/\s+/', trim($user->name)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->join('');
     $field = 'block w-full rounded-lg border-slate-300 text-sm';
+    $tabs = ['details' => ['Details', 'fa-user'], 'password' => ['Password', 'fa-lock'], 'security' => ['Sign-in & preferences', 'fa-shield-halved']];
+    $startTab = $errors->password->any() ? 'password' : ($errors->details->any() ? 'details' : (session('profile_tab') ?: 'details'));
 @endphp
 <div class="mx-auto max-w-2xl">
     <h1 class="text-xl font-semibold text-slate-800">My profile</h1>
@@ -29,8 +31,20 @@
         </div>
     </div>
 
+    <div class="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist" aria-label="Profile sections" data-profile-tabs data-start="{{ $startTab }}">
+        @foreach($tabs as $key => [$label, $icon])
+            <button type="button" role="tab" id="profile-tab-{{ $key }}" aria-controls="profile-panel-{{ $key }}"
+                    data-tabgroup="profile" data-tab="{{ $key }}"
+                    aria-selected="{{ $key === $startTab ? 'true' : 'false' }}" tabindex="{{ $key === $startTab ? '0' : '-1' }}"
+                    class="-mb-px inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium {{ $key === $startTab ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500' }}">
+                <i class="fas {{ $icon }}" aria-hidden="true"></i>{{ $label }}
+            </button>
+        @endforeach
+    </div>
+
     {{-- Details --}}
-    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mb-5 rounded-lg bg-white shadow">
+    <div role="tabpanel" id="profile-panel-details" aria-labelledby="profile-tab-details" data-tabpanel="profile" data-tab="details" class="{{ $startTab === 'details' ? '' : 'hidden' }}">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="rounded-lg bg-white shadow">
         @csrf
         @method('PUT')
         <div class="border-b px-5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Your details</div>
@@ -77,9 +91,11 @@
             <button class="rounded px-5 py-2 text-sm font-semibold text-white" style="background: var(--theme-primary)">Save details</button>
         </div>
     </form>
+    </div>
 
     {{-- Password --}}
-    <form method="POST" action="{{ route('profile.password') }}" class="mb-5 rounded-lg bg-white shadow">
+    <div role="tabpanel" id="profile-panel-password" aria-labelledby="profile-tab-password" data-tabpanel="profile" data-tab="password" class="{{ $startTab === 'password' ? '' : 'hidden' }}">
+    <form method="POST" action="{{ route('profile.password') }}" class="rounded-lg bg-white shadow">
         @csrf
         @method('PUT')
         <div class="border-b px-5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Change password</div>
@@ -104,8 +120,10 @@
             <button class="rounded px-5 py-2 text-sm font-semibold text-white" style="background: var(--theme-primary)">Change password</button>
         </div>
     </form>
+    </div>
 
     {{-- Related settings --}}
+    <div role="tabpanel" id="profile-panel-security" aria-labelledby="profile-tab-security" data-tabpanel="profile" data-tab="security" class="{{ $startTab === 'security' ? '' : 'hidden' }}">
     <div class="rounded-lg bg-white shadow">
         <div class="border-b px-5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Sign-in and preferences</div>
         <a href="{{ route('passkeys.index') }}" class="flex items-center gap-3 border-b px-5 py-4 hover:bg-slate-50">
@@ -135,10 +153,40 @@
             <i class="fas fa-chevron-right text-slate-300" aria-hidden="true"></i>
         </a>
     </div>
+    </div>
 </div>
 
 @push('scripts')
 <script>
+// Tabs: remembered in the address (#password, #security) so links and reloads
+// land on the same tab; arrow keys move between them.
+(function () {
+    var bar = document.querySelector('[data-profile-tabs]');
+    if (!bar) return;
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll('[role="tab"]'));
+    var keys = buttons.map(function (b) { return b.dataset.tab; });
+
+    function open(key, focus) {
+        switchTab('profile', key);
+        if (history.replaceState) history.replaceState(null, '', key === 'details' ? location.pathname + location.search : '#' + key);
+        if (focus) buttons[keys.indexOf(key)].focus();
+    }
+
+    var fromHash = location.hash.slice(1);
+    // Errors and "saved" messages from the server win over the address.
+    if (bar.dataset.start === 'details' && keys.indexOf(fromHash) > -1) open(fromHash, false);
+
+    buttons.forEach(function (button, index) {
+        button.addEventListener('click', function () { open(button.dataset.tab, false); });
+        button.addEventListener('keydown', function (event) {
+            var next = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: buttons.length - 1 }[event.key];
+            if (next === undefined) return;
+            event.preventDefault();
+            open(keys[(next + buttons.length) % buttons.length], true);
+        });
+    });
+})();
+
 // Picking a new photo makes "Remove photo" meaningless; untick it.
 document.getElementById('profile-photo')?.addEventListener('change', function () {
     var remove = document.querySelector('input[name="remove_photo"]');

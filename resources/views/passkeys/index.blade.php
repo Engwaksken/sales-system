@@ -2,7 +2,7 @@
 @section('title', 'Passkeys')
 @section('content')
 <div class="mx-auto max-w-2xl">
-    <a href="{{ route('profile.edit') }}" class="mb-2 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800"><i class="fas fa-arrow-left" aria-hidden="true"></i> My profile</a>
+    <a href="{{ route('profile.edit') }}#security" class="mb-2 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800"><i class="fas fa-arrow-left" aria-hidden="true"></i> My profile</a>
     <h1 class="text-xl font-semibold text-slate-800">Passkeys</h1>
     <p class="mb-5 text-sm text-slate-500">Sign in with your fingerprint, face or device PIN instead of a password and emailed code. The passkey stays on your device; this site only keeps a public key that cannot be used to sign in anywhere else.</p>
 

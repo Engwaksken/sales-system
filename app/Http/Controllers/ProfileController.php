@@ -93,6 +93,7 @@ class ProfileController extends Controller
         ActivityLogger::record('password_changed', 'Changed their password on the website', user: $user);
 
         return redirect()->route('profile.edit')
+            ->with('profile_tab', 'password')
             ->with('success', 'Password changed. Other browsers and the mobile app have been signed out.');
     }
 }
