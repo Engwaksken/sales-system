@@ -162,13 +162,20 @@
                 @auth
                     @include('partials.topbar-notifications')
 
-                    <span class="text-slate-500 hidden sm:flex items-center gap-2">
-                        <i class="fas fa-circle-user text-lg text-slate-400"></i>
-                        <span class="max-w-40 truncate">{{ auth()->user()->name }}</span>
+                    @php
+                        $headerPhoto = \App\Support\UserProfile::photoUrl(auth()->user());
+                    @endphp
+                    <a href="{{ route('profile.edit') }}" class="text-slate-500 hover:text-slate-800 flex items-center gap-2" title="My profile" aria-label="My profile">
+                        @if($headerPhoto)
+                            <img src="{{ $headerPhoto }}" alt="" class="h-7 w-7 rounded-full object-cover">
+                        @else
+                            <i class="fas fa-circle-user text-lg text-slate-400"></i>
+                        @endif
+                        <span class="max-w-40 truncate hidden sm:inline">{{ auth()->user()->name }}</span>
                         <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full hidden lg:inline">
                             {{ \App\Models\User::roleLabel(auth()->user()->role) }}
                         </span>
-                    </span>
+                    </a>
 
                     @if((auth()->user()->role ?: 'customer') !== 'customer')
                         <a href="{{ route('signature.edit') }}" class="text-slate-500 hover:text-slate-800" title="My signature" aria-label="My signature">

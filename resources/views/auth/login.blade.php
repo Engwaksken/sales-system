@@ -52,8 +52,57 @@
     </button>
 </form>
 
+{{-- Shown by script only on browsers that support passkeys. --}}
+<div class="auth-passkey" data-passkey-login hidden>
+    <div class="auth-divider"><span>or</span></div>
+    <div class="auth-alert auth-alert-error" data-passkey-error role="alert" hidden>
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i><span></span>
+    </div>
+    <button class="auth-secondary" type="button" data-passkey-button data-loading-text="Waiting for your device...">
+        <span class="auth-spinner" aria-hidden="true"></span>
+        <i class="fas fa-fingerprint" aria-hidden="true"></i>
+        <span data-label>Sign in with fingerprint or face</span>
+    </button>
+    <p class="auth-hint">Uses a passkey you added on this device. Add one from your account after signing in.</p>
+</div>
+
 <p class="auth-alt">
     New customer?
     <a class="auth-link" href="{{ route('customer.signup') }}">Create an account</a>
 </p>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('js/passkeys.js') }}?v={{ filemtime(public_path('js/passkeys.js')) }}"></script>
+<script>
+(function () {
+    var box = document.querySelector('[data-passkey-login]');
+    if (!box || !window.Passkeys || !Passkeys.supported()) return;
+    box.hidden = false;
+
+    var button = box.querySelector('[data-passkey-button]');
+    var label = button.querySelector('[data-label]');
+    var idle = label.textContent;
+    var error = box.querySelector('[data-passkey-error]');
+    var remember = document.querySelector('input[name="remember"]');
+
+    button.addEventListener('click', function () {
+        error.hidden = true;
+        button.disabled = true;
+        button.classList.add('is-loading');
+        label.textContent = button.dataset.loadingText;
+
+        Passkeys.login(remember && remember.checked).then(function (result) {
+            if (result.ok) { window.location.assign(result.redirect); return; }
+            button.disabled = false;
+            button.classList.remove('is-loading');
+            label.textContent = idle;
+            if (result.message) {
+                error.querySelector('span').textContent = result.message;
+                error.hidden = false;
+            }
+        });
+    });
+})();
+</script>
+@endpush

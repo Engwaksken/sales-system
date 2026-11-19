@@ -46,7 +46,9 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Logout::class, fn (Logout $e) => $e->user ? ActivityLogger::record('logout', 'Signed out of the website', user: $e->user) : null);
         Event::listen(Failed::class, fn (Failed $e) => ActivityLogger::record(
             'login_failed',
-            'Failed website sign-in for '.($e->credentials['email'] ?? 'unknown email'),
+            isset($e->credentials['rawId'])
+                ? 'Failed passkey sign-in'
+                : 'Failed website sign-in for '.($e->credentials['email'] ?? 'unknown email'),
             user: $e->user,
         ));
 

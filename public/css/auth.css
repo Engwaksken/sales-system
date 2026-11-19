@@ -673,6 +673,38 @@ body{
 
 @keyframes auth-spin{to{transform:rotate(360deg)}}
 
+/* Passkey (fingerprint / face) sign-in */
+.auth-passkey{margin-top:18px}
+.auth-passkey[hidden],.auth-passkey .auth-alert[hidden]{display:none}
+.auth-passkey .auth-alert{margin-bottom:12px}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:0 0 16px;color:var(--text-2);font-size:.85rem}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.auth-secondary{
+    width:100%;
+    height:var(--field-h);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding:0 18px;
+    border:1.5px solid var(--auth-primary);
+    border-radius:var(--radius-field);
+    background:transparent;
+    color:var(--auth-primary);
+    font-family:inherit;
+    font-size:max(1rem,15px);
+    font-weight:600;
+    cursor:pointer;
+    transition:background-color .15s ease;
+}
+.auth-secondary:hover{background:color-mix(in srgb,var(--auth-primary) 8%,transparent)}
+.auth-secondary:focus-visible{outline:2px solid var(--auth-primary);outline-offset:3px}
+.auth-secondary:disabled{cursor:progress;opacity:.85}
+.auth-secondary .fa-fingerprint{font-size:1.2em}
+.auth-secondary.is-loading .auth-spinner{display:inline-block}
+.auth-secondary.is-loading .fa-fingerprint{display:none}
+.auth-hint{margin:8px 0 0;text-align:center;color:var(--text-2);font-size:.8rem;line-height:1.45}
+
 .auth-alt{
     margin:22px 0 0;
     text-align:center;

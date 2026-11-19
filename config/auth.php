@@ -15,8 +15,10 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
+            // Eloquent plus passkey (WebAuthn) sign-in; passwords still work as before.
+            'driver' => 'eloquent-webauthn',
             'model' => App\Models\User::class,
+            'password_fallback' => true,
         ],
     ],
 

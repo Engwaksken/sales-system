@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Support\DocumentSignature;
 use App\Support\PublicMedia;
+use App\Support\UserProfile;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\User;
@@ -12,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -28,7 +28,7 @@ class ProfileController extends Controller
     public function update(Request $request): JsonResponse
     {
         $user = $request->user();
-        $isCustomer = ($user->role ?: 'customer') === 'customer';
+        $isCustomer = UserProfile::isCustomer($user);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
@@ -38,31 +38,14 @@ class ProfileController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
         ]);
 
-        DB::transaction(function () use ($request, $user, $data, $isCustomer) {
-            $user->name = $data['name'];
-
-            if ($request->hasFile('photo') || $request->boolean('remove_photo')) {
-                $this->deletePhoto($user->profile_pic);
-                $user->profile_pic = $request->hasFile('photo')
-                    ? $request->file('photo')->store('avatars', 'public')
-                    : null;
-            }
-            $user->save();
-
-            if ($isCustomer && Schema::hasTable('customers')) {
-                $customer = $this->customer($user) ?? new Customer([
-                    'email' => $user->email,
-                    'branch_id' => $user->branch_id,
-                ]);
-                if (Schema::hasColumn('customers', 'user_id')) {
-                    $customer->user_id = $user->id;
-                }
-                $customer->name = $data['name'];
-                $customer->phone = $data['phone'] ?? $customer->phone;
-                $customer->address = $data['address'] ?? $customer->address;
-                $customer->save();
-            }
-        });
+        UserProfile::save(
+            $user,
+            $data['name'],
+            photo: $request->file('photo'),
+            removePhoto: $request->boolean('remove_photo'),
+            phone: $isCustomer ? ($data['phone'] ?? null) : null,
+            address: $isCustomer ? ($data['address'] ?? null) : null,
+        );
 
         return response()->json([
             'message' => 'Profile saved.',
@@ -148,22 +131,6 @@ class ProfileController extends Controller
 
     private function customer(User $user): ?Customer
     {
-        if (! Schema::hasTable('customers')) {
-            return null;
-        }
-
-        return Customer::query()
-            ->when(Schema::hasColumn('customers', 'user_id'),
-                fn ($q) => $q->where('user_id', $user->id),
-                fn ($q) => $q->where('email', $user->email))
-            ->first();
-    }
-
-    private function deletePhoto(?string $path): void
-    {
-        $path = trim((string) $path);
-        if ($path !== '' && str_starts_with($path, 'avatars/')) {
-            Storage::disk('public')->delete($path);
-        }
+        return UserProfile::customer($user);
     }
 }

@@ -65,6 +65,12 @@ Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store']);
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
+// Passkey sign-in (fingerprint, face or device PIN in the browser).
+Route::middleware(['guest', 'throttle:10,1'])->group(function () {
+    Route::post('/passkeys/login/options', [\App\Http\Controllers\WebAuthn\WebAuthnLoginController::class, 'options'])->name('passkeys.login.options');
+    Route::post('/passkeys/login', [\App\Http\Controllers\WebAuthn\WebAuthnLoginController::class, 'login'])->name('passkeys.login');
+});
+
 // Password recovery with 6-digit email OTP
 Route::get('/forgot-password', [LoginController::class, 'forgotForm'])->name('password.request');
 Route::post('/forgot-password', [LoginController::class, 'sendResetOtp'])->name('password.email')->middleware('throttle:5,1');
@@ -153,6 +159,15 @@ Route::middleware('auth')->group(function () {
     // Every signed-in user manages their own notifications.
     Route::get('/notification-settings', [NotificationSettingsController::class, 'edit'])->name('notification-settings.edit');
     Route::get('/my-signature', [\App\Http\Controllers\SignatureController::class, 'edit'])->name('signature.edit');
+    // Each signed-in user's own profile: details, photo and password.
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'password'])->name('profile.password')->middleware('throttle:6,1');
+    // Each signed-in user manages their own passkeys.
+    Route::get('/passkeys', [\App\Http\Controllers\WebAuthn\WebAuthnRegisterController::class, 'index'])->name('passkeys.index');
+    Route::post('/passkeys/options', [\App\Http\Controllers\WebAuthn\WebAuthnRegisterController::class, 'options'])->name('passkeys.options')->middleware('throttle:10,1');
+    Route::post('/passkeys', [\App\Http\Controllers\WebAuthn\WebAuthnRegisterController::class, 'register'])->name('passkeys.store')->middleware('throttle:10,1');
+    Route::delete('/passkeys/{passkey}', [\App\Http\Controllers\WebAuthn\WebAuthnRegisterController::class, 'destroy'])->name('passkeys.destroy');
     Route::put('/my-signature', [\App\Http\Controllers\SignatureController::class, 'update'])->name('signature.update');
     Route::delete('/my-signature', [\App\Http\Controllers\SignatureController::class, 'destroy'])->name('signature.destroy');
     Route::put('/notification-settings', [NotificationSettingsController::class, 'update'])->name('notification-settings.update');
