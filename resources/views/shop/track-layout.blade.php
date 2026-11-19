@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="{{ $brand['primary'] }}">
 <title>@yield('title', 'Track your order') · {{ $brand['name'] }}</title>
@@ -14,6 +14,13 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 :root{--shop-primary:{{ $brand['primary'] }};--on-primary:{{ $brand['onPrimary'] }};--primary-soft:{{ $brand['primarySoft'] }}}
+/* Same scale as the shop: rem-based layout grows on large desktops and TVs. */
+html{font-size:16px;-webkit-text-size-adjust:100%}
+@media (min-width:1800px){html{font-size:17px}}
+@media (min-width:2300px){html{font-size:19px}}
+@media (min-width:3000px){html{font-size:23px}}
+@media (min-width:3600px){html{font-size:26px}}
+:focus-visible{outline:3px solid var(--shop-primary);outline-offset:2px}
 body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-serif}
 .btn-primary{background:var(--shop-primary);color:var(--on-primary)}
 .btn-primary:hover{filter:brightness(.94)}

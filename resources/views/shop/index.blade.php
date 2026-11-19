@@ -2,9 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 @php
   $brand = \App\Support\Brand::get();
+  $visibleCategories = $categories->filter(fn ($c) => $c->cnt > 0);
+  $sortOptions = ['name_asc' => 'Name (A–Z)', 'newest' => 'Newest first', 'price_asc' => 'Price: low to high', 'price_desc' => 'Price: high to low'];
+  $filterQuery = fn (array $changes = []) => array_filter(array_merge([
+      'branch_id' => $branch->id, 'cat' => $catFilter ?: null, 'q' => $search !== '' ? $search : null,
+      'sort' => $sort !== 'name_asc' ? $sort : null,
+  ], $changes), fn ($v) => $v !== null && $v !== '');
 @endphp
 <title>Shop · {{ $brand['name'] }}{{ $branch->name !== $brand['name'] ? ' · '.$branch->name : '' }}</title>
 <meta name="description" content="Shop online at {{ $brand['name'] }} — {{ $branch->name }}{{ $branch->location ? ', '.$branch->location : '' }}.">
@@ -19,63 +25,104 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <style>
 :root{--shop-primary:{{ $brand['primary'] }};--shop-secondary:{{ $brand['secondary'] }};--on-primary:{{ $brand['onPrimary'] }};--primary-soft:{{ $brand['primarySoft'] }}}
-body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-serif}
+
+/* One scale for every screen: Tailwind sizes are in rem, so raising the root size
+   on large desktops and TVs grows text, spacing and the layout width together. */
+html{font-size:16px;-webkit-text-size-adjust:100%}
+@media (min-width:1800px){html{font-size:17px}}
+@media (min-width:2300px){html{font-size:19px}}
+@media (min-width:3000px){html{font-size:23px}}
+@media (min-width:3600px){html{font-size:26px}}
+body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-serif;overflow-x:hidden}
+.shop-container{width:100%;max-width:100rem;margin-inline:auto;padding-inline:clamp(.75rem,2.5vw,2.5rem)}
+/* 27" monitors and TVs: use more of the width instead of wide empty margins. */
+@media (min-width:2300px){.shop-container{max-width:122rem}}
+/* The smallest phones: the logo alone keeps the cart on the first header row. */
+@media (max-width:359px){.brand-name{display:none}}
+
 .bg-brand{background:var(--shop-primary);color:var(--on-primary)}
 .bg-brand:hover{filter:brightness(.93)}
 .text-brand{color:var(--shop-primary)}
 .bg-brand-soft{background:var(--primary-soft)}
 .brand-hero{background:linear-gradient(135deg,var(--shop-primary),color-mix(in srgb,var(--shop-primary) 65%,#0f172a));color:var(--on-primary)}
-.shop-search:focus{outline:none;border-color:var(--shop-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--shop-primary) 15%,transparent)}
+.shop-search:focus,.shop-select:focus{outline:none;border-color:var(--shop-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--shop-primary) 15%,transparent)}
+
+/* Keyboard and TV-remote users must always see where focus is. */
+:focus-visible{outline:3px solid var(--shop-primary);outline-offset:2px}
+
+/* Product grid: two columns on phones, then as many ~13rem cards as fit. */
+.product-grid{display:grid;gap:clamp(.6rem,1.2vw,1.25rem);grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:640px){.product-grid{grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))}}
+@media (max-width:330px){.product-grid{grid-template-columns:minmax(0,1fr)}}
+.product-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #e2e8f0;border-radius:1rem;overflow:hidden;transition:box-shadow .15s,transform .15s}
+.product-card:hover{box-shadow:0 10px 28px rgba(15,23,42,.08);transform:translateY(-2px)}
+.product-media{aspect-ratio:1/1;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.product-media img{width:100%;height:100%;object-fit:contain;padding:.6rem}
+.line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Category chips (phones and tablets). */
+.chip-row{display:flex;gap:.5rem;overflow-x:auto;scrollbar-width:none;padding-bottom:.25rem;scroll-snap-type:x proximity}
+.chip-row::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap;border:1px solid #e2e8f0;background:#fff;color:#475569;border-radius:999px;padding:.4rem .85rem;font-size:.82rem;font-weight:600}
+.chip.active{background:var(--shop-primary);border-color:var(--shop-primary);color:var(--on-primary)}
+
+/* New products slider. */
+.new-products-track{display:flex;gap:clamp(.6rem,1.2vw,1rem);overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;scroll-snap-type:x mandatory;padding:.15rem .1rem .75rem}
+.new-products-track::-webkit-scrollbar{display:none}
+.new-product-slide{flex:0 0 clamp(10.5rem,42vw,15rem);scroll-snap-align:start;min-width:0}
+.new-product-image{aspect-ratio:4/3;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.new-product-image img{width:100%;height:100%;object-fit:contain;padding:.6rem}
+.new-slider-btn{width:2.4rem;height:2.4rem;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#475569;box-shadow:0 5px 16px rgba(15,23,42,.08);display:grid;place-items:center;transition:.15s}
+.new-slider-btn:hover{color:var(--shop-primary);border-color:var(--shop-primary);transform:translateY(-1px)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
-<style>
-.new-products-slider{position:relative}
-.new-products-track{display:flex;gap:1rem;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;scroll-snap-type:x mandatory;padding:.15rem .1rem .75rem}
-.new-products-track::-webkit-scrollbar{display:none}
-.new-product-slide{flex:0 0 min(260px,78vw);scroll-snap-align:start}
-.new-product-image{height:160px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.new-product-image img{width:100%;height:100%;object-fit:contain;padding:10px}
-.new-slider-btn{width:38px;height:38px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#475569;box-shadow:0 5px 16px rgba(15,23,42,.08);display:grid;place-items:center;transition:.15s}
-.new-slider-btn:hover{color:var(--shop-primary,#0f766e);border-color:var(--shop-primary,#0f766e);transform:translateY(-1px)}
-@media(min-width:768px){.new-product-slide{flex-basis:240px}}
-</style>
 
-<header class="bg-white border-b border-slate-200 sticky top-0 z-10">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-    <a href="{{ route('shop.index', ['branch_id' => $branch->id]) }}" class="flex items-center gap-2 min-w-0 shrink-0">
+<header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+  <div class="shop-container flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5 sm:flex-nowrap sm:gap-5">
+    <a href="{{ route('shop.index', ['branch_id' => $branch->id]) }}" class="flex min-w-0 items-center gap-2 shrink-0">
       @if ($brand['logo'])
-        <img src="{{ $brand['logo'] }}" alt="{{ $brand['name'] }}" class="h-9 w-auto max-w-[110px] object-contain">
+        <img src="{{ $brand['logo'] }}" alt="{{ $brand['name'] }}" class="h-9 w-auto max-w-[7rem] object-contain">
       @else
-        <span class="bg-brand grid h-9 w-9 place-items-center rounded-lg font-black">{{ mb_strtoupper(mb_substr($brand['name'], 0, 1)) }}</span>
+        <span class="bg-brand grid h-9 w-9 shrink-0 place-items-center rounded-lg font-black">{{ mb_strtoupper(mb_substr($brand['name'], 0, 1)) }}</span>
       @endif
-      <span class="hidden sm:block min-w-0 leading-tight">
-        <span class="block truncate font-extrabold">{{ $brand['name'] }}</span>
-        <span class="block truncate text-xs text-slate-500">{{ $branch->name }}</span>
+      <span class="brand-name min-w-0 leading-tight {{ $brand['logo'] ? 'hidden md:block' : '' }}">
+        <span class="block max-w-[11rem] truncate font-extrabold lg:max-w-[16rem]">{{ $brand['name'] }}</span>
+        <span class="hidden truncate text-xs text-slate-500 sm:block">{{ $branch->name }}</span>
       </span>
     </a>
-    <form method="GET" class="flex-1 max-w-md min-w-0">
+
+    <form method="GET" role="search" class="order-last basis-full sm:order-none sm:basis-auto sm:flex-1 sm:max-w-2xl min-w-0">
+      <label for="shopSearch" class="sr-only">Search products</label>
       <div class="relative">
-        <i class="fas fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
-        <input type="text" name="q" value="{{ $search }}" placeholder="Search products…"
-               class="shop-search w-full rounded-full border border-slate-300 pl-9 pr-4 py-1.5 text-sm">
+        <i class="fas fa-magnifying-glass pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+        <input id="shopSearch" type="search" name="q" value="{{ $search }}" placeholder="Search products…" enterkeyhint="search"
+               class="shop-search w-full rounded-full border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm">
       </div>
       <input type="hidden" name="branch_id" value="{{ $branch->id }}">
+      @if ($catFilter)<input type="hidden" name="cat" value="{{ $catFilter }}">@endif
+      @if ($sort !== 'name_asc')<input type="hidden" name="sort" value="{{ $sort }}">@endif
     </form>
-    <a href="{{ route('orders.track') }}" class="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap" aria-label="Track order">
-      <i class="fas fa-truck-fast"></i><span class="hidden sm:inline"> Track order</span>
-    </a>
-    <button onclick="openCheckout()" class="bg-brand relative inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap" aria-label="Open cart">
-      <i class="fas fa-cart-shopping"></i><span class="hidden sm:inline">Cart</span> <span class="rounded-full bg-white/25 px-1.5 text-xs" id="cartCount">0</span>
-    </button>
+
+    <div class="ml-auto flex shrink-0 items-center gap-1 sm:gap-3">
+      <a href="{{ route('orders.track') }}" class="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 whitespace-nowrap" aria-label="Track order">
+        <i class="fas fa-truck-fast"></i><span class="hidden lg:inline">Track order</span>
+      </a>
+      <button type="button" onclick="openCheckout()" class="bg-brand relative inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold whitespace-nowrap" aria-label="Open cart">
+        <i class="fas fa-cart-shopping"></i><span class="hidden sm:inline">Cart</span>
+        <span class="rounded-full bg-white/25 px-1.5 text-xs" id="cartCount">0</span>
+      </button>
+    </div>
   </div>
 </header>
 
-<section class="max-w-6xl mx-auto px-4 mt-4">
-  <div class="brand-hero rounded-2xl px-5 py-6 sm:px-8 sm:py-8 shadow-sm flex flex-wrap items-center justify-between gap-4">
+<section class="shop-container mt-4">
+  <div class="brand-hero flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-5 shadow-sm sm:px-8 sm:py-7 2xl:py-9">
     <div class="min-w-0">
       <p class="text-xs font-bold uppercase tracking-wider opacity-75">Welcome to</p>
-      <h1 class="text-2xl sm:text-3xl font-black">{{ $brand['name'] }}</h1>
+      <h1 class="text-[clamp(1.4rem,3.2vw,2.4rem)] font-black leading-tight">{{ $brand['name'] }}</h1>
       <p class="mt-1 text-sm opacity-85">
         <i class="fas fa-location-dot mr-1"></i>Shopping at {{ $branch->name }}{{ $branch->location ? ' · '.$branch->location : '' }}
       </p>
@@ -90,28 +137,28 @@ body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-
 </section>
 
 @if ($slides->isNotEmpty())
-<div class="max-w-6xl mx-auto px-4 mt-4 grid md:grid-cols-3 gap-4">
+<div class="shop-container mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
   @foreach ($slides->take(3) as $slide)
-  <div class="rounded-xl overflow-hidden bg-white shadow p-4">
-    <div class="text-xs uppercase text-brand font-semibold">{{ $slide->badge_text }}</div>
+  <div class="min-w-0 rounded-xl bg-white p-4 shadow-sm border border-slate-200 {{ $loop->last && $loop->count === 3 ? 'sm:col-span-2 lg:col-span-1' : '' }}">
+    <div class="text-xs font-semibold uppercase text-brand">{{ $slide->badge_text }}</div>
     <div class="font-semibold text-slate-800">{{ $slide->title }}</div>
-    <div class="text-sm text-slate-500">{{ $slide->subtitle }}</div>
+    <div class="text-sm text-slate-500 line-clamp-2">{{ $slide->subtitle }}</div>
   </div>
   @endforeach
 </div>
 @endif
 
 @if(($newProducts ?? collect())->isNotEmpty())
-<section class="max-w-6xl mx-auto px-4 mt-7">
-  <div class="flex items-end justify-between gap-4 mb-3">
-    <div>
-      <div class="text-xs uppercase tracking-wider font-bold" style="color:var(--shop-primary,#0f766e)">
-        <i class="fas fa-sparkles mr-1"></i> Just added
+<section class="shop-container mt-7" aria-labelledby="newProductsTitle">
+  <div class="mb-3 flex items-end justify-between gap-4">
+    <div class="min-w-0">
+      <div class="text-xs font-bold uppercase tracking-wider text-brand">
+        <i class="fas fa-wand-magic-sparkles mr-1"></i> Just added
       </div>
-      <h2 class="text-xl md:text-2xl font-extrabold text-slate-900 mt-1">New Products</h2>
-      <p class="text-sm text-slate-500 mt-1">Discover the latest products now available at {{ $branch->name }}.</p>
+      <h2 id="newProductsTitle" class="mt-1 text-xl font-extrabold text-slate-900 md:text-2xl">New Products</h2>
+      <p class="mt-1 text-sm text-slate-500">Discover the latest products now available at {{ $branch->name }}.</p>
     </div>
-    <div class="hidden sm:flex items-center gap-2">
+    <div class="hidden items-center gap-2 sm:flex">
       <button type="button" class="new-slider-btn" onclick="slideNewProducts(-1)" aria-label="Previous new products">
         <i class="fas fa-chevron-left"></i>
       </button>
@@ -121,141 +168,188 @@ body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-
     </div>
   </div>
 
-  <div class="new-products-slider">
-    <div id="newProductsTrack" class="new-products-track">
-      @foreach($newProducts as $newProduct)
-        @php
-          $newImage = $newProduct->image_url
-              ? route('shop.product-image', ['product' => $newProduct->id])
-              : null;
-        @endphp
-        <article class="new-product-slide bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition">
-          <div class="new-product-image relative">
-            @if($newImage)
-              <img src="{{ $newImage }}" alt="{{ $newProduct->name }}" loading="lazy"
-                   onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
-              <div class="hidden text-slate-300 text-4xl"><i class="fas fa-box-open"></i></div>
-            @else
-              <div class="text-slate-300 text-4xl"><i class="fas fa-box-open"></i></div>
-            @endif
-            <span class="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full text-white"
-                  style="background:var(--shop-primary,#0f766e)">
-              New
-            </span>
-          </div>
+  <div id="newProductsTrack" class="new-products-track">
+    @foreach($newProducts as $newProduct)
+      @php
+        $newImage = $newProduct->image_url
+            ? route('shop.product-image', ['product' => $newProduct->id])
+            : null;
+      @endphp
+      <article class="new-product-slide overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+        <div class="new-product-image relative">
+          @if($newImage)
+            <img src="{{ $newImage }}" alt="{{ $newProduct->name }}" loading="lazy"
+                 onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
+            <div class="hidden text-4xl text-slate-300"><i class="fas fa-box-open"></i></div>
+          @else
+            <div class="text-4xl text-slate-300"><i class="fas fa-box-open"></i></div>
+          @endif
+          <span class="bg-brand absolute left-3 top-3 rounded-full px-2 py-1 text-[0.625rem] font-bold uppercase tracking-wide">New</span>
+        </div>
 
-          <div class="p-4">
-            @if($newProduct->category_name)
-              <div class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold truncate">
-                {{ $newProduct->category_name }}
-              </div>
-            @endif
-            <h3 class="font-bold text-slate-800 mt-1 truncate" title="{{ $newProduct->name }}">{{ $newProduct->name }}</h3>
-            <div class="flex items-center justify-between gap-3 mt-3">
-              <div>
-                <div class="text-xs text-slate-400">Price</div>
-                <div class="font-extrabold text-slate-900">UGX {{ number_format((float)$newProduct->price, 0) }}</div>
-              </div>
-              <button type="button"
-                      onclick='addFromCard({{ (int)$newProduct->id }}, @json($newProduct->name), {{ (float)$newProduct->price }}, {{ (int)$newProduct->stock }})'
-                      class="w-10 h-10 rounded-full text-white grid place-items-center shadow-sm"
-                      style="background:var(--shop-primary,#0f766e)"
-                      title="Add {{ $newProduct->name }} to cart"
-                      aria-label="Add {{ $newProduct->name }} to cart">
-                <i class="fas fa-cart-plus"></i>
-              </button>
+        <div class="p-3 sm:p-4">
+          @if($newProduct->category_name)
+            <div class="truncate text-[0.7rem] font-semibold uppercase tracking-wide text-slate-400">{{ $newProduct->category_name }}</div>
+          @endif
+          <h3 class="mt-1 truncate font-bold text-slate-800" title="{{ $newProduct->name }}">{{ $newProduct->name }}</h3>
+          <div class="mt-3 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-xs text-slate-400">Price</div>
+              <div class="truncate font-extrabold text-slate-900">UGX {{ number_format((float)$newProduct->price, 0) }}</div>
             </div>
+            <button type="button"
+                    onclick='addFromCard({{ (int)$newProduct->id }}, @json($newProduct->name), {{ (float)$newProduct->price }}, {{ (int)$newProduct->stock }})'
+                    class="bg-brand grid h-10 w-10 shrink-0 place-items-center rounded-full shadow-sm"
+                    title="Add {{ $newProduct->name }} to cart"
+                    aria-label="Add {{ $newProduct->name }} to cart">
+              <i class="fas fa-cart-plus"></i>
+            </button>
           </div>
-        </article>
-      @endforeach
-    </div>
+        </div>
+      </article>
+    @endforeach
   </div>
 </section>
 @endif
 
-<div class="max-w-6xl mx-auto px-4 py-6 flex gap-6">
-  <aside class="w-48 flex-shrink-0 hidden md:block">
-    <div class="font-semibold text-sm text-slate-700 mb-2">Categories</div>
-    <a href="?branch_id={{ $branch->id }}" class="block py-1 text-sm {{ !$catFilter ? 'text-brand font-bold' : 'text-slate-600' }}">All</a>
-    @foreach ($categories as $cat)
-      @if ($cat->cnt > 0)
-      <a href="?branch_id={{ $branch->id }}&cat={{ $cat->id }}"
-         class="block py-1 text-sm {{ $catFilter == $cat->id ? 'text-brand font-bold' : 'text-slate-600' }}">
-        {{ $cat->category_name }} ({{ $cat->cnt }})
-      </a>
+<div class="shop-container py-6 lg:flex lg:items-start lg:gap-8">
+  {{-- Desktop sidebar --}}
+  <aside class="hidden w-60 shrink-0 lg:block 2xl:w-64" aria-label="Filters">
+    <div class="sticky top-24 space-y-5 rounded-2xl border border-slate-200 bg-white p-4">
+      <div>
+        <div class="mb-2 text-sm font-bold text-slate-800">Categories</div>
+        <nav class="max-h-[60vh] space-y-0.5 overflow-y-auto pr-1">
+          <a href="?{{ http_build_query($filterQuery(['cat' => null])) }}"
+             class="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-sm {{ !$catFilter ? 'bg-brand-soft text-brand font-bold' : 'text-slate-600 hover:bg-slate-50' }}">All products</a>
+          @foreach ($visibleCategories as $cat)
+            <a href="?{{ http_build_query($filterQuery(['cat' => $cat->id])) }}"
+               class="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-sm {{ $catFilter == $cat->id ? 'bg-brand-soft text-brand font-bold' : 'text-slate-600 hover:bg-slate-50' }}">
+              <span class="truncate">{{ $cat->category_name }}</span><span class="text-xs text-slate-400">{{ $cat->cnt }}</span>
+            </a>
+          @endforeach
+        </nav>
+      </div>
+      @if ($branches->count() > 1)
+      <div>
+        <label for="branchSelectDesktop" class="mb-2 block text-sm font-bold text-slate-800">Branch</label>
+        <select id="branchSelectDesktop" onchange="location.href='?branch_id='+this.value" class="shop-select w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm">
+          @foreach ($branches as $b)
+            <option value="{{ $b->id }}" {{ $b->id === $branch->id ? 'selected' : '' }}>{{ $b->name }}</option>
+          @endforeach
+        </select>
+      </div>
       @endif
-    @endforeach
-
-    <div class="font-semibold text-sm text-slate-700 mt-6 mb-2">Branch</div>
-    <select onchange="location.href='?branch_id='+this.value" class="w-full text-sm rounded-md border-slate-300">
-      @foreach ($branches as $b)
-        <option value="{{ $b->id }}" {{ $b->id === $branch->id ? 'selected' : '' }}>{{ $b->name }}</option>
-      @endforeach
-    </select>
+    </div>
   </aside>
 
-  <div class="flex-1 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-    @forelse ($products as $p)
-    <div id="pc-{{ $p->id }}" class="bg-white rounded-lg shadow overflow-hidden flex flex-col">
-      <div class="h-36 bg-slate-100 flex items-center justify-center text-slate-300 text-xs">
-        @if ($p->image_url)
-          <img src="{{ route('shop.product-image', ['product' => $p->id]) }}"
-               class="h-full w-full object-contain p-2"
-               alt="{{ $p->name }}"
-               loading="lazy"
-               onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('hidden');">
-          <div class="hidden h-full w-full items-center justify-center text-slate-300 text-4xl">
-            <i class="fas fa-box-open"></i>
-          </div>
-        @else
-          No image
+  <main class="min-w-0 flex-1">
+    {{-- Phone and tablet filters --}}
+    <div class="mb-4 space-y-3 lg:hidden">
+      @if ($visibleCategories->isNotEmpty())
+      <nav class="chip-row" aria-label="Categories">
+        <a href="?{{ http_build_query($filterQuery(['cat' => null])) }}" class="chip {{ !$catFilter ? 'active' : '' }}">All</a>
+        @foreach ($visibleCategories as $cat)
+          <a href="?{{ http_build_query($filterQuery(['cat' => $cat->id])) }}" class="chip {{ $catFilter == $cat->id ? 'active' : '' }}">{{ $cat->category_name }} <span class="opacity-60">{{ $cat->cnt }}</span></a>
+        @endforeach
+      </nav>
+      @endif
+      @if ($branches->count() > 1)
+      <div class="flex items-center gap-2">
+        <label for="branchSelectMobile" class="shrink-0 text-sm font-semibold text-slate-600"><i class="fas fa-store mr-1 text-brand"></i>Branch</label>
+        <select id="branchSelectMobile" onchange="location.href='?branch_id='+this.value" class="shop-select min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm">
+          @foreach ($branches as $b)
+            <option value="{{ $b->id }}" {{ $b->id === $branch->id ? 'selected' : '' }}>{{ $b->name }}</option>
+          @endforeach
+        </select>
+      </div>
+      @endif
+    </div>
+
+    {{-- Results toolbar --}}
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-slate-500">
+        <strong class="text-slate-800">{{ $products->count() }}</strong> {{ \Illuminate\Support\Str::plural('product', $products->count()) }}
+        @if ($search !== '') for “<strong class="text-slate-800">{{ $search }}</strong>” <a href="?{{ http_build_query($filterQuery(['q' => null])) }}" class="ml-1 text-brand font-semibold">Clear</a>@endif
+      </p>
+      <form method="GET" class="flex items-center gap-2">
+        @foreach ($filterQuery(['sort' => null]) as $key => $value)
+          <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+        @endforeach
+        <label for="shopSort" class="text-sm text-slate-500">Sort</label>
+        <select id="shopSort" name="sort" onchange="this.form.submit()" class="shop-select rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm">
+          @foreach ($sortOptions as $value => $label)
+            <option value="{{ $value }}" @selected($sort === $value)>{{ $label }}</option>
+          @endforeach
+        </select>
+        <noscript><button class="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">Apply</button></noscript>
+      </form>
+    </div>
+
+    <div class="product-grid">
+      @forelse ($products as $p)
+      <article id="pc-{{ $p->id }}" class="product-card">
+        <div class="product-media">
+          @if ($p->image_url)
+            <img src="{{ route('shop.product-image', ['product' => $p->id]) }}" alt="{{ $p->name }}" loading="lazy"
+                 onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('hidden');">
+            <div class="hidden text-4xl text-slate-300"><i class="fas fa-box-open"></i></div>
+          @else
+            <div class="text-4xl text-slate-300"><i class="fas fa-box-open"></i></div>
+          @endif
+        </div>
+        <div class="flex flex-1 flex-col p-3 sm:p-4">
+          @if ($p->category_name)<div class="truncate text-[0.7rem] font-semibold uppercase tracking-wide text-slate-400">{{ $p->category_name }}</div>@endif
+          <h3 class="line-clamp-2 text-sm font-semibold text-slate-800 sm:text-[0.95rem]" title="{{ $p->name }}">{{ $p->name }}</h3>
+          <div class="mt-1.5 font-extrabold text-brand">UGX {{ number_format($p->price, 0) }}</div>
+          <div class="mb-3 text-xs text-slate-400">{{ $p->stock }} in stock</div>
+          <button type="button"
+                  onclick='addFromCard({{ (int) $p->id }}, @json($p->name), {{ (float) $p->price }}, {{ (int) $p->stock }})'
+                  class="bg-brand mt-auto inline-flex min-h-[2.5rem] items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold">
+            <i class="fas fa-cart-plus"></i> <span>Add to cart</span>
+          </button>
+        </div>
+      </article>
+      @empty
+      <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-500">
+        <i class="fas fa-box-open mb-2 text-3xl text-slate-300"></i>
+        <p>No products found.</p>
+        @if ($search !== '' || $catFilter)
+          <a href="?branch_id={{ $branch->id }}" class="mt-2 inline-block font-semibold text-brand">Show all products</a>
         @endif
       </div>
-      <div class="p-3 flex-1 flex flex-col">
-        <div class="text-sm font-medium text-slate-800">{{ $p->name }}</div>
-        <div class="text-xs text-slate-400">{{ $p->category_name }}</div>
-        <div class="mt-1 font-bold text-brand">UGX {{ number_format($p->price, 0) }}</div>
-        <div class="text-xs text-slate-400 mb-2">{{ $p->stock }} in stock</div>
-        <button onclick="addFromCard({{ $p->id }}, '{{ addslashes($p->name) }}', {{ $p->price }}, {{ $p->stock }})"
-                class="bg-brand mt-auto text-sm font-semibold py-1.5 rounded-md">
-          Add to cart
-        </button>
-      </div>
+      @endforelse
     </div>
-    @empty
-    <div class="col-span-full text-center text-slate-400 py-12">No products found.</div>
-    @endforelse
-  </div>
+  </main>
 </div>
 
 <footer class="mt-6 border-t border-slate-200 bg-white">
-  <div class="max-w-6xl mx-auto px-4 py-8 grid gap-6 sm:grid-cols-3 text-sm">
+  <div class="shop-container grid gap-6 py-8 text-sm sm:grid-cols-2 lg:grid-cols-3">
     <div>
       <div class="flex items-center gap-2">
         @if ($brand['logo'])
-          <img src="{{ $brand['logo'] }}" alt="" class="h-8 w-auto max-w-[100px] object-contain">
+          <img src="{{ $brand['logo'] }}" alt="" class="h-8 w-auto max-w-[6rem] object-contain">
         @endif
         <span class="font-extrabold">{{ $brand['name'] }}</span>
       </div>
       <p class="mt-2 text-slate-500">Order online and pay on delivery or by mobile money.</p>
     </div>
     <div>
-      <div class="font-bold text-slate-800 mb-2">{{ $branch->name }}</div>
+      <div class="mb-2 font-bold text-slate-800">{{ $branch->name }}</div>
       <ul class="space-y-1 text-slate-500">
         @if ($branch->location)<li><i class="fas fa-location-dot w-4 text-brand"></i> {{ $branch->location }}</li>@endif
         @if ($branch->contact)<li><a href="tel:{{ preg_replace('/[^\d+]/', '', $branch->contact) }}" class="hover:text-slate-800"><i class="fas fa-phone w-4 text-brand"></i> {{ $branch->contact }}</a></li>@endif
-        @if ($branch->branch_email)<li><a href="mailto:{{ $branch->branch_email }}" class="hover:text-slate-800 break-all"><i class="fas fa-envelope w-4 text-brand"></i> {{ $branch->branch_email }}</a></li>@endif
+        @if ($branch->branch_email)<li><a href="mailto:{{ $branch->branch_email }}" class="break-all hover:text-slate-800"><i class="fas fa-envelope w-4 text-brand"></i> {{ $branch->branch_email }}</a></li>@endif
       </ul>
     </div>
     <div>
-      <div class="font-bold text-slate-800 mb-2">Your orders</div>
+      <div class="mb-2 font-bold text-slate-800">Your orders</div>
       <ul class="space-y-1 text-slate-500">
         <li><a href="{{ route('orders.track') }}" class="hover:text-slate-800"><i class="fas fa-truck-fast w-4 text-brand"></i> Track an order</a></li>
         <li><button type="button" onclick="openCheckout()" class="hover:text-slate-800"><i class="fas fa-cart-shopping w-4 text-brand"></i> View cart</button></li>
       </ul>
     </div>
   </div>
-  <div class="border-t border-slate-100 py-4 text-center text-xs text-slate-400">© {{ date('Y') }} {{ $brand['name'] }}. All rights reserved.</div>
+  <div class="border-t border-slate-100 py-4 pb-24 text-center text-xs text-slate-400 sm:pb-4">© {{ date('Y') }} {{ $brand['name'] }}. All rights reserved.</div>
 </footer>
 
 
@@ -267,7 +361,7 @@ body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-
 }
 .order-success-overlay.show{display:flex}
 .order-success-card{
-  width:min(460px,100%);background:#fff;border-radius:20px;overflow:hidden;
+  width:min(29rem,100%);background:#fff;border-radius:20px;overflow:hidden;
   border:1px solid #e2e8f0;box-shadow:0 30px 80px rgba(15,23,42,.30);
   animation:orderSuccessIn .18s ease-out
 }
@@ -356,7 +450,7 @@ body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-
 
 <!-- Checkout modal -->
 <style>
-.checkout-modal-card{width:min(760px,100%);max-height:min(92vh,860px);display:flex;flex-direction:column;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 28px 80px rgba(15,23,42,.25)}
+.checkout-modal-card{width:min(48rem,100%);max-height:min(92vh,54rem);display:flex;flex-direction:column;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 28px 80px rgba(15,23,42,.25)}
 .checkout-modal-head{padding:18px 20px;border-bottom:1px solid #e2e8f0;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:2}
 .checkout-modal-head h2{margin:0;font-size:1.15rem;font-weight:800;color:#0f172a}
 .checkout-modal-head p{margin:2px 0 0;color:#64748b;font-size:.78rem}
@@ -591,8 +685,10 @@ function slideNewProducts(direction) {
   const track = document.getElementById('newProductsTrack');
   if (!track) return;
   const card = track.querySelector('.new-product-slide');
-  const distance = card ? card.getBoundingClientRect().width + 16 : 260;
-  track.scrollBy({left: direction * distance * 2, behavior: 'smooth'});
+  const step = card ? card.getBoundingClientRect().width : 240;
+  // Move by roughly a screenful of cards, whatever the screen size.
+  const distance = Math.max(step, Math.floor(track.clientWidth / step) * step);
+  track.scrollBy({left: direction * distance, behavior: 'smooth'});
 }
 
 const BID = {{ $branch->id }};
@@ -1109,7 +1205,7 @@ updateBadge();
 
 <!-- Professional Chat widget -->
 <style>
-.chat-bubble{background:var(--shop-primary)}.chat-bubble:hover{filter:brightness(.92)}.chat-window{height:min(620px,calc(100vh - 110px));width:min(390px,calc(100vw - 28px))}.chat-head{background:linear-gradient(135deg,var(--shop-primary),var(--shop-secondary))}.chat-field{position:relative}.chat-field>i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8}.chat-field textarea+i{top:17px;transform:none}.chat-field input,.chat-field textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:10px 12px 10px 38px;outline:none}.chat-field textarea{min-height:78px;resize:vertical}.chat-field input:focus,.chat-field textarea:focus{border-color:var(--shop-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--shop-primary) 12%,transparent)}.chat-primary{background:var(--shop-primary)}.chat-primary:hover{filter:brightness(.92)}.chat-message-customer{background:var(--shop-primary);color:#fff}.chat-send-input{min-width:0;flex:1;border:1px solid #cbd5e1;border-radius:10px;padding:10px 11px;outline:none}.chat-send-input:focus{border-color:var(--shop-primary)}
+.chat-bubble{background:var(--shop-primary)}.chat-bubble:hover{filter:brightness(.92)}.chat-window{height:min(39rem,calc(100vh - 7rem));height:min(39rem,calc(100dvh - 7rem));width:min(24.5rem,calc(100vw - 1.75rem))}.chat-head{background:linear-gradient(135deg,var(--shop-primary),var(--shop-secondary))}.chat-field{position:relative}.chat-field>i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8}.chat-field textarea+i{top:17px;transform:none}.chat-field input,.chat-field textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:10px 12px 10px 38px;outline:none}.chat-field textarea{min-height:78px;resize:vertical}.chat-field input:focus,.chat-field textarea:focus{border-color:var(--shop-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--shop-primary) 12%,transparent)}.chat-primary{background:var(--shop-primary)}.chat-primary:hover{filter:brightness(.92)}.chat-message-customer{background:var(--shop-primary);color:#fff}.chat-send-input{min-width:0;flex:1;border:1px solid #cbd5e1;border-radius:10px;padding:10px 11px;outline:none}.chat-send-input:focus{border-color:var(--shop-primary)}
 </style>
 <button id="chat-bubble" onclick="toggleChat()" aria-label="Open customer chat" class="chat-bubble fixed bottom-5 right-5 z-40 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center">
   <i class="fas fa-comments text-xl"></i>
