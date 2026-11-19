@@ -124,7 +124,7 @@
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-  <input type="text" name="status" value="{{ old('status') }}" class="w-full rounded-md border-slate-300 shadow-sm" required>
+  <select name="status" class="w-full rounded-md border-slate-300 shadow-sm" required>@foreach(\App\Models\Order::STAGES as $stageKey => $stageLabel)<option value="{{ $stageKey }}" @selected(old('status', 'pending') === $stageKey)>{{ $stageLabel }}</option>@endforeach</select>
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Orders Count</label>

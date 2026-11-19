@@ -36,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         Expense::observe(ExpenseObserver::class);
         Payment::observe(PaymentObserver::class);
         OrderPaymentReceipt::observe(OrderPaymentReceiptObserver::class);
+        \App\Models\Order::observe(\App\Observers\OrderObserver::class);
 
         // Audit trail for the owner: who changed sales, stock, payments and access.
         foreach (ActivityObserver::MODELS as $model) {

@@ -71,12 +71,16 @@ class OrderTrackingController extends Controller
     }
 
     /**
-     * @return array<int, array{label: string, state: string}>
+     * @return array<int, array{label: string, state: string, at: ?\Illuminate\Support\Carbon}>
      */
     private function steps(Order $order): array
     {
-        $status = (string) $order->status;
+        $status = match ((string) $order->status) {
+            'shipped', 'shipping' => 'out_for_delivery',
+            default => (string) $order->status,
+        };
         $isPickup = $status === 'ready_for_pickup';
+        $reachedAt = $this->reachedAt($order);
 
         $flow = self::FLOW;
         $flow['ready'] = $isPickup ? 'Ready for pickup' : 'Ready for delivery';
@@ -95,13 +99,42 @@ class OrderTrackingController extends Controller
 
         $steps = [];
         foreach ($keys as $i => $key) {
+            $state = in_array($status, ['completed', 'delivered'], true) || $i < $currentIndex
+                ? 'done'
+                : ($i === $currentIndex ? 'current' : 'upcoming');
+
             $steps[] = [
                 'label' => $flow[$key],
-                'state' => $status === 'completed' || $i < $currentIndex ? 'done' : ($i === $currentIndex ? 'current' : 'upcoming'),
+                'state' => $state,
+                'at' => $state === 'upcoming' ? null : ($reachedAt[$key] ?? null),
             ];
         }
 
         return $steps;
+    }
+
+    /**
+     * When each step was reached, read from the "Stage changed … to X" order log
+     * entries written by the web admin and the staff app.
+     *
+     * @return array<string, \Illuminate\Support\Carbon>
+     */
+    private function reachedAt(Order $order): array
+    {
+        $times = ['pending' => $order->created_at];
+
+        $logs = $order->order_logs()->where('action', 'status_changed')->orderBy('id')->get(['description', 'created_at']);
+        foreach ($logs as $log) {
+            foreach (Order::STAGES as $stage => $label) {
+                if (! str_contains((string) $log->description, " to {$label}")) {
+                    continue;
+                }
+                $step = str_starts_with($stage, 'ready_') ? 'ready' : $stage;
+                $times[$step] ??= $log->created_at;
+            }
+        }
+
+        return array_filter($times);
     }
 
     /** Compare phone numbers by their last nine digits so 07…, 2567… and +2567… all match. */

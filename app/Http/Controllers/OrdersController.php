@@ -11,6 +11,7 @@ use App\Models\Sale;
 use App\Models\User;
 use App\Support\ExportsCsv;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class OrdersController extends Controller
 {
@@ -128,7 +129,7 @@ class OrdersController extends Controller
             'discount' => 'required|numeric',
             'amount_paid' => 'required|numeric',
             'balance_amount' => 'required|numeric',
-            'status' => 'required',
+            'status' => ['required', Rule::in(array_keys(Order::STAGES))],
             'orders_count' => 'nullable|numeric',
             'notes' => 'nullable',
             'is_guest_order' => 'boolean',
@@ -146,7 +147,34 @@ class OrdersController extends Controller
 
     public function show(Order $order)
     {
-        return view('orders.show', ['order' => $order]);
+        return view('orders.show', [
+            'order' => $order->load(['order_logs' => fn ($q) => $q->latest('id')]),
+        ]);
+    }
+
+    /** Move an order to another stage; the customer is emailed by OrderObserver. */
+    public function updateStage(Request $request, Order $order)
+    {
+        $data = $request->validate([
+            'status' => ['required', Rule::in(array_keys(Order::STAGES))],
+            'note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if ($order->status === $data['status']) {
+            return back()->with('status', "Order is already {$order->stageLabel()}.");
+        }
+
+        $from = $order->stageLabel();
+        $order->update(['status' => $data['status']]);
+        \App\Models\OrderLog::create([
+            'order_id' => $order->id,
+            'action' => 'status_changed',
+            'description' => "Stage changed from {$from} to {$order->stageLabel()} by {$request->user()->name}."
+                .(filled($data['note'] ?? null) ? ' Note: '.$data['note'] : ''),
+        ]);
+
+        return back()->with('status', "Order moved to {$order->stageLabel()}."
+            .($order->email ? ' The customer has been emailed.' : ''));
     }
 
     public function update(Request $request, Order $order)
@@ -174,7 +202,7 @@ class OrdersController extends Controller
             'discount' => 'sometimes|required|numeric',
             'amount_paid' => 'sometimes|required|numeric',
             'balance_amount' => 'sometimes|required|numeric',
-            'status' => 'sometimes|required',
+            'status' => ['sometimes', 'required', Rule::in([...array_keys(Order::STAGES), $order->status])],
             'orders_count' => 'nullable|numeric',
             'notes' => 'nullable',
             'is_guest_order' => 'boolean',

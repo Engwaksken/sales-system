@@ -124,7 +124,7 @@
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-  <input type="text" name="status" value="{{ $order->status }}" class="w-full rounded-md border-slate-300 shadow-sm" required>
+  <select name="status" class="w-full rounded-md border-slate-300 shadow-sm" required>@unless(array_key_exists($order->status, \App\Models\Order::STAGES))<option value="{{ $order->status }}" selected>{{ $order->stageLabel() }}</option>@endunless@foreach(\App\Models\Order::STAGES as $stageKey => $stageLabel)<option value="{{ $stageKey }}" @selected(old('status', $order->status) === $stageKey)>{{ $stageLabel }}</option>@endforeach</select>
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-700 mb-1">Orders Count</label>

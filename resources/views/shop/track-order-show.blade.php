@@ -43,6 +43,7 @@
             <span class="{{ $step['state'] === 'upcoming' ? 'text-slate-400' : 'font-bold text-slate-800' }}">
               {{ $step['label'] }}
               @if ($step['state'] === 'current')<span class="ml-1 text-xs font-semibold text-primary">— current</span>@endif
+              @if ($step['at'])<span class="block text-xs font-normal text-slate-400">{{ $step['at']->format('d M Y, H:i') }}</span>@endif
             </span>
           </li>
         @endforeach
@@ -86,6 +87,10 @@
 </div>
 
 <script>
+@unless ($cancelled || in_array($order->status, ['completed', 'delivered'], true))
+// Keep an open tracking page current without the customer having to reload.
+setInterval(() => { if (document.visibilityState === 'visible') location.reload(); }, 60000);
+@endunless
 document.getElementById('copyLinkBtn').addEventListener('click', async function () {
   try { await navigator.clipboard.writeText(location.href); this.innerHTML = '<i class="fas fa-check mr-1"></i> Link copied'; }
   catch (_) { window.prompt('Copy this tracking link:', location.href); }

@@ -29,8 +29,8 @@
              class="w-full rounded-full border-slate-300 px-4 py-1.5 text-sm">
       <input type="hidden" name="branch_id" value="{{ $branch->id }}">
     </form>
-    <a href="{{ route('orders.track') }}" class="hidden sm:inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap">
-      <i class="fas fa-truck-fast"></i> Track order
+    <a href="{{ route('orders.track') }}" class="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap" aria-label="Track order">
+      <i class="fas fa-truck-fast"></i><span class="hidden sm:inline"> Track order</span>
     </a>
     <button onclick="openCheckout()" class="relative bg-indigo-600 text-white px-4 py-1.5 rounded-full text-sm">
       Cart (<span id="cartCount">0</span>)
