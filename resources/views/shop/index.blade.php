@@ -800,6 +800,58 @@ function normalizeCheckoutPhone(value){
   return String(value || '').replace(/[^\d+]/g, '');
 }
 
+// --- CSRF handling -------------------------------------------------------
+// The token rendered into the page goes stale if the tab outlives the session
+// (SESSION_LIFETIME) or the session is rotated by a login/logout elsewhere,
+// which made checkout fail with "CSRF token mismatch" (HTTP 419). We fetch a
+// fresh token right before submitting and retry once if the server still 419s.
+function currentCsrfToken(){
+  return document.querySelector('meta[name=csrf-token]').content;
+}
+
+async function refreshCsrfToken(){
+  const res = await fetch('{{ route('csrf.token') }}', {
+    method: 'GET',
+    credentials: 'same-origin',
+    cache: 'no-store',
+    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+  });
+  if (!res.ok) throw new Error('Could not refresh the security token.');
+  const data = await res.json();
+  if (!data.token) throw new Error('Could not refresh the security token.');
+  document.querySelector('meta[name=csrf-token]').content = data.token;
+  return data.token;
+}
+
+// POST with a fresh CSRF token; on a 419 refresh the token and retry once.
+// `makeBody` is a function so the body can be rebuilt for the retry.
+async function csrfPost(url, makeBody, extraHeaders = {}){
+  const send = (token) => fetch(url, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      ...extraHeaders,
+      'X-CSRF-TOKEN': token,
+    },
+    body: makeBody(),
+  });
+
+  let token;
+  try { token = await refreshCsrfToken(); } catch (_) { token = currentCsrfToken(); }
+
+  let res = await send(token);
+  if (res.status === 419) {
+    token = await refreshCsrfToken();
+    res = await send(token);
+  }
+  return res;
+}
+
+// Pages restored from the back/forward cache carry an old token — refresh it.
+window.addEventListener('pageshow', (e) => { if (e.persisted) refreshCsrfToken().catch(() => {}); });
+
 document.getElementById('coForm').addEventListener('submit', placeOrder);
 
 async function placeOrder(event){
@@ -823,16 +875,20 @@ async function placeOrder(event){
     return;
   }
 
-  const fd = new FormData(form);
-
   // IMPORTANT: Laravel validates items as an ARRAY.
   // Appending one JSON string as "items" caused validation to fail and the old
   // frontend then tried to parse Laravel's HTML validation response as JSON,
   // which was displayed incorrectly as "Network error".
-  cart.forEach((item, index) => {
-    fd.append(`items[${index}][id]`, String(item.id));
-    fd.append(`items[${index}][qty]`, String(item.qty));
-  });
+  const buildCheckoutBody = () => {
+    const body = new FormData(form);
+    body.delete('_token'); // the header carries the fresh token
+    cart.forEach((item, index) => {
+      body.append(`items[${index}][id]`, String(item.id));
+      body.append(`items[${index}][qty]`, String(item.qty));
+    });
+    return body;
+  };
+  const fd = buildCheckoutBody();
 
   const btn = document.getElementById('placeBtn');
   const btnLabel = btn.querySelector('span');
@@ -842,15 +898,11 @@ async function placeOrder(event){
   btnIcon.className = 'fas fa-spinner fa-spin';
 
   try {
-    const res = await fetch('{{ route('checkout.store') }}', {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: fd,
-    });
+    const res = await csrfPost('{{ route('checkout.store') }}', buildCheckoutBody);
+
+    if (res.status === 419) {
+      throw new Error('Your session expired. Please refresh the page and place your order again — your cart is saved.');
+    }
 
     const contentType = res.headers.get('content-type') || '';
     let data = null;
@@ -892,21 +944,12 @@ async function placeOrder(event){
       const submittedMmNetwork = String(fd.get('mm_network') || mmNetwork || '');
 
       try {
-        const paymentRes = await fetch('{{ route('iotec.collect') }}', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-          },
-          body: JSON.stringify({
-            order_id: data.order_number,
-            amount: data.total_raw,
-            phone: submittedMmPhone,
-            network: submittedMmNetwork,
-          }),
-        });
+        const paymentRes = await csrfPost('{{ route('iotec.collect') }}', () => JSON.stringify({
+          order_id: data.order_number,
+          amount: data.total_raw,
+          phone: submittedMmPhone,
+          network: submittedMmNetwork,
+        }), { 'Content-Type': 'application/json' });
 
         let paymentData = null;
         try { paymentData = await paymentRes.json(); } catch (_) {}

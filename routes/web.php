@@ -77,6 +77,10 @@ Route::post('/reset-password', [LoginController::class, 'resetPassword'])->name(
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/product-image/{product}', [ShopController::class, 'productImage'])->name('shop.product-image');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+// Fresh CSRF token for long-lived storefront tabs: the token baked into the page goes
+// stale when the session expires or is rotated (login/logout in another tab).
+Route::get('/csrf-token', fn () => response()->json(['token' => csrf_token()])
+    ->header('Cache-Control', 'no-store, no-cache, must-revalidate, private'))->name('csrf.token');
 
 // Authenticated customer chat widget endpoints retain web/CSRF protection.
 Route::prefix('chat')->name('chat.')->middleware(['auth', 'throttle:60,1'])->group(function () {
