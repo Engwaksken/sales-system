@@ -31,6 +31,12 @@ Your order is on the way to **{{ $order->delivery_location }}**.
 Thank you for shopping with us. Your order is complete.
 @endif
 
+@if($order->order_number || $order->order_id)
+@component('mail::button', ['url' => $order->trackingUrl()])
+Track your order
+@endcomponent
+@endif
+
 Thanks,<br>
 {{ $order->branch?->name ?? $brandName }} · {{ $brandName }}
 @endcomponent

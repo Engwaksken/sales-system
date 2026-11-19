@@ -29,6 +29,9 @@
              class="w-full rounded-full border-slate-300 px-4 py-1.5 text-sm">
       <input type="hidden" name="branch_id" value="{{ $branch->id }}">
     </form>
+    <a href="{{ route('orders.track') }}" class="hidden sm:inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap">
+      <i class="fas fa-truck-fast"></i> Track order
+    </a>
     <button onclick="openCheckout()" class="relative bg-indigo-600 text-white px-4 py-1.5 rounded-full text-sm">
       Cart (<span id="cartCount">0</span>)
     </button>
@@ -219,6 +222,8 @@
 }
 .order-success-secondary{border:1px solid #cbd5e1;background:#fff;color:#475569}
 .order-success-primary{border:0;background:var(--shop-primary,#0f766e);color:#fff}
+.order-success-track{display:flex;align-items:center;justify-content:center;min-height:46px;margin-top:16px;border-radius:10px;background:var(--shop-primary,#0f766e);color:#fff;font-weight:900;text-decoration:none}
+.order-success-track:hover{filter:brightness(.94)}
 @media(max-width:520px){
   .order-success-overlay{align-items:flex-end;padding:0}
   .order-success-card{border-radius:20px 20px 0 0}
@@ -252,11 +257,15 @@
 
       <div id="orderSuccessMessage" class="order-success-message"></div>
 
+      <a id="orderSuccessTrack" href="{{ route('orders.track') }}" class="order-success-track">
+        <i class="fas fa-truck-fast mr-1"></i> Track my order
+      </a>
+
       <div class="order-success-actions">
         <button type="button" class="order-success-secondary" onclick="closeOrderSuccessPopup()">
           <i class="fas fa-xmark mr-1"></i> Close
         </button>
-        <button type="button" class="order-success-primary" onclick="continueShoppingAfterOrder()">
+        <button type="button" class="order-success-secondary" onclick="continueShoppingAfterOrder()">
           <i class="fas fa-bag-shopping mr-1"></i> Continue Shopping
         </button>
       </div>
@@ -552,6 +561,21 @@ function closeOrderSuccessPopup() {
     popup.classList.remove('show');
   }
   document.body.classList.remove('overflow-hidden');
+}
+
+// Keep the signed tracking link on this device and point the popup's
+// "Track order" button at it.
+function rememberOrderForTracking(data) {
+  const trackBtn = document.getElementById('orderSuccessTrack');
+  if (trackBtn) trackBtn.href = data.tracking_url || '{{ route('orders.track') }}?ref=' + encodeURIComponent(data.order_number || '');
+  if (!data.tracking_url) return;
+  try {
+    let orders = JSON.parse(localStorage.getItem('shopRecentOrders') || '[]');
+    if (!Array.isArray(orders)) orders = [];
+    orders = orders.filter(o => o && o.ref !== data.order_number);
+    orders.unshift({ ref: data.order_number, url: data.tracking_url, placed: new Date().toISOString() });
+    localStorage.setItem('shopRecentOrders', JSON.stringify(orders.slice(0, 10)));
+  } catch (_) {}
 }
 
 function continueShoppingAfterOrder() {
@@ -934,6 +958,7 @@ async function placeOrder(event){
     updateBadge();
 
     const orderTotal = Number(data.total_raw || 0);
+    rememberOrderForTracking(data);
 
     if (data.payment_method === 'mobile-money') {
       const mmPhone = form.mm_phone ? form.mm_phone.value.trim() : '';

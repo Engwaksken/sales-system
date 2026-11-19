@@ -201,6 +201,14 @@ class Order extends Model
         return in_array($this->status, ['ready_for_pickup', 'ready_for_delivery'], true);
     }
 
+    /** Signed, non-expiring link the customer can use to follow this order. */
+    public function trackingUrl(): string
+    {
+        return \Illuminate\Support\Facades\URL::signedRoute('orders.track.show', [
+            'reference' => $this->order_number ?: $this->order_id,
+        ]);
+    }
+
     public function hasPosSale(): bool
     {
         return ! is_null($this->sale_id);

@@ -24,6 +24,10 @@ You'll receive a mobile money prompt on your phone shortly to complete payment.
 Please have payment ready for delivery.
 @endif
 
+@component('mail::button', ['url' => $order->trackingUrl()])
+Track your order
+@endcomponent
+
 Thanks,<br>
 {{ $branch->name }} · {{ $brandName }}
 @endcomponent

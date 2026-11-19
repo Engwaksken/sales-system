@@ -231,6 +231,7 @@ class CheckoutController extends Controller
             'status' => 'ok',
             'order_id' => $order->order_number,
             'order_number' => $order->order_number,
+            'tracking_url' => $order->trackingUrl(),
             'db_order_id' => $order->id,
             'customer_id' => $customer->id,
             'customer_name' => $order->customer_name,
