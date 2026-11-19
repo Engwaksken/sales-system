@@ -3,10 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ $branch->name }} - Shop</title>
+@php
+  $brand = \App\Support\Brand::get();
+@endphp
+<title>Shop · {{ $brand['name'] }}{{ $branch->name !== $brand['name'] ? ' · '.$branch->name : '' }}</title>
+<meta name="description" content="Shop online at {{ $brand['name'] }} — {{ $branch->name }}{{ $branch->location ? ', '.$branch->location : '' }}.">
+<meta name="theme-color" content="{{ $brand['primary'] }}">
+<meta property="og:title" content="{{ $brand['name'] }} — Shop online">
+@if ($brand['logo'])<meta property="og:image" content="{{ $brand['logo'] }}">@endif
+@if ($brand['favicon'])<link rel="icon" href="{{ $brand['favicon'] }}">@endif
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ urlencode($brand['font']) }}:wght@400;600;700;800;900&display=swap">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+:root{--shop-primary:{{ $brand['primary'] }};--shop-secondary:{{ $brand['secondary'] }};--on-primary:{{ $brand['onPrimary'] }};--primary-soft:{{ $brand['primarySoft'] }}}
+body{font-family:'{{ $brand['font'] }}',system-ui,-apple-system,'Segoe UI',sans-serif}
+.bg-brand{background:var(--shop-primary);color:var(--on-primary)}
+.bg-brand:hover{filter:brightness(.93)}
+.text-brand{color:var(--shop-primary)}
+.bg-brand-soft{background:var(--primary-soft)}
+.brand-hero{background:linear-gradient(135deg,var(--shop-primary),color-mix(in srgb,var(--shop-primary) 65%,#0f172a));color:var(--on-primary)}
+.shop-search:focus{outline:none;border-color:var(--shop-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--shop-primary) 15%,transparent)}
+</style>
 </head>
 <body class="bg-slate-50 text-slate-900">
 <style>
@@ -23,26 +43,57 @@
 
 <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
   <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-    <div class="font-bold text-lg">{{ $branch->name }}</div>
-    <form method="GET" class="flex-1 max-w-md">
-      <input type="text" name="q" value="{{ $search }}" placeholder="Search products…"
-             class="w-full rounded-full border-slate-300 px-4 py-1.5 text-sm">
+    <a href="{{ route('shop.index', ['branch_id' => $branch->id]) }}" class="flex items-center gap-2 min-w-0 shrink-0">
+      @if ($brand['logo'])
+        <img src="{{ $brand['logo'] }}" alt="{{ $brand['name'] }}" class="h-9 w-auto max-w-[110px] object-contain">
+      @else
+        <span class="bg-brand grid h-9 w-9 place-items-center rounded-lg font-black">{{ mb_strtoupper(mb_substr($brand['name'], 0, 1)) }}</span>
+      @endif
+      <span class="hidden sm:block min-w-0 leading-tight">
+        <span class="block truncate font-extrabold">{{ $brand['name'] }}</span>
+        <span class="block truncate text-xs text-slate-500">{{ $branch->name }}</span>
+      </span>
+    </a>
+    <form method="GET" class="flex-1 max-w-md min-w-0">
+      <div class="relative">
+        <i class="fas fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+        <input type="text" name="q" value="{{ $search }}" placeholder="Search products…"
+               class="shop-search w-full rounded-full border border-slate-300 pl-9 pr-4 py-1.5 text-sm">
+      </div>
       <input type="hidden" name="branch_id" value="{{ $branch->id }}">
     </form>
     <a href="{{ route('orders.track') }}" class="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap" aria-label="Track order">
       <i class="fas fa-truck-fast"></i><span class="hidden sm:inline"> Track order</span>
     </a>
-    <button onclick="openCheckout()" class="relative bg-indigo-600 text-white px-4 py-1.5 rounded-full text-sm">
-      Cart (<span id="cartCount">0</span>)
+    <button onclick="openCheckout()" class="bg-brand relative inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap" aria-label="Open cart">
+      <i class="fas fa-cart-shopping"></i><span class="hidden sm:inline">Cart</span> <span class="rounded-full bg-white/25 px-1.5 text-xs" id="cartCount">0</span>
     </button>
   </div>
 </header>
+
+<section class="max-w-6xl mx-auto px-4 mt-4">
+  <div class="brand-hero rounded-2xl px-5 py-6 sm:px-8 sm:py-8 shadow-sm flex flex-wrap items-center justify-between gap-4">
+    <div class="min-w-0">
+      <p class="text-xs font-bold uppercase tracking-wider opacity-75">Welcome to</p>
+      <h1 class="text-2xl sm:text-3xl font-black">{{ $brand['name'] }}</h1>
+      <p class="mt-1 text-sm opacity-85">
+        <i class="fas fa-location-dot mr-1"></i>Shopping at {{ $branch->name }}{{ $branch->location ? ' · '.$branch->location : '' }}
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2 text-sm">
+      @if ($branch->contact)
+        <a href="tel:{{ preg_replace('/[^\d+]/', '', $branch->contact) }}" class="rounded-full bg-white/15 px-3 py-1.5 font-semibold hover:bg-white/25"><i class="fas fa-phone mr-1"></i>{{ $branch->contact }}</a>
+      @endif
+      <a href="{{ route('orders.track') }}" class="rounded-full bg-white/15 px-3 py-1.5 font-semibold hover:bg-white/25"><i class="fas fa-truck-fast mr-1"></i>Track an order</a>
+    </div>
+  </div>
+</section>
 
 @if ($slides->isNotEmpty())
 <div class="max-w-6xl mx-auto px-4 mt-4 grid md:grid-cols-3 gap-4">
   @foreach ($slides->take(3) as $slide)
   <div class="rounded-xl overflow-hidden bg-white shadow p-4">
-    <div class="text-xs uppercase text-indigo-500 font-semibold">{{ $slide->badge_text }}</div>
+    <div class="text-xs uppercase text-brand font-semibold">{{ $slide->badge_text }}</div>
     <div class="font-semibold text-slate-800">{{ $slide->title }}</div>
     <div class="text-sm text-slate-500">{{ $slide->subtitle }}</div>
   </div>
@@ -125,11 +176,11 @@
 <div class="max-w-6xl mx-auto px-4 py-6 flex gap-6">
   <aside class="w-48 flex-shrink-0 hidden md:block">
     <div class="font-semibold text-sm text-slate-700 mb-2">Categories</div>
-    <a href="?branch_id={{ $branch->id }}" class="block py-1 text-sm {{ !$catFilter ? 'text-indigo-600 font-medium' : 'text-slate-600' }}">All</a>
+    <a href="?branch_id={{ $branch->id }}" class="block py-1 text-sm {{ !$catFilter ? 'text-brand font-bold' : 'text-slate-600' }}">All</a>
     @foreach ($categories as $cat)
       @if ($cat->cnt > 0)
       <a href="?branch_id={{ $branch->id }}&cat={{ $cat->id }}"
-         class="block py-1 text-sm {{ $catFilter == $cat->id ? 'text-indigo-600 font-medium' : 'text-slate-600' }}">
+         class="block py-1 text-sm {{ $catFilter == $cat->id ? 'text-brand font-bold' : 'text-slate-600' }}">
         {{ $cat->category_name }} ({{ $cat->cnt }})
       </a>
       @endif
@@ -163,10 +214,10 @@
       <div class="p-3 flex-1 flex flex-col">
         <div class="text-sm font-medium text-slate-800">{{ $p->name }}</div>
         <div class="text-xs text-slate-400">{{ $p->category_name }}</div>
-        <div class="mt-1 font-semibold text-indigo-600">UGX {{ number_format($p->price, 0) }}</div>
+        <div class="mt-1 font-bold text-brand">UGX {{ number_format($p->price, 0) }}</div>
         <div class="text-xs text-slate-400 mb-2">{{ $p->stock }} in stock</div>
         <button onclick="addFromCard({{ $p->id }}, '{{ addslashes($p->name) }}', {{ $p->price }}, {{ $p->stock }})"
-                class="mt-auto bg-indigo-600 text-white text-sm py-1.5 rounded-md hover:bg-indigo-700">
+                class="bg-brand mt-auto text-sm font-semibold py-1.5 rounded-md">
           Add to cart
         </button>
       </div>
@@ -176,6 +227,36 @@
     @endforelse
   </div>
 </div>
+
+<footer class="mt-6 border-t border-slate-200 bg-white">
+  <div class="max-w-6xl mx-auto px-4 py-8 grid gap-6 sm:grid-cols-3 text-sm">
+    <div>
+      <div class="flex items-center gap-2">
+        @if ($brand['logo'])
+          <img src="{{ $brand['logo'] }}" alt="" class="h-8 w-auto max-w-[100px] object-contain">
+        @endif
+        <span class="font-extrabold">{{ $brand['name'] }}</span>
+      </div>
+      <p class="mt-2 text-slate-500">Order online and pay on delivery or by mobile money.</p>
+    </div>
+    <div>
+      <div class="font-bold text-slate-800 mb-2">{{ $branch->name }}</div>
+      <ul class="space-y-1 text-slate-500">
+        @if ($branch->location)<li><i class="fas fa-location-dot w-4 text-brand"></i> {{ $branch->location }}</li>@endif
+        @if ($branch->contact)<li><a href="tel:{{ preg_replace('/[^\d+]/', '', $branch->contact) }}" class="hover:text-slate-800"><i class="fas fa-phone w-4 text-brand"></i> {{ $branch->contact }}</a></li>@endif
+        @if ($branch->branch_email)<li><a href="mailto:{{ $branch->branch_email }}" class="hover:text-slate-800 break-all"><i class="fas fa-envelope w-4 text-brand"></i> {{ $branch->branch_email }}</a></li>@endif
+      </ul>
+    </div>
+    <div>
+      <div class="font-bold text-slate-800 mb-2">Your orders</div>
+      <ul class="space-y-1 text-slate-500">
+        <li><a href="{{ route('orders.track') }}" class="hover:text-slate-800"><i class="fas fa-truck-fast w-4 text-brand"></i> Track an order</a></li>
+        <li><button type="button" onclick="openCheckout()" class="hover:text-slate-800"><i class="fas fa-cart-shopping w-4 text-brand"></i> View cart</button></li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t border-slate-100 py-4 text-center text-xs text-slate-400">© {{ date('Y') }} {{ $brand['name'] }}. All rights reserved.</div>
+</footer>
 
 
 <!-- Custom Order Success Popup -->
@@ -221,8 +302,8 @@
   min-height:44px;border-radius:10px;font-weight:800;cursor:pointer;flex:1
 }
 .order-success-secondary{border:1px solid #cbd5e1;background:#fff;color:#475569}
-.order-success-primary{border:0;background:var(--shop-primary,#0f766e);color:#fff}
-.order-success-track{display:flex;align-items:center;justify-content:center;min-height:46px;margin-top:16px;border-radius:10px;background:var(--shop-primary,#0f766e);color:#fff;font-weight:900;text-decoration:none}
+.order-success-primary{border:0;background:var(--shop-primary,#0f766e);color:var(--on-primary,#fff)}
+.order-success-track{display:flex;align-items:center;justify-content:center;min-height:46px;margin-top:16px;border-radius:10px;background:var(--shop-primary,#0f766e);color:var(--on-primary,#fff);font-weight:900;text-decoration:none}
 .order-success-track:hover{filter:brightness(.94)}
 @media(max-width:520px){
   .order-success-overlay{align-items:flex-end;padding:0}
@@ -327,7 +408,7 @@
 .checkout-error{display:flex;gap:9px;align-items:flex-start;margin-top:16px;padding:11px 12px;border:1px solid #fecaca;border-radius:10px;background:#fef2f2;color:#b91c1c;font-size:.8rem;line-height:1.45}
 .checkout-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:18px;margin-top:18px;border-top:1px solid #e2e8f0}
 .checkout-cancel{min-height:44px;padding:10px 17px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#475569;font-weight:800;cursor:pointer}
-.checkout-place{min-height:44px;padding:10px 20px;border:0;border-radius:10px;background:var(--shop-primary,#0f766e);color:#fff;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:150px}
+.checkout-place{min-height:44px;padding:10px 20px;border:0;border-radius:10px;background:var(--shop-primary,#0f766e);color:var(--on-primary,#fff);font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:150px}
 .checkout-place:hover{filter:brightness(.94)}
 .checkout-place:disabled{opacity:.65;cursor:not-allowed}
 .mm-panel{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:14px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff}
@@ -1028,7 +1109,6 @@ updateBadge();
 
 <!-- Professional Chat widget -->
 <style>
-:root{--shop-primary:{{ $siteSettings['theme_primary'] ?? '#0f766e' }};--shop-secondary:{{ $siteSettings['theme_secondary'] ?? '#0ea5e9' }}}
 .chat-bubble{background:var(--shop-primary)}.chat-bubble:hover{filter:brightness(.92)}.chat-window{height:min(620px,calc(100vh - 110px));width:min(390px,calc(100vw - 28px))}.chat-head{background:linear-gradient(135deg,var(--shop-primary),var(--shop-secondary))}.chat-field{position:relative}.chat-field>i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8}.chat-field textarea+i{top:17px;transform:none}.chat-field input,.chat-field textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:10px 12px 10px 38px;outline:none}.chat-field textarea{min-height:78px;resize:vertical}.chat-field input:focus,.chat-field textarea:focus{border-color:var(--shop-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--shop-primary) 12%,transparent)}.chat-primary{background:var(--shop-primary)}.chat-primary:hover{filter:brightness(.92)}.chat-message-customer{background:var(--shop-primary);color:#fff}.chat-send-input{min-width:0;flex:1;border:1px solid #cbd5e1;border-radius:10px;padding:10px 11px;outline:none}.chat-send-input:focus{border-color:var(--shop-primary)}
 </style>
 <button id="chat-bubble" onclick="toggleChat()" aria-label="Open customer chat" class="chat-bubble fixed bottom-5 right-5 z-40 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center">

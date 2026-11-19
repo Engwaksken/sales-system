@@ -189,6 +189,14 @@ class OrderTrackingTest extends TestCase
             ->assertSee('0772000111')
             ->assertSee('main@acme.test');
 
+        $this->get(route('shop.index'))->assertOk()
+            ->assertSee('<title>Shop · Acme Hardware · Main Branch</title>', false)
+            ->assertSee('uploads/settings/logo-acme.png', false)
+            ->assertSee('--shop-primary:#7c3aed', false)
+            ->assertSee('Welcome to')
+            ->assertSee('tel:0772000111', false)
+            ->assertDontSee('bg-indigo-600', false);
+
         $confirmation = (new \App\Mail\OrderConfirmationMail($order, $this->branch->fresh()))->render();
         $stage = (new OrderStageUpdatedMail($order, 'Confirmed', 'Confirmed.'))->render();
 
@@ -199,6 +207,17 @@ class OrderTrackingTest extends TestCase
             $this->assertStringContainsString('0772000111', $html);
             $this->assertStringNotContainsString('Laravel', $html);
         }
+    }
+
+    public function test_a_malformed_theme_colour_cannot_inject_css_into_the_shop(): void
+    {
+        \App\Models\Setting::create(['setting_key' => 'theme_primary', 'setting_value' => 'red}</style><script>alert(1)</script>']);
+        \Illuminate\Support\Facades\Cache::flush();
+        \App\Support\Brand::flush();
+
+        $this->get(route('shop.index'))->assertOk()
+            ->assertSee('--shop-primary:#0f766e', false)
+            ->assertDontSee('<script>alert(1)</script>', false);
     }
 
     public function test_cancelled_orders_show_a_notice_instead_of_the_timeline(): void
